@@ -1,11 +1,13 @@
 "use client";
 
 import { SuiClientProvider, WalletProvider } from "@mysten/dapp-kit";
-import { getFullnodeUrl } from "@mysten/sui/client";
+import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 
-const networks = { testnet: { url: getFullnodeUrl("testnet") } };
+const networks = {
+  testnet: { url: getJsonRpcFullnodeUrl("testnet"), network: "testnet" as const },
+};
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
