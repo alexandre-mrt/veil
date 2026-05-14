@@ -3,6 +3,7 @@
 import {
   useCurrentAccount,
   useSignAndExecuteTransaction,
+  useSuiClientQuery,
 } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { type FormEvent, useCallback, useState } from "react";
@@ -12,6 +13,7 @@ import styles from "./components.module.css";
 
 const VEIL_DECIMALS = 6;
 const SUISCAN_TX_URL = "https://suiscan.xyz/testnet/tx";
+const TOKEN_TYPE = `${PACKAGE_ID}::token::TOKEN`;
 
 interface TxResult {
   readonly success: boolean;
@@ -29,6 +31,13 @@ export function DepositForm({ onTxAppended }: DepositFormProps) {
     useSignAndExecuteTransaction();
   const [amount, setAmount] = useState("");
   const [result, setResult] = useState<TxResult | null>(null);
+
+  const { data: tokenCoins } = useSuiClientQuery(
+    "getCoins",
+    { owner: account?.address ?? "", coinType: TOKEN_TYPE },
+    { enabled: !!account },
+  );
+  const tokenCoinId = tokenCoins?.data?.[0]?.coinObjectId ?? "";
 
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
@@ -51,14 +60,10 @@ export function DepositForm({ onTxAppended }: DepositFormProps) {
       try {
         const tx = new Transaction();
 
-        // REVIEW: deposit takes Coin<TOKEN>, not Coin<SUI>.
-        // Once PACKAGE_ID is deployed and users have TOKEN coins, replace
-        // tx.gas with a split from the user's TOKEN coin objects.
-        // For MVP scaffolding we build the PTB structure correctly.
-        const [depositCoin] = tx.splitCoins(tx.gas, [tx.pure.u64(amountRaw)]);
+        const coins = tx.splitCoins(tx.object(tokenCoinId), [tx.pure.u64(amountRaw)]);
         tx.moveCall({
           target: `${PACKAGE_ID}::pool::deposit`,
-          arguments: [tx.object(POOL_ID), depositCoin],
+          arguments: [tx.object(POOL_ID), coins[0]],
         });
 
         const txResult = await signAndExecute({ transaction: tx });
@@ -76,7 +81,7 @@ export function DepositForm({ onTxAppended }: DepositFormProps) {
     [amount, account, signAndExecute, onTxAppended],
   );
 
-  const isDisabled = isPending || !account || !amount;
+  const isDisabled = isPending || !account || !amount || !tokenCoinId;
 
   return (
     <form className={styles.depositForm} onSubmit={handleSubmit}>

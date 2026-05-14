@@ -18,8 +18,10 @@ const EPOCH_DURATION_MS: u64 = 2_592_000_000; // 30 days in milliseconds
 const E_FROZEN: u64 = 1;
 const E_NULLIFIER_SPENT: u64 = 2;
 const E_INVALID_PROOF: u64 = 3;
+const E_THRESHOLD_MISMATCH: u64 = 5;
 const E_INSUFFICIENT_BALANCE: u64 = 6;
 const E_INVALID_INPUTS_LENGTH: u64 = 7;
+const E_EPOCH_MISMATCH: u64 = 8;
 
 // ---------------------------------------------------------------------------
 // Structs
@@ -96,11 +98,20 @@ public fun shielded_transfer(
     pool: &mut Pool,
     proof_bytes: vector<u8>,
     public_inputs_bytes: vector<u8>,
-    _clock: &sui::clock::Clock,
+    clock: &sui::clock::Clock,
     _ctx: &TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
     assert!(public_inputs_bytes.length() >= 192, E_INVALID_INPUTS_LENGTH);
+
+    // Validate threshold matches pool config (bytes 64..96, LE u64)
+    let proof_threshold = le_bytes_to_u64(&public_inputs_bytes, 64);
+    assert!(proof_threshold == pool.threshold, E_THRESHOLD_MISMATCH);
+
+    // Validate epoch matches current on-chain epoch (bytes 96..128, LE u64)
+    let proof_epoch = le_bytes_to_u64(&public_inputs_bytes, 96);
+    let on_chain_epoch = current_epoch(clock);
+    assert!(proof_epoch == on_chain_epoch, E_EPOCH_MISMATCH);
 
     let valid = verifier::verify_transfer_proof(
         &pool.transfer_vk,
@@ -207,6 +218,17 @@ public fun ms_until_epoch_end(clock: &sui::clock::Clock): u64 {
 // ---------------------------------------------------------------------------
 // Internal utilities
 // ---------------------------------------------------------------------------
+fun le_bytes_to_u64(data: &vector<u8>, offset: u64): u64 {
+    let mut result: u64 = 0;
+    let mut i: u8 = 0;
+    while (i < 8) {
+        let byte_val = data[offset + (i as u64)] as u64;
+        result = result | (byte_val << ((i as u8) * 8));
+        i = i + 1;
+    };
+    result
+}
+
 fun extract_bytes(data: &vector<u8>, start: u64, end: u64): vector<u8> {
     let mut result = vector[];
     let mut i = start;
