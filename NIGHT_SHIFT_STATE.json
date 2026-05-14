@@ -2,7 +2,7 @@
   "project": "veil",
   "branch": "feat/night-shift-2026-05-14",
   "base_commit": "ce1c381",
-  "iteration": 16,
+  "iteration": 17,
   "phase": "execution",
   "repo": "https://github.com/alexandre-mrt/veil",
   "tasks": [

@@ -424,3 +424,469 @@
   font-size: 0.7rem;
   color: var(--text-secondary);
 }
+
+/* === TransferForm === */
+.transferForm {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  position: relative;
+  overflow: hidden;
+}
+
+.transferFormAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent);
+}
+
+.transferTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.transferInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.transferInputLabel {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.transferInput {
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.transferInput:focus {
+  border-color: var(--accent);
+}
+
+.transferInput::placeholder {
+  color: var(--text-secondary);
+}
+
+.transferSubmitBtn {
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-6);
+  background-color: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.transferSubmitBtn:hover:not(:disabled) {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+
+.transferSubmitBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.transferWarning {
+  font-size: 0.75rem;
+  color: var(--warning);
+  border: 1px solid var(--warning);
+  background-color: rgba(255, 170, 0, 0.05);
+  padding: var(--spacing-3);
+  border-radius: var(--radius);
+}
+
+.transferDanger {
+  font-size: 0.75rem;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background-color: rgba(255, 68, 68, 0.05);
+  padding: var(--spacing-3);
+  border-radius: var(--radius);
+}
+
+.transferFrozenBanner {
+  font-size: 0.75rem;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background-color: rgba(255, 68, 68, 0.05);
+  padding: var(--spacing-3);
+  border-radius: var(--radius);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.transferResult {
+  font-size: 0.75rem;
+  padding: var(--spacing-3);
+  border-radius: var(--radius);
+}
+
+.transferResultSuccess {
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  background-color: rgba(0, 255, 136, 0.05);
+}
+
+.transferResultError {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background-color: rgba(255, 68, 68, 0.05);
+}
+
+.transferResultLink {
+  color: var(--accent);
+  text-decoration: underline;
+  font-size: 0.7rem;
+}
+
+/* === WithdrawForm === */
+.withdrawForm {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  position: relative;
+  overflow: hidden;
+}
+
+.withdrawFormAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent);
+}
+
+.withdrawTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.withdrawInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.withdrawInputLabel {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.withdrawInput {
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.withdrawInput:focus {
+  border-color: var(--accent);
+}
+
+.withdrawInput::placeholder {
+  color: var(--text-secondary);
+}
+
+.withdrawSubmitBtn {
+  padding: var(--spacing-3) var(--spacing-6);
+  background-color: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.withdrawSubmitBtn:hover:not(:disabled) {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+
+.withdrawSubmitBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.withdrawResult {
+  font-size: 0.75rem;
+  padding: var(--spacing-3);
+  border-radius: var(--radius);
+}
+
+.withdrawResultSuccess {
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  background-color: rgba(0, 255, 136, 0.05);
+}
+
+.withdrawResultError {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background-color: rgba(255, 68, 68, 0.05);
+}
+
+.withdrawResultLink {
+  color: var(--accent);
+  text-decoration: underline;
+  font-size: 0.7rem;
+}
+
+/* === TransactionHistory === */
+.historyPanel {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.historyPanelAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent);
+}
+
+.historyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.historyTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.historyCount {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.historyEmpty {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  padding: var(--spacing-4) 0;
+}
+
+.historyTableWrapper {
+  overflow-x: auto;
+}
+
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.historyTh {
+  text-align: left;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.historyRow:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.historyTd {
+  padding: var(--spacing-2) var(--spacing-3);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.historyType_deposit {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.historyType_transfer {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.historyType_withdraw {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.historyTimestamp {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}
+
+.historyDigestLink {
+  color: var(--accent);
+  text-decoration: underline;
+  font-size: 0.7rem;
+  letter-spacing: 0;
+}
+
+/* === Dashboard Tab Navigation === */
+.tabNav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--spacing-6);
+}
+
+.tabBtn {
+  padding: var(--spacing-3) var(--spacing-5);
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  margin-bottom: -1px;
+}
+
+.tabBtn:hover {
+  color: var(--text);
+}
+
+.tabBtnActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* === ProofProgress === */
+.proofProgress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.proofMockBanner {
+  font-size: 0.7rem;
+  color: var(--warning);
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--warning);
+  background-color: rgba(255, 170, 0, 0.05);
+  border-radius: var(--radius);
+}
+
+.proofSteps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.proofStepLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.proofStepActive {
+  color: var(--accent);
+}
+
+.proofStepComplete {
+  color: var(--text-secondary);
+}
+
+.proofStepLabel {
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.proofStepBar {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.proofDone {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.proofError {
+  font-size: 0.75rem;
+  color: var(--danger);
+  font-weight: 600;
+}

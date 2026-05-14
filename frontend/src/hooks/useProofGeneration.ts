@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { VeilPrivateState } from "@/lib/types";
+import type { SnarkjsProof } from "@/lib/proof-converter";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -105,24 +106,52 @@ async function generateMockProof(
 // Real proof generation (snarkjs + circomlibjs)
 // ---------------------------------------------------------------------------
 
+/**
+ * Dynamically imports a module by name, bypassing webpack static analysis.
+ * This prevents build failures when optional dependencies are not installed.
+ */
+async function dynamicRequire(moduleName: string): Promise<unknown> {
+  // Using Function constructor to create a dynamic import that webpack cannot
+  // statically analyze, allowing optional dependencies to be missing at build time.
+  // eslint-disable-next-line no-new-func
+  const importFn = new Function("m", "return import(m)") as (m: string) => Promise<unknown>;
+  return importFn(moduleName);
+}
+
 async function generateRealProof(
   privateState: VeilPrivateState,
   txAmount: bigint,
   epochId: bigint,
   threshold: bigint,
 ): Promise<ProofGenerationResult> {
-  // Dynamic imports: snarkjs and circomlibjs are heavy, load on demand
-  // @ts-expect-error snarkjs has no TypeScript declarations
-  const snarkjs = await import("snarkjs");
-  const { buildPoseidon } = await import("circomlibjs");
-  const poseidon = await buildPoseidon();
+  // Dynamic imports: snarkjs and circomlibjs are heavy, load on demand.
+  // Uses dynamicRequire to avoid webpack bundling these optional deps.
+  const snarkjs = (await dynamicRequire("snarkjs")) as {
+    groth16: {
+      fullProve: (
+        input: Record<string, string>,
+        wasmPath: string,
+        zkeyPath: string,
+      ) => Promise<{ proof: SnarkjsProof; publicSignals: string[] }>;
+    };
+  };
+  const circomlibjs = (await dynamicRequire("circomlibjs")) as {
+    buildPoseidon: () => Promise<PoseidonInstance>;
+  };
+
+  interface PoseidonInstance {
+    (inputs: bigint[]): unknown;
+    F: { toString: (v: unknown) => string };
+  }
+
+  const poseidon: PoseidonInstance = await circomlibjs.buildPoseidon();
   const F = poseidon.F;
 
   const newRandomness = generateRandomBigInt();
   const salt = generateRandomBigInt();
   const cumulativeNew = privateState.cumulativeSpending + txAmount;
 
-  // Compute Poseidon hashes with domain separation
+  // Compute Poseidon hashes with domain separation (array input, matching e2e-test.ts)
   const oldCommitment = F.toString(
     poseidon([DOMAIN_COMMITMENT, privateState.cumulativeSpending, privateState.randomness]),
   );

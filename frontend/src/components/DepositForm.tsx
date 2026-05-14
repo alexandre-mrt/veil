@@ -7,6 +7,7 @@ import {
 import { Transaction } from "@mysten/sui/transactions";
 import { type FormEvent, useCallback, useState } from "react";
 import { PACKAGE_ID, POOL_ID } from "@/lib/constants";
+import { appendTx } from "@/lib/txHistory";
 import styles from "./components.module.css";
 
 const VEIL_DECIMALS = 6;

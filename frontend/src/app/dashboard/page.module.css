@@ -27,6 +27,15 @@
   }
 }
 
+.tabPanel {
+  width: 100%;
+}
+
+.singlePanel {
+  width: 100%;
+  max-width: 480px;
+}
+
 .footer {
   padding: var(--spacing-6);
   color: var(--text-secondary);
