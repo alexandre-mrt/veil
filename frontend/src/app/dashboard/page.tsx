@@ -86,7 +86,7 @@ export default function DashboardPage() {
 
           {activeTab === "deposit" && (
             <div className={styles.singlePanel}>
-              <DepositForm />
+              <DepositForm onTxAppended={handleTxAppended} />
             </div>
           )}
 
@@ -96,6 +96,7 @@ export default function DashboardPage() {
                 privateState={state}
                 frozen={frozen}
                 onStateUpdate={handleStateUpdate}
+                onTxAppended={handleTxAppended}
               />
             </div>
           )}
