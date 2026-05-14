@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.local
+build/
+.next/
+target/
+*.ptau
+*.zkey
+*.wasm
+*.r1cs
+*.wtns
+.claude/worktrees/
