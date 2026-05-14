@@ -1,0 +1,29 @@
+{
+  "project": "veil",
+  "branch": "feat/night-shift-2026-05-14",
+  "base_commit": "ce1c381",
+  "iteration": 0,
+  "phase": "planning",
+  "tasks": [
+    {"id": "T1", "name": "Circom transfer circuit", "status": "pending", "deps": [], "priority": "MUST", "agent": "night-coder", "model": "sonnet"},
+    {"id": "T2", "name": "Move contract core pool", "status": "pending", "deps": [], "priority": "MUST", "agent": "night-coder", "model": "sonnet"},
+    {"id": "T3", "name": "snarkjs to Sui proof converter", "status": "pending", "deps": [], "priority": "MUST", "agent": "night-coder", "model": "sonnet"},
+    {"id": "T4", "name": "Project scaffolding", "status": "pending", "deps": [], "priority": "MUST", "agent": "night-coder", "model": "sonnet"},
+    {"id": "T5", "name": "E2E proof pipeline", "status": "pending", "deps": ["T1", "T2", "T3"], "priority": "MUST", "agent": "night-coder", "model": "opus"},
+    {"id": "T6", "name": "Frontend wallet + deposit", "status": "pending", "deps": ["T4"], "priority": "MUST", "agent": "night-coder", "model": "opus"},
+    {"id": "T7", "name": "Frontend transfer with proof", "status": "pending", "deps": ["T5", "T6"], "priority": "MUST", "agent": "night-coder", "model": "opus"},
+    {"id": "T8", "name": "Withdraw flow", "status": "pending", "deps": ["T7"], "priority": "SHOULD", "agent": "night-coder", "model": "sonnet"},
+    {"id": "T9", "name": "Epoch management", "status": "pending", "deps": ["T7"], "priority": "SHOULD", "agent": "night-coder", "model": "sonnet"},
+    {"id": "T10", "name": "Tests + README", "status": "pending", "deps": ["T8"], "priority": "SHOULD", "agent": "night-tester", "model": "sonnet"}
+  ],
+  "done": 0,
+  "total": 10,
+  "mid_course_done": false,
+  "skills_ready": true,
+  "budget": {"max": 50.0, "cur": 0.0, "alert": 0.7},
+  "doom": {"err_hashes": {}, "file_edits": {}, "no_progress_count": 0},
+  "gate": {"loop_count": 0, "prev_hashes": []},
+  "ground_truth_hash": "verified",
+  "log": [],
+  "prefetch": null
+}
