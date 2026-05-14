@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { VeilPrivateState } from "@/lib/types";
 
+const EPOCH_DURATION_MS = 2_592_000_000; // 30 days in milliseconds
+
+function computeCurrentEpoch(): number {
+  return Math.floor(Date.now() / EPOCH_DURATION_MS);
+}
+
 const STORAGE_KEY = "veil-state";
 
 function generateRandomBigInt(): bigint {
@@ -59,7 +65,7 @@ function decodeState(encoded: string): VeilPrivateState {
 function createInitialState(): VeilPrivateState {
   return {
     userSecret: generateRandomBigInt(),
-    currentEpoch: 0,
+    currentEpoch: computeCurrentEpoch(),
     cumulativeSpending: 0n,
     randomness: generateRandomBigInt(),
     credentials: [],
@@ -81,7 +87,21 @@ export function usePrivateState(): UsePrivateStateReturn {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        setState(decodeState(stored));
+        const loaded = decodeState(stored);
+        const onchainEpoch = computeCurrentEpoch();
+        if (loaded.currentEpoch !== onchainEpoch) {
+          // New epoch: reset cumulative spending and randomness
+          const reset: VeilPrivateState = {
+            ...loaded,
+            currentEpoch: onchainEpoch,
+            cumulativeSpending: 0n,
+            randomness: generateRandomBigInt(),
+          };
+          localStorage.setItem(STORAGE_KEY, encodeState(reset));
+          setState(reset);
+        } else {
+          setState(loaded);
+        }
       } else {
         const initial = createInitialState();
         localStorage.setItem(STORAGE_KEY, encodeState(initial));

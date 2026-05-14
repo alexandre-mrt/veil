@@ -8,6 +8,11 @@ use veil::token::TOKEN;
 use veil::verifier;
 
 // ---------------------------------------------------------------------------
+// Epoch constants
+// ---------------------------------------------------------------------------
+const EPOCH_DURATION_MS: u64 = 2_592_000_000; // 30 days in milliseconds
+
+// ---------------------------------------------------------------------------
 // Error codes
 // ---------------------------------------------------------------------------
 const E_FROZEN: u64 = 1;
@@ -172,6 +177,28 @@ public fun pool_balance(pool: &Pool): u64 {
 
 public fun threshold(pool: &Pool): u64 {
     pool.threshold
+}
+
+// ---------------------------------------------------------------------------
+// Epoch helpers
+// ---------------------------------------------------------------------------
+public fun current_epoch(clock: &sui::clock::Clock): u64 {
+    sui::clock::timestamp_ms(clock) / EPOCH_DURATION_MS
+}
+
+public fun epoch_start_ms(epoch: u64): u64 {
+    epoch * EPOCH_DURATION_MS
+}
+
+public fun epoch_end_ms(epoch: u64): u64 {
+    (epoch + 1) * EPOCH_DURATION_MS
+}
+
+public fun ms_until_epoch_end(clock: &sui::clock::Clock): u64 {
+    let epoch = current_epoch(clock);
+    let end = epoch_end_ms(epoch);
+    let now = sui::clock::timestamp_ms(clock);
+    if (now >= end) { 0 } else { end - now }
 }
 
 // ---------------------------------------------------------------------------
