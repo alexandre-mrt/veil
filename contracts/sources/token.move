@@ -1,10 +1,10 @@
+#[allow(deprecated_usage)]
 module veil::token;
 
 use sui::coin::{Self, TreasuryCap};
 
 const FAUCET_AMOUNT: u64 = 1_000_000_000; // 1000 VEIL at 6 decimals
 
-/// One-time witness — name must match module name (TOKEN = token uppercased)
 public struct TOKEN has drop {}
 
 fun init(witness: TOKEN, ctx: &mut TxContext) {
