@@ -6,7 +6,7 @@ import {
   useSignAndExecuteTransaction,
 } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
-import { PACKAGE_ID, POOL_ID, THRESHOLD } from "@/lib/constants";
+import { PACKAGE_ID, POOL_ID, THRESHOLD, EPOCH_DURATION_MS } from "@/lib/constants";
 import type { VeilPrivateState } from "@/lib/types";
 import { useProofGeneration } from "./useProofGeneration";
 import type { ProofStep } from "./useProofGeneration";
@@ -42,7 +42,10 @@ interface UseShieldedTransferReturn {
 // ---------------------------------------------------------------------------
 
 const SUI_CLOCK_OBJECT_ID = "0x6";
-const CURRENT_EPOCH_ID = 1n;
+
+function getCurrentEpochId(): bigint {
+  return BigInt(Math.floor(Date.now() / Number(EPOCH_DURATION_MS)));
+}
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -87,7 +90,7 @@ export function useShieldedTransfer(): UseShieldedTransferReturn {
         const proofResult = await proofGen.generateTransferProof(
           privateState,
           txAmount,
-          CURRENT_EPOCH_ID,
+          getCurrentEpochId(),
           THRESHOLD,
         );
 

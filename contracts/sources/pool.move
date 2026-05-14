@@ -19,6 +19,7 @@ const E_FROZEN: u64 = 1;
 const E_NULLIFIER_SPENT: u64 = 2;
 const E_INVALID_PROOF: u64 = 3;
 const E_INSUFFICIENT_BALANCE: u64 = 6;
+const E_INVALID_INPUTS_LENGTH: u64 = 7;
 
 // ---------------------------------------------------------------------------
 // Structs
@@ -31,7 +32,7 @@ public struct Pool has key {
     frozen: bool,
 }
 
-public struct AdminCap has key, store {
+public struct AdminCap has key {
     id: UID,
 }
 
@@ -99,6 +100,7 @@ public fun shielded_transfer(
     _ctx: &TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
+    assert!(public_inputs_bytes.length() >= 192, E_INVALID_INPUTS_LENGTH);
 
     let valid = verifier::verify_transfer_proof(
         &pool.transfer_vk,
@@ -122,7 +124,7 @@ public fun shielded_transfer(
     let new_commitment = extract_bytes(&public_inputs_bytes, 32, 64);
     dynamic_field::add(
         &mut pool.id,
-        CommitmentKey { bytes: nullifier },
+        CommitmentKey { bytes: new_commitment },
         new_commitment,
     );
 
@@ -137,6 +139,7 @@ public fun shielded_transfer(
 // ---------------------------------------------------------------------------
 public fun withdraw(
     pool: &mut Pool,
+    _cap: &AdminCap,
     amount: u64,
     recipient: address,
     ctx: &mut TxContext,
