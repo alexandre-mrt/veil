@@ -20,6 +20,7 @@ import { fromBase64 } from "@mysten/sui/utils";
 import { SuiJsonRpcClient, getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 import { requestSuiFromFaucetV2, getFaucetHost } from "@mysten/sui/faucet";
 import { buildPoseidon } from "circomlibjs";
+import type { PoseidonFunction } from "circomlibjs";
 
 import { deployContract } from "./deploy.js";
 import {
@@ -55,15 +56,11 @@ const TRANSFER_THRESHOLD = 1_000_000_000n; // 1B threshold for KYC-free transfer
 // Helpers
 // ---------------------------------------------------------------------------
 
-type PoseidonFn = ReturnType<Awaited<ReturnType<typeof buildPoseidon>>["F"]["toString"]> extends string
-  ? never
-  : Awaited<ReturnType<typeof buildPoseidon>>;
-
 /**
  * Convert a circomlibjs Poseidon output to a BigInt string.
  * circomlibjs returns an internal field element; we use F.toString to get the decimal string.
  */
-function poseidonHash(poseidon: PoseidonFn, inputs: bigint[]): string {
+function poseidonHash(poseidon: PoseidonFunction, inputs: bigint[]): string {
   const result = poseidon(inputs);
   return poseidon.F.toString(result);
 }
@@ -80,10 +77,6 @@ function info(msg: string): void {
 
 function success(msg: string): void {
   console.log(`  [ok]   ${msg}`);
-}
-
-function warn(msg: string): void {
-  console.log(`  [warn] ${msg}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +179,7 @@ interface WitnessData {
   readonly vk: SnarkjsVK;
 }
 
-async function generateProof(poseidon: PoseidonFn): Promise<WitnessData> {
+async function generateProof(poseidon: PoseidonFunction): Promise<WitnessData> {
   // We import snarkjs dynamically since it has no types
   // @ts-expect-error snarkjs has no TypeScript declarations
   const snarkjs = await import("snarkjs");
@@ -553,7 +546,10 @@ async function main(): Promise<void> {
 
   // ── Step 2: Connect to testnet + ensure balance ───────────────────────
   step(2, "Connecting to testnet and checking balance");
-  const client = new SuiJsonRpcClient({ url: getJsonRpcFullnodeUrl(NETWORK) });
+  const client = new SuiJsonRpcClient({
+    url: getJsonRpcFullnodeUrl(NETWORK),
+    network: NETWORK,
+  });
   await ensureBalance(client, address);
 
   // ── Step 3: Compile circuit if needed ─────────────────────────────────
