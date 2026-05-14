@@ -8,6 +8,7 @@ import { THRESHOLD } from "@/lib/constants";
 import type { VeilPrivateState } from "@/lib/types";
 import { useShieldedTransfer } from "@/hooks/useShieldedTransfer";
 import type { TransferResult } from "@/hooks/useShieldedTransfer";
+import { appendTx } from "@/lib/txHistory";
 import { ProofProgress } from "./ProofProgress";
 import styles from "./components.module.css";
 
@@ -36,9 +37,10 @@ interface TransferFormProps {
   readonly privateState: VeilPrivateState | null;
   readonly frozen: boolean;
   readonly onStateUpdate: (cumulativeNew: bigint, newRandomness: bigint) => void;
+  readonly onTxAppended?: () => void;
 }
 
-export function TransferForm({ privateState, frozen, onStateUpdate }: TransferFormProps) {
+export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended }: TransferFormProps) {
   const account = useCurrentAccount();
   const transfer = useShieldedTransfer();
 
@@ -87,11 +89,13 @@ export function TransferForm({ privateState, frozen, onStateUpdate }: TransferFo
       );
 
       setResult(txResult);
-      if (txResult.success) {
+      if (txResult.success && txResult.digest) {
+        appendTx({ type: "transfer", amount: txAmountRaw, digest: txResult.digest });
+        onTxAppended?.();
         setAmount("");
       }
     },
-    [privateState, parsedAmount, account, frozen, transfer, txAmountRaw, onStateUpdate],
+    [privateState, parsedAmount, account, frozen, transfer, txAmountRaw, onStateUpdate, onTxAppended],
   );
 
   const isDisabled =

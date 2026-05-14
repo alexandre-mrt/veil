@@ -19,7 +19,11 @@ interface TxResult {
   readonly error?: string;
 }
 
-export function DepositForm() {
+interface DepositFormProps {
+  readonly onTxAppended?: () => void;
+}
+
+export function DepositForm({ onTxAppended }: DepositFormProps) {
   const account = useCurrentAccount();
   const { mutateAsync: signAndExecute, isPending } =
     useSignAndExecuteTransaction();
@@ -59,6 +63,8 @@ export function DepositForm() {
 
         const txResult = await signAndExecute({ transaction: tx });
 
+        appendTx({ type: "deposit", amount: amountRaw, digest: txResult.digest });
+        onTxAppended?.();
         setResult({ success: true, digest: txResult.digest });
         setAmount("");
       } catch (err: unknown) {
@@ -67,7 +73,7 @@ export function DepositForm() {
         setResult({ success: false, error: message });
       }
     },
-    [amount, account, signAndExecute],
+    [amount, account, signAndExecute, onTxAppended],
   );
 
   const isDisabled = isPending || !account || !amount;
