@@ -45,7 +45,7 @@ const COMPILE_SCRIPT = join(CIRCUITS_DIR, "scripts", "compile.sh");
 
 const NETWORK = "testnet" as const;
 const SUI_CLOCK_OBJECT_ID = "0x6";
-const MIN_SUI_BALANCE_MIST = 500_000_000; // 0.5 SUI minimum for operations
+const MIN_SUI_BALANCE_MIST = 200_000_000; // 0.2 SUI minimum for operations
 const GAS_BUDGET = 200_000_000;
 const FAUCET_MINT_AMOUNT = 1_000_000; // Amount to deposit into pool
 const DOMAIN_COMMITMENT = 1n;
@@ -84,17 +84,30 @@ function success(msg: string): void {
 // ---------------------------------------------------------------------------
 
 function loadKeypair(): Ed25519Keypair {
+  const activeAddress = execSync("sui client active-address", { encoding: "utf-8" }).trim();
+  info(`Active Sui address: ${activeAddress}`);
+
   const keystorePath = join(homedir(), ".sui", "sui_config", "sui.keystore");
   if (!existsSync(keystorePath)) {
     throw new Error(`Sui keystore not found at ${keystorePath}. Run 'sui client' first.`);
   }
   const keystore: string[] = JSON.parse(readFileSync(keystorePath, "utf-8"));
   if (keystore.length === 0) {
-    throw new Error("Sui keystore is empty. Generate a key with 'sui keytool generate ed25519'.");
+    throw new Error("Sui keystore is empty.");
   }
-  // First byte is the key scheme flag (0 = ed25519), rest is the secret key
-  const raw = fromBase64(keystore[0]);
-  return Ed25519Keypair.fromSecretKey(raw.slice(1));
+
+  for (const key of keystore) {
+    const raw = fromBase64(key);
+    if (raw[0] !== 0) continue;
+    try {
+      const kp = Ed25519Keypair.fromSecretKey(raw.slice(1));
+      if (kp.toSuiAddress() === activeAddress) {
+        return kp;
+      }
+    } catch {}
+  }
+
+  throw new Error(`No Ed25519 key found matching active address ${activeAddress}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -191,7 +204,7 @@ async function generateProof(poseidon: PoseidonFunction): Promise<WitnessData> {
   const randomnessOld = 0n; // Genesis randomness
   const randomnessNew = 42424242n;
   const userSecret = 123456789n;
-  const epochId = 1n;
+  const epochId = BigInt(Math.floor(Date.now() / 2_592_000_000));
   const salt = 777n;
 
   // Compute public inputs using Poseidon

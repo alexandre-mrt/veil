@@ -59,14 +59,27 @@ export function deployContract(
 
   console.log(`[deploy] Publishing from ${contractsDir} with gas budget ${gasBudget}...`);
 
-  const output = execSync(
-    `sui client publish --gas-budget ${gasBudget} --json --skip-dependency-verification`,
-    {
-      cwd: contractsDir,
-      encoding: "utf-8",
-      maxBuffer: 10 * 1024 * 1024, // 10MB buffer for JSON output
-    },
-  );
+  let output: string;
+  try {
+    output = execSync(
+      `sui client publish --gas-budget ${gasBudget} --json --skip-dependency-verification`,
+      {
+        cwd: contractsDir,
+        encoding: "utf-8",
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    );
+  } catch (err: unknown) {
+    const execErr = err as { stdout?: string; stderr?: string; status?: number; message?: string };
+    const combined = (execErr.stdout ?? "") + (execErr.stderr ?? "");
+    if (combined.includes('"objectChanges"')) {
+      output = combined;
+    } else if (combined.includes('"effects"')) {
+      output = combined;
+    } else {
+      throw new Error(`[deploy] Publish failed (exit ${execErr.status}): ${combined.slice(0, 500)}`);
+    }
+  }
 
   // The CLI may print warnings before the JSON — find the JSON start
   const jsonStart = output.indexOf("{");
