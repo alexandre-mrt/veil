@@ -78,7 +78,15 @@ template Transfer() {
     component newBits = Num2Bits(64);
     newBits.in <== cumulativeNew;
 
-    // ─── CONSTRAINT 8: Nullifier is correctly derived ─────────────────────────
+    // ─── CONSTRAINT 8: Cumulative spending under threshold ─────────────────────
+    // cumulativeNew <= threshold (anonymous tier allowed)
+    // If cumulativeNew > threshold, the prover needs a separate compliance proof
+    component ltThreshold = LessEqThan(64);
+    ltThreshold.in[0] <== cumulativeNew;
+    ltThreshold.in[1] <== threshold;
+    ltThreshold.out === 1;
+
+    // ─── CONSTRAINT 9: Nullifier is correctly derived ─────────────────────────
     // nullifier = Poseidon(2, userSecret, epochId)
     // Domain tag 2 separates nullifiers from commitments (tag 1)
     component nfHash = Poseidon(3);

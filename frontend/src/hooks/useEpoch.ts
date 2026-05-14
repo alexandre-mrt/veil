@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-
-const EPOCH_DURATION_MS = 2_592_000_000; // 30 days in milliseconds
+import { EPOCH_DURATION_MS } from "@/lib/constants";
 
 export interface EpochInfo {
   readonly currentEpoch: number;

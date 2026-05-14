@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { VeilPrivateState } from "@/lib/types";
-
-const EPOCH_DURATION_MS = 2_592_000_000; // 30 days in milliseconds
+import { EPOCH_DURATION_MS } from "@/lib/constants";
 
 function computeCurrentEpoch(): number {
   return Math.floor(Date.now() / EPOCH_DURATION_MS);
@@ -12,7 +11,7 @@ function computeCurrentEpoch(): number {
 const STORAGE_KEY = "veil-state";
 
 function generateRandomBigInt(): bigint {
-  const bytes = new Uint8Array(32);
+  const bytes = new Uint8Array(31);
   crypto.getRandomValues(bytes);
   return bytes.reduce(
     (acc, byte, i) => acc | (BigInt(byte) << BigInt(i * 8)),
