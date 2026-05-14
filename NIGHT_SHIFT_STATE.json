@@ -6,28 +6,29 @@
   "phase": "execution",
   "repo": "https://github.com/alexandre-mrt/veil",
   "tasks": [
-    {"id": "T1", "name": "Circom transfer circuit", "status": "done", "deps": [], "priority": "MUST"},
-    {"id": "T2", "name": "Move contract core pool", "status": "done", "deps": [], "priority": "MUST"},
-    {"id": "T3", "name": "snarkjs to Sui proof converter", "status": "done", "deps": [], "priority": "MUST"},
-    {"id": "T4", "name": "Project scaffolding", "status": "done", "deps": [], "priority": "MUST"},
-    {"id": "T5", "name": "E2E proof pipeline", "status": "done", "deps": ["T1", "T2", "T3"], "priority": "MUST"},
-    {"id": "T6", "name": "Frontend wallet + deposit", "status": "done", "deps": ["T4"], "priority": "MUST"},
-    {"id": "T7", "name": "Frontend transfer with proof", "status": "pending", "deps": ["T5", "T6"], "priority": "MUST", "agent": "night-coder", "model": "opus"},
-    {"id": "T8", "name": "Withdraw flow", "status": "pending", "deps": ["T7"], "priority": "SHOULD", "agent": "night-coder", "model": "sonnet"},
-    {"id": "T9", "name": "Epoch management", "status": "pending", "deps": ["T7"], "priority": "SHOULD", "agent": "night-coder", "model": "sonnet"},
-    {"id": "T10", "name": "Tests + README", "status": "pending", "deps": ["T8"], "priority": "SHOULD", "agent": "night-tester", "model": "sonnet"}
+    {"id": "T1", "name": "Circom transfer circuit", "status": "done", "priority": "MUST"},
+    {"id": "T2", "name": "Move contract core pool", "status": "done", "priority": "MUST"},
+    {"id": "T3", "name": "snarkjs to Sui proof converter", "status": "done", "priority": "MUST"},
+    {"id": "T4", "name": "Project scaffolding", "status": "done", "priority": "MUST"},
+    {"id": "T5", "name": "E2E proof pipeline", "status": "done", "priority": "MUST"},
+    {"id": "T6", "name": "Frontend wallet + deposit", "status": "done", "priority": "MUST"},
+    {"id": "T7", "name": "Frontend transfer with proof", "status": "in_progress", "deps": ["T5", "T6"], "priority": "MUST", "agent": "night-coder", "model": "opus"},
+    {"id": "T8", "name": "Withdraw flow", "status": "pending", "deps": ["T7"], "priority": "SHOULD"},
+    {"id": "T9", "name": "Epoch management", "status": "done", "priority": "SHOULD"},
+    {"id": "T10", "name": "Tests + README", "status": "pending", "deps": ["T8"], "priority": "SHOULD"}
   ],
-  "done": 6,
+  "done": 8,
   "total": 10,
   "mid_course_done": true,
   "skills_ready": true,
-  "budget": {"max": 50.0, "cur": 8.0, "alert": 0.7},
+  "budget": {"max": 50.0, "cur": 12.0, "alert": 0.7},
   "doom": {"err_hashes": {}, "file_edits": {}, "no_progress_count": 0},
   "gate": {"loop_count": 0, "prev_hashes": []},
   "ground_truth_hash": "verified",
   "log": [
     {"iter": 1, "done": ["T1", "T2", "T3", "T4"], "issues": "T2 public entry fix"},
-    {"iter": 13, "done": ["T5", "T6"], "issues": "T5 notification delayed, T6 dapp-kit 1.x fallback"}
+    {"iter": 13, "done": ["T5", "T6"], "issues": "T5 notification delayed"},
+    {"iter": 14, "done": ["T9"], "issues": "none"}
   ],
   "prefetch": null
 }
