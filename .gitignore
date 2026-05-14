@@ -10,3 +10,6 @@ target/
 *.r1cs
 *.wtns
 .claude/worktrees/
+transfer.wasm
+*.zkey
+*.ptau
