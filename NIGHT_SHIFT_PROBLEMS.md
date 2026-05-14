@@ -20,6 +20,14 @@
 - **Confidence**: HIGH — 1.x is the correct stable package for this pattern
 - **User action needed**: None unless you specifically want the 2.x Lit-based architecture
 
+### ASSUMPTION: Deposit form uses tx.gas (SUI) as placeholder coin
+- **Iteration**: T6
+- **File**: frontend/src/components/DepositForm.tsx
+- **What I needed**: Deposit requires `Coin<TOKEN>` but no TOKEN coins exist before contract deployment
+- **What I did**: Built PTB using `splitCoins(tx.gas, ...)` as placeholder. Marked with `NIGHT-SHIFT-REVIEW`. After deployment, replace with user's TOKEN coin objects via `getCoins` query.
+- **Confidence**: MEDIUM — PTB structure is correct but coin type mismatch will cause tx failure until updated
+- **User action needed**: After deploying contract, update DepositForm to split from TOKEN coins instead of gas
+
 ### ASSUMPTION: shielded_transfer test uses #[expected_failure] without abort code
 - **Iteration**: T2
 - **File**: contracts/tests/pool_tests.move
