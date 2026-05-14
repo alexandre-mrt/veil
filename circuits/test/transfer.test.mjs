@@ -27,18 +27,18 @@ const DOMAIN_NULLIFIER = 2n;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/** Poseidon field element reference — set in main() after buildPoseidon() */
+let poseidonF = null;
+
 /**
- * Convert a snarkjs/circomlibjs field element to BigInt.
- * circomlibjs Poseidon returns a Uint8Array (32 bytes, big-endian).
+ * Convert a circomlibjs Poseidon output to BigInt.
+ * circomlibjs returns an internal field element (Uint8Array buffer).
+ * Must use F.toObject() for correct conversion, NOT manual byte parsing.
  */
 function toBI(val) {
   if (typeof val === "bigint") return val;
-  if (val instanceof Uint8Array) {
-    let result = 0n;
-    for (const byte of val) {
-      result = (result << 8n) | BigInt(byte);
-    }
-    return result;
+  if (poseidonF && val instanceof Uint8Array) {
+    return poseidonF.toObject(val);
   }
   return BigInt(val);
 }
@@ -191,7 +191,11 @@ async function loadSnarkjs() {
 }
 
 async function proveAndVerify(groth16, vk, inputs) {
-  const { proof, publicSignals } = await groth16.fullProve(inputs, WASM_PATH, ZKEY_PATH);
+  const stringInputs = {};
+  for (const [k, v] of Object.entries(inputs)) {
+    stringInputs[k] = v.toString();
+  }
+  const { proof, publicSignals } = await groth16.fullProve(stringInputs, WASM_PATH, ZKEY_PATH);
   const valid = await groth16.verify(vk, publicSignals, proof);
   return { proof, publicSignals, valid };
 }
@@ -200,6 +204,7 @@ async function proveAndVerify(groth16, vk, inputs) {
 
 async function main() {
   const poseidon = await buildPoseidon();
+  poseidonF = poseidon.F;
   let groth16 = null;
   let vk = null;
 

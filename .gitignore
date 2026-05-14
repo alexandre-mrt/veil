@@ -9,3 +9,6 @@ target/
 *.wasm
 *.r1cs
 *.wtns
+transfer.wasm
+*.zkey
+*.ptau
