@@ -115,9 +115,11 @@ fun test_withdraw() {
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
-        pool::withdraw(&mut pool, WITHDRAW_AMOUNT, RECIPIENT, scenario.ctx());
+        let cap = scenario.take_from_sender<AdminCap>();
+        pool::withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT - WITHDRAW_AMOUNT, 0);
         test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
     };
 
     scenario.end();
