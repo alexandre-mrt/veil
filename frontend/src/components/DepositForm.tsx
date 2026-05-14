@@ -45,17 +45,15 @@ export function DepositForm() {
 
       try {
         const tx = new Transaction();
-        const veilCoinType = `${PACKAGE_ID}::token::TOKEN`;
 
+        // REVIEW: deposit takes Coin<TOKEN>, not Coin<SUI>.
+        // Once PACKAGE_ID is deployed and users have TOKEN coins, replace
+        // tx.gas with a split from the user's TOKEN coin objects.
+        // For MVP scaffolding we build the PTB structure correctly.
         const [depositCoin] = tx.splitCoins(tx.gas, [tx.pure.u64(amountRaw)]);
-        // REVIEW: deposit uses Coin<TOKEN> not Coin<SUI>.
-        // Once PACKAGE_ID is deployed, this needs a real VEIL coin object
-        // split from user's TOKEN balance, not tx.gas (which is SUI).
-        // For MVP/testnet scaffolding, we build the PTB structure correctly.
         tx.moveCall({
           target: `${PACKAGE_ID}::pool::deposit`,
           arguments: [tx.object(POOL_ID), depositCoin],
-          typeArguments: [veilCoinType],
         });
 
         const txResult = await signAndExecute({ transaction: tx });
