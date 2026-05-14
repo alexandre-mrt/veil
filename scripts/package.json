@@ -4,10 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "bun run src/test-converter.ts"
+    "test": "bun run src/test-converter.ts",
+    "e2e": "bun run src/e2e-test.ts"
   },
   "dependencies": {
-    "snarkjs": "^0.7.0"
+    "@mysten/sui": "^2.16.2",
+    "circomlibjs": "^0.1.7",
+    "snarkjs": "^0.7.6"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

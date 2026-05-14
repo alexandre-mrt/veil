@@ -1,3 +1,4 @@
+import Link from "next/link";
 import styles from "./page.module.css";
 
 const FEATURES = [
@@ -27,9 +28,9 @@ export default function Home() {
         <p className={styles.description}>
           Anonymous below threshold. Compliant above. Zero-knowledge proofs protect your spending.
         </p>
-        <button type="button" className={styles.connectButton}>
-          Connect Wallet
-        </button>
+        <Link href="/dashboard" className={styles.connectButton}>
+          Launch App
+        </Link>
       </section>
 
       <section className={styles.features}>

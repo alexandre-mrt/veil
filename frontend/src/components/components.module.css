@@ -1,0 +1,362 @@
+/* === WalletButton === */
+.walletWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.walletAddress {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.walletConnectBtn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.walletConnectBtn:hover {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+
+/* === Header === */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-4) var(--spacing-6);
+  border-bottom: 1px solid var(--border);
+  background-color: var(--surface);
+  width: 100%;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.headerLogo {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.headerLogo:hover {
+  text-decoration: none;
+  color: var(--accent);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+/* === BalanceDisplay === */
+.balanceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-4);
+  width: 100%;
+}
+
+.balanceCard {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  position: relative;
+  overflow: hidden;
+}
+
+.balanceCardAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent);
+}
+
+.balanceLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: var(--spacing-2);
+}
+
+.balanceValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.balanceUnit {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: var(--spacing-1);
+}
+
+/* === PrivacyStatus === */
+.privacyStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDotAnonymous {
+  background-color: var(--accent);
+}
+
+.statusDotWarning {
+  background-color: var(--warning);
+}
+
+.statusDotDanger {
+  background-color: var(--danger);
+}
+
+.statusLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.statusLabelAnonymous {
+  color: var(--accent);
+}
+
+.statusLabelWarning {
+  color: var(--warning);
+}
+
+.statusLabelDanger {
+  color: var(--danger);
+}
+
+/* === PrivacyStatus expanded (dashboard) === */
+.privacyPanel {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.privacyPanelAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+.privacyPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+}
+
+.privacyPanelTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.progressBarTrack {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: var(--spacing-2);
+}
+
+.progressBarFill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progressBarAnonymous {
+  background-color: var(--accent);
+}
+
+.progressBarWarning {
+  background-color: var(--warning);
+}
+
+.progressBarDanger {
+  background-color: var(--danger);
+}
+
+.progressText {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+/* === DepositForm === */
+.depositForm {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  position: relative;
+  overflow: hidden;
+}
+
+.depositFormAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent);
+}
+
+.depositTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.depositInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.depositInputLabel {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.depositInput {
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.depositInput:focus {
+  border-color: var(--accent);
+}
+
+.depositInput::placeholder {
+  color: var(--text-secondary);
+}
+
+.depositSubmitBtn {
+  padding: var(--spacing-3) var(--spacing-6);
+  background-color: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.depositSubmitBtn:hover:not(:disabled) {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+
+.depositSubmitBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.depositResult {
+  font-size: 0.75rem;
+  padding: var(--spacing-3);
+  border-radius: var(--radius);
+}
+
+.depositResultSuccess {
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  background-color: rgba(0, 255, 136, 0.05);
+}
+
+.depositResultError {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background-color: rgba(255, 68, 68, 0.05);
+}
+
+.depositResultLink {
+  color: var(--accent);
+  text-decoration: underline;
+  font-size: 0.7rem;
+}
+
+/* === Placeholder panel === */
+.placeholderPanel {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  min-height: 160px;
+}
+
+.placeholderTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.placeholderText {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}

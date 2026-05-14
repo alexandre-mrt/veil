@@ -2,14 +2,14 @@
   "project": "veil",
   "branch": "feat/night-shift-2026-05-14",
   "base_commit": "ce1c381",
-  "iteration": 1,
+  "iteration": 12,
   "phase": "execution",
   "repo": "https://github.com/alexandre-mrt/veil",
   "tasks": [
-    {"id": "T1", "name": "Circom transfer circuit", "status": "in_progress", "deps": [], "priority": "MUST", "agent": "night-coder", "model": "sonnet"},
-    {"id": "T2", "name": "Move contract core pool", "status": "in_progress", "deps": [], "priority": "MUST", "agent": "night-coder", "model": "sonnet"},
-    {"id": "T3", "name": "snarkjs to Sui proof converter", "status": "in_progress", "deps": [], "priority": "MUST", "agent": "night-coder", "model": "sonnet"},
-    {"id": "T4", "name": "Project scaffolding", "status": "in_progress", "deps": [], "priority": "MUST", "agent": "night-coder", "model": "sonnet"},
+    {"id": "T1", "name": "Circom transfer circuit", "status": "done", "deps": [], "priority": "MUST"},
+    {"id": "T2", "name": "Move contract core pool", "status": "done", "deps": [], "priority": "MUST"},
+    {"id": "T3", "name": "snarkjs to Sui proof converter", "status": "done", "deps": [], "priority": "MUST"},
+    {"id": "T4", "name": "Project scaffolding", "status": "done", "deps": [], "priority": "MUST"},
     {"id": "T5", "name": "E2E proof pipeline", "status": "pending", "deps": ["T1", "T2", "T3"], "priority": "MUST", "agent": "night-coder", "model": "opus"},
     {"id": "T6", "name": "Frontend wallet + deposit", "status": "pending", "deps": ["T4"], "priority": "MUST", "agent": "night-coder", "model": "opus"},
     {"id": "T7", "name": "Frontend transfer with proof", "status": "pending", "deps": ["T5", "T6"], "priority": "MUST", "agent": "night-coder", "model": "opus"},
@@ -17,14 +17,14 @@
     {"id": "T9", "name": "Epoch management", "status": "pending", "deps": ["T7"], "priority": "SHOULD", "agent": "night-coder", "model": "sonnet"},
     {"id": "T10", "name": "Tests + README", "status": "pending", "deps": ["T8"], "priority": "SHOULD", "agent": "night-tester", "model": "sonnet"}
   ],
-  "done": 0,
+  "done": 4,
   "total": 10,
   "mid_course_done": false,
   "skills_ready": true,
-  "budget": {"max": 50.0, "cur": 0.0, "alert": 0.7},
+  "budget": {"max": 50.0, "cur": 3.5, "alert": 0.7},
   "doom": {"err_hashes": {}, "file_edits": {}, "no_progress_count": 0},
   "gate": {"loop_count": 0, "prev_hashes": []},
   "ground_truth_hash": "verified",
-  "log": [],
-  "prefetch": null
+  "log": [{"iter": 1, "done": ["T1", "T2", "T3", "T4"], "issues": "T2 needed public entry→public fix, T4 ShadowBook port conflict resolved"}],
+  "prefetch": "T5: deploy via sui client publish, extract packageId from objectChanges, call shielded_transfer with tx.pure.vector('u8', proofBytes), Clock at 0x6, faucet at https://faucet.testnet.sui.io"
 }
