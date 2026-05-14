@@ -12,6 +12,14 @@
 - **Confidence**: HIGH — this is a hard constraint of the Move compiler
 - **User action needed**: If you want the type to be `VEIL`, rename the module file to `veil.move` and declare `module veil::veil;` — but that's unusual naming.
 
+### ASSUMPTION: Used @mysten/dapp-kit 1.x instead of @mysten/dapp-kit-react 2.x
+- **Iteration**: T4
+- **File**: frontend/src/app/providers.tsx, frontend/package.json
+- **What I needed**: Task spec requested `@mysten/dapp-kit-react 2.x` with `DAppKitProvider` + `SuiClientProvider` imports
+- **What I did**: Used `@mysten/dapp-kit@1.0.6` (stable, ships `SuiClientProvider` + `WalletProvider`). The 2.x API is fundamentally different (Lit-based, no `SuiClientProvider`). Also used `getJsonRpcFullnodeUrl` from `@mysten/sui/jsonRpc` (renamed from `getFullnodeUrl` in @mysten/sui 2.x) and added required `network` field in `NetworkConfig`.
+- **Confidence**: HIGH — 1.x is the correct stable package for this pattern
+- **User action needed**: None unless you specifically want the 2.x Lit-based architecture
+
 ### ASSUMPTION: shielded_transfer test uses #[expected_failure] without abort code
 - **Iteration**: T2
 - **File**: contracts/tests/pool_tests.move
