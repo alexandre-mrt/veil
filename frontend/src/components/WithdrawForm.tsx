@@ -78,6 +78,10 @@ export function WithdrawForm({ onTxAppended }: WithdrawFormProps) {
       <div className={styles.withdrawFormAccent} />
       <span className={styles.withdrawTitle}>Withdraw</span>
 
+      <div className={styles.withdrawAdminNotice}>
+        Emergency admin withdrawal only. ZK-proof-gated withdrawal coming in Tier 2.
+      </div>
+
       <div className={styles.withdrawInputGroup}>
         <label htmlFor="withdraw-amount" className={styles.withdrawInputLabel}>
           Amount (VEIL)
