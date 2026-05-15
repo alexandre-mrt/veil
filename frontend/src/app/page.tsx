@@ -5,17 +5,41 @@ const FEATURES = [
   {
     title: "Anonymous Transfers",
     description: "Send tokens without revealing amounts or identity",
-    accent: "var(--accent)",
   },
   {
     title: "Cumulative Proofs",
     description: "Track spending across an epoch without leaking individual transactions",
-    accent: "var(--accent)",
   },
   {
     title: "Tiered Compliance",
     description: "KYC kicks in only above the threshold — privacy by default",
-    accent: "var(--accent)",
+  },
+] as const;
+
+const STEPS = [
+  {
+    number: "1",
+    title: "Deposit",
+    description:
+      "Deposit VEIL tokens into shielded pool with genesis commitment.",
+  },
+  {
+    number: "2",
+    title: "ZK Proof",
+    description:
+      "Browser generates Groth16 proof (~2s, 11 constraints). Amount stays private.",
+  },
+  {
+    number: "3",
+    title: "Transfer",
+    description:
+      "Submit proof to Sui Move contract. Amount hidden. Threshold enforced.",
+  },
+  {
+    number: "4",
+    title: "Verify",
+    description:
+      "Sui verifies on-chain via native groth16. Nullifier stored. New commitment created.",
   },
 ] as const;
 
@@ -41,6 +65,23 @@ export default function Home() {
             <p className={styles.cardDescription}>{feature.description}</p>
           </article>
         ))}
+      </section>
+
+      <section className={styles.howItWorks}>
+        <h2 className={styles.howItWorksTitle}>How It Works</h2>
+        <div className={styles.stepsGrid}>
+          {STEPS.map((step) => (
+            <article key={step.number} className={styles.stepCard}>
+              <div className={styles.cardAccentLine} />
+              <span className={styles.stepNumber}>{step.number}</span>
+              <h3 className={styles.stepName}>{step.title}</h3>
+              <p className={styles.stepDescription}>{step.description}</p>
+            </article>
+          ))}
+        </div>
+        <p className={styles.howItWorksNote}>
+          &gt; Below threshold: anonymous. Above: prove KYC in zero-knowledge.
+        </p>
       </section>
 
       <footer className={styles.footer}>
