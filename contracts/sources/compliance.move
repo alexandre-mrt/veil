@@ -12,6 +12,7 @@ const E_INVALID_COMPLIANCE_INPUTS: u64 = 23;
 const E_CONTEXT_ID_MISMATCH: u64 = 24;
 const E_CREDENTIAL_INVALID: u64 = 25;
 const E_CONFIG_POOL_MISMATCH: u64 = 26;
+const E_EPOCH_MISMATCH: u64 = 8;
 
 public struct ComplianceConfig has key {
     id: UID,
@@ -30,9 +31,7 @@ public struct ComplianceConfigCreatedEvent has copy, drop {
     required_kyc_level: u64,
 }
 
-public struct CompliantTransferEvent has copy, drop {
-    transfer_nullifier: vector<u8>,
-    new_commitment: vector<u8>,
+public struct ComplianceVerifiedEvent has copy, drop {
     credential_nullifier: vector<u8>,
     encrypted_amount: vector<u8>,
 }
@@ -100,7 +99,7 @@ public fun compliant_transfer(
     let proof_epoch = le_bytes_to_u64(&compliance_inputs_bytes, 32);
     assert_upper_bytes_zero(&compliance_inputs_bytes, 40, 64);
     let on_chain_epoch = pool::current_epoch(clock);
-    assert!(proof_epoch == on_chain_epoch, 8);
+    assert!(proof_epoch == on_chain_epoch, E_EPOCH_MISMATCH);
 
     let context_id = extract_bytes(&compliance_inputs_bytes, 64, 96);
     assert!(context_id == transfer_nullifier, E_CONTEXT_ID_MISMATCH);
@@ -112,7 +111,7 @@ public fun compliant_transfer(
     let credential_nullifier = extract_bytes(&compliance_inputs_bytes, 128, 160);
     let cred_nf_key = CredentialNullifierKey { bytes: credential_nullifier };
     assert!(
-        !dynamic_field::exists_(&config.id, cred_nf_key),
+        !dynamic_field::exists_(pool::pool_uid(pool), cred_nf_key),
         E_CREDENTIAL_NULLIFIER_SPENT,
     );
 
@@ -127,13 +126,9 @@ public fun compliant_transfer(
     );
     assert!(valid, E_COMPLIANCE_PROOF_INVALID);
 
-    dynamic_field::add(&mut config.id, cred_nf_key, true);
+    dynamic_field::add(pool::pool_uid_mut(pool), cred_nf_key, true);
 
-    let new_commitment = extract_bytes(&transfer_inputs_bytes, 32, 64);
-
-    event::emit(CompliantTransferEvent {
-        transfer_nullifier,
-        new_commitment,
+    event::emit(ComplianceVerifiedEvent {
         credential_nullifier,
         encrypted_amount,
     });
