@@ -62,7 +62,7 @@ export function deployContract(
   let output: string;
   try {
     output = execSync(
-      `sui client publish --gas-budget ${gasBudget} --json --skip-fetch-latest-git-deps`,
+      `sui client publish --gas-budget ${gasBudget} --json`,
       {
         cwd: contractsDir,
         encoding: "utf-8",

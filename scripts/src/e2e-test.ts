@@ -45,11 +45,12 @@ const COMPILE_SCRIPT = join(CIRCUITS_DIR, "scripts", "compile.sh");
 
 const NETWORK = "testnet" as const;
 const SUI_CLOCK_OBJECT_ID = "0x6";
-const MIN_SUI_BALANCE_MIST = 200_000_000; // 0.2 SUI minimum for operations
-const GAS_BUDGET = 200_000_000;
+const MIN_SUI_BALANCE_MIST = 100_000_000; // 0.1 SUI minimum for operations
+const GAS_BUDGET = 50_000_000;
 const FAUCET_MINT_AMOUNT = 1_000_000; // Amount to deposit into pool
 const DOMAIN_COMMITMENT = 1n;
 const DOMAIN_NULLIFIER = 2n;
+const DOMAIN_TX_AMOUNT = 3n;
 const TRANSFER_THRESHOLD = 1_000_000_000n; // 1B threshold for KYC-free transfers
 
 // ---------------------------------------------------------------------------
@@ -208,10 +209,10 @@ async function generateProof(poseidon: PoseidonFunction): Promise<WitnessData> {
   const salt = 777n;
 
   // Compute public inputs using Poseidon
-  const oldCommitment = poseidonHash(poseidon, [DOMAIN_COMMITMENT, cumulativeOld, randomnessOld]);
-  const newCommitment = poseidonHash(poseidon, [DOMAIN_COMMITMENT, cumulativeNew, randomnessNew]);
-  const nullifier = poseidonHash(poseidon, [DOMAIN_NULLIFIER, userSecret, epochId]);
-  const txAmountHash = poseidonHash(poseidon, [txAmount, salt]);
+  const oldCommitment = poseidonHash(poseidon, [DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]);
+  const newCommitment = poseidonHash(poseidon, [DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]);
+  const nullifier = poseidonHash(poseidon, [DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]);
+  const txAmountHash = poseidonHash(poseidon, [DOMAIN_TX_AMOUNT, txAmount, salt]);
 
   info(`oldCommitment: ${oldCommitment}`);
   info(`newCommitment: ${newCommitment}`);
@@ -591,6 +592,29 @@ async function main(): Promise<void> {
   // ── Step 8: Mint and deposit tokens ───────────────────────────────────
   step(8, "Minting and depositing VEIL tokens");
   await mintAndDeposit(client, keypair, packageId, treasuryCapId, poolId);
+
+  // ── Step 8b: Register genesis commitment ──────────────────────────────
+  info("Registering genesis commitment (oldCommitment) on-chain...");
+  {
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${packageId}::pool::register_commitment`,
+      arguments: [
+        tx.object(poolId),
+        tx.pure.vector("u8", Array.from(publicInputsBytes.slice(0, 32))),
+      ],
+    });
+    const regResult = await client.signAndExecuteTransaction({
+      transaction: tx,
+      signer: keypair,
+      options: { showEffects: true },
+    });
+    if (regResult.effects?.status?.status !== "success") {
+      throw new Error(`register_commitment failed: ${JSON.stringify(regResult.effects?.status)}`);
+    }
+    await client.waitForTransaction({ digest: regResult.digest });
+    success("Genesis commitment registered.");
+  }
 
   // ── Step 9: Execute shielded transfer ─────────────────────────────────
   step(9, "Executing shielded transfer with ZK proof");
