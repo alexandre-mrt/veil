@@ -15,7 +15,16 @@ const USER: address = @0xB;
 const ATTACKER: address = @0xC;
 const RECIPIENT: address = @0xD;
 
-const DUMMY_VK: vector<u8> = vector[0u8, 0u8];
+const DUMMY_VK: vector<u8> = vector[
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0
+];
 const THRESHOLD: u64 = 1_000_000_000;
 const DEPOSIT_AMOUNT: u64 = 500_000_000;
 const WITHDRAW_AMOUNT: u64 = 200_000_000;
@@ -147,8 +156,7 @@ fun test_propose_vk_update() {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         let clock = sui::clock::create_for_testing(scenario.ctx());
-        let new_vk = vector[1u8, 2u8, 3u8, 4u8];
-        pool::propose_vk_update(&mut pool, &cap, new_vk, &clock);
+        pool::propose_vk_update(&mut pool, &cap, DUMMY_VK, &clock);
         sui::clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -396,8 +404,7 @@ fun test_propose_vk_update_wrong_admin_cap() {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
         let clock = sui::clock::create_for_testing(scenario.ctx());
-        let new_vk = vector[9u8, 9u8];
-        pool::propose_vk_update(&mut pool, &cap, new_vk, &clock);
+        pool::propose_vk_update(&mut pool, &cap, DUMMY_VK, &clock);
         sui::clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
