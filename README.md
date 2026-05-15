@@ -145,7 +145,7 @@ The credential nullifier (`Poseidon(5, credentialSecret, epoch, contextId)`) pre
 
 | Layer | Tests | Coverage |
 |-------|-------|---------|
-| Move contract | 50 | Every function, every error code, compliance config, admin isolation |
+| Move contract | 79 | Every function, every error code, compliance config, admin isolation, 19 attacker threat scenarios |
 | Circom circuit (transfer) | 40 | Every constraint (C1-C11), boundaries, domain separation |
 | Proof converter | 109 | bigintToLE32, G1/G2 compression, sign bits, VK layout |
 | Compliance utils | 67 | Credential leaf, nullifier, Merkle tree builder, depth-20 proofs |
@@ -159,7 +159,7 @@ The credential nullifier (`Poseidon(5, credentialSecret, epoch, contextId)`) pre
 | ZK Circuits | Circom 2.1 + snarkjs 0.7 (BN254 Groth16) |
 | Smart Contract | Sui Move 2024 |
 | On-chain Verifier | `sui::groth16` native (BN254) |
-| Frontend | Next.js 14 + @mysten/dapp-kit |
+| Frontend | Next.js 14 + @mysten/dapp-kit-react v2 (gRPC) |
 | Client Proving | snarkjs WASM (Web Worker) |
 | Token | Custom VEIL (6 decimals, TreasuryCap + faucet) |
 | Documentation | C4 diagrams + HTML report |
@@ -171,7 +171,7 @@ git clone https://github.com/alexandre-mrt/veil
 cd veil && bash scripts/init.sh
 
 # Build and test the Move contract
-cd contracts && sui move build && sui move test       # 37/37 pass
+cd contracts && sui move build && sui move test       # 79/79 pass
 
 # Compile the ZK circuit and run tests
 cd ../circuits && bash scripts/compile.sh && npm test  # 40/40 pass
@@ -185,13 +185,55 @@ cd ../frontend && bun run dev                          # localhost:3000
 
 **Prerequisites:** `circom` 2.1.x, `snarkjs` 0.7.x, `sui` CLI (testnet), `bun`
 
-## E2E Verified on Testnet
+## Live on Testnet
 
-```
-Package: 0xd0598d2256bfa33b8324bc6316cee1118f9131cdde346f8f1f757adb594a66bb
-Network: testnet (chain-id 4c78adac)
-Nullifier replay: correctly rejected (abort code 2 or 9)
-```
+**Frontend:** https://frontend-sepia-nine-30.vercel.app
+
+| Object | ID |
+|--------|----|
+| Package | `0x468e707669e33ef8664fd0f25fb16ee86623feab98254cc9c22044e79a371737` |
+| Pool | `0x9b8e6bb7f09a483d8ec50c91f9e9f64a1d91bac64706afe56653c46a1ed720ba` |
+| ComplianceConfig | `0x5999ace2cfcc952dc66dce83b3314930e435f99ee49abc11972871b5ecf5ed29` |
+| TreasuryCap | `0xf2b51f2995dc8fdebb0342cabc3d162b7159a91cda2ecb1d1b46988129e366d2` |
+
+Network: testnet (chain-id `4c78adac`), 1-hour epochs, compliance required
+
+## Demo Walkthrough (Judges)
+
+### 1. Connect & Fund
+1. Open https://frontend-sepia-nine-30.vercel.app/dashboard
+2. Connect a Sui testnet wallet (Sui Wallet, Suiet, etc.)
+3. Click **+ FAUCET** to mint 1000 VEIL test tokens
+
+### 2. Anonymous Deposit
+1. In the **Deposit** tab, select a denomination (100, 500, or 1000 VEIL)
+2. Click **Deposit & Register** -- this computes a Poseidon commitment client-side and submits a PTB
+3. Watch the "Shielded Balance" card update in the balance display
+4. Check the tx on Suiscan via the link
+
+### 3. Anonymous Transfer (Below Threshold)
+1. Switch to the **Transfer** tab
+2. Enter an amount (e.g., 50 VEIL) -- the threshold progress bar shows your cumulative spending
+3. Click **Shielded Transfer** -- a Groth16 proof is generated in-browser (~2s)
+4. Watch the 5-step progress indicator: commitment, proof, nullifier, submit, confirm
+5. The transfer consumes the old UTXO commitment and creates a new one
+
+### 4. Hit the Threshold
+1. Make multiple transfers until cumulative spending approaches 1000 VEIL
+2. At 70%, a yellow warning appears: "KYC may be required soon"
+3. At 100%, the transfer is blocked: "Threshold exceeded"
+
+### 5. Compliant Transfer (Above Threshold)
+1. In the sidebar, open **Credential Manager** and click **[Demo] Generate Test Credential**
+2. Switch to the **Compliant Transfer** tab
+3. Select your credential from the dropdown
+4. Enter an amount and submit
+5. Two Groth16 proofs are generated (transfer + compliance), the amount is encrypted for the auditor via ECDH P-256, and the PTB is submitted
+
+### 6. Verify On-Chain
+- All transfers emit privacy-preserving events (no amounts, no addresses)
+- `ComplianceVerifiedEvent` contains the auditor-encrypted amount
+- Pool balance is verifiable on Suiscan: search for the Pool ID above
 
 ## Project Structure
 
