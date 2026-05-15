@@ -3,3 +3,7 @@ export const PACKAGE_ID = "0xdb8b862787a152f5581298b991e2c86dc1b0f0eb5b868e9a313
 export const POOL_ID = "0xbd5d353cd5c0bed612692e6a76429d63b84c71201b5a28ffd542af70641e0303";
 export const THRESHOLD = 1000_000000n; // 1000 VEIL (6 decimals)
 export const EPOCH_DURATION_MS = 2_592_000_000; // 30 days
+
+// Compliance (Tier 3)
+export const COMPLIANCE_CONFIG_ID = "";
+export const REQUIRED_KYC_LEVEL = 1;
