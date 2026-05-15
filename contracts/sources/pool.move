@@ -22,6 +22,8 @@ const E_THRESHOLD_MISMATCH: u64 = 5;
 const E_INSUFFICIENT_BALANCE: u64 = 6;
 const E_INVALID_INPUTS_LENGTH: u64 = 7;
 const E_EPOCH_MISMATCH: u64 = 8;
+const E_COMMITMENT_CHAIN_BROKEN: u64 = 9;
+const E_COMMITMENT_EXISTS: u64 = 10;
 
 // ---------------------------------------------------------------------------
 // Structs
@@ -106,10 +108,12 @@ public fun shielded_transfer(
 
     // Validate threshold matches pool config (bytes 64..96, LE u64)
     let proof_threshold = le_bytes_to_u64(&public_inputs_bytes, 64);
+    assert_upper_bytes_zero(&public_inputs_bytes, 72, 96);
     assert!(proof_threshold == pool.threshold, E_THRESHOLD_MISMATCH);
 
     // Validate epoch matches current on-chain epoch (bytes 96..128, LE u64)
     let proof_epoch = le_bytes_to_u64(&public_inputs_bytes, 96);
+    assert_upper_bytes_zero(&public_inputs_bytes, 104, 128);
     let on_chain_epoch = current_epoch(clock);
     assert!(proof_epoch == on_chain_epoch, E_EPOCH_MISMATCH);
 
@@ -120,24 +124,32 @@ public fun shielded_transfer(
     );
     assert!(valid, E_INVALID_PROOF);
 
-    // Nullifier: bytes 128..160 of public_inputs_bytes (5th 32-byte input)
-    let nullifier = extract_bytes(&public_inputs_bytes, 128, 160);
+    // Verify commitment chain: oldCommitment must exist on-chain or be genesis
+    let old_commitment = extract_bytes(&public_inputs_bytes, 0, 32);
+    let old_comm_key = CommitmentKey { bytes: old_commitment };
+    let is_genesis = all_zero(&old_commitment);
+    assert!(
+        is_genesis || dynamic_field::exists_(&pool.id, old_comm_key),
+        E_COMMITMENT_CHAIN_BROKEN,
+    );
 
+    // Nullifier: bytes 128..160 (5th 32-byte input)
+    let nullifier = extract_bytes(&public_inputs_bytes, 128, 160);
     let nullifier_key = NullifierKey { bytes: nullifier };
     assert!(
-        !dynamic_field::exists(&pool.id, nullifier_key),
+        !dynamic_field::exists_(&pool.id, nullifier_key),
         E_NULLIFIER_SPENT,
     );
-
     dynamic_field::add(&mut pool.id, nullifier_key, true);
 
-    // New commitment: bytes 32..64 of public_inputs_bytes (2nd 32-byte input)
+    // New commitment: bytes 32..64 (2nd 32-byte input)
     let new_commitment = extract_bytes(&public_inputs_bytes, 32, 64);
-    dynamic_field::add(
-        &mut pool.id,
-        CommitmentKey { bytes: new_commitment },
-        new_commitment,
+    let new_comm_key = CommitmentKey { bytes: new_commitment };
+    assert!(
+        !dynamic_field::exists_(&pool.id, new_comm_key),
+        E_COMMITMENT_EXISTS,
     );
+    dynamic_field::add(&mut pool.id, new_comm_key, true);
 
     event::emit(TransferEvent {
         nullifier,
@@ -218,6 +230,23 @@ public fun ms_until_epoch_end(clock: &sui::clock::Clock): u64 {
 // ---------------------------------------------------------------------------
 // Internal utilities
 // ---------------------------------------------------------------------------
+fun all_zero(data: &vector<u8>): bool {
+    let mut i = 0;
+    while (i < data.length()) {
+        if (data[i] != 0) { return false };
+        i = i + 1;
+    };
+    true
+}
+
+fun assert_upper_bytes_zero(data: &vector<u8>, start: u64, end: u64) {
+    let mut i = start;
+    while (i < end) {
+        assert!(data[i] == 0, E_INVALID_INPUTS_LENGTH);
+        i = i + 1;
+    };
+}
+
 fun le_bytes_to_u64(data: &vector<u8>, offset: u64): u64 {
     let mut result: u64 = 0;
     let mut i: u8 = 0;
