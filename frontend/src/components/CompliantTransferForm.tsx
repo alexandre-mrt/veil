@@ -2,8 +2,9 @@
 
 import {
   useCurrentAccount,
+  useCurrentClient,
 } from "@mysten/dapp-kit-react";
-import { type FormEvent, useCallback, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { COMPLIANCE_CONFIG_ID, POOL_ID, REQUIRED_KYC_LEVEL, VEIL_DECIMALS, EXPLORER_TX_URL } from "@/lib/constants";
 import { parseAmountToBigInt } from "@/lib/utils";
 import type { Credential, VeilPrivateState, ComplianceConfig, ComplianceStep } from "@/lib/types";
@@ -67,13 +68,35 @@ export function CompliantTransferForm({
   onTxAppended,
 }: CompliantTransferFormProps) {
   const account = useCurrentAccount();
+  const client = useCurrentClient();
   const transfer = useCompliantTransfer();
 
   const [amount, setAmount] = useState("");
   const [selectedCredIdx, setSelectedCredIdx] = useState(0);
   const [result, setResult] = useState<{ success: boolean; digest?: string; error?: string } | null>(null);
+  const [chainConfig, setChainConfig] = useState<{ credentialRoot: string; auditorPublicKey: Uint8Array } | null>(null);
 
   const hasComplianceConfig = COMPLIANCE_CONFIG_ID.length > 0;
+
+  useEffect(() => {
+    if (!hasComplianceConfig || !client) return;
+    let cancelled = false;
+    client.core
+      .getObject({ objectId: COMPLIANCE_CONFIG_ID, include: { json: true } })
+      .then((res) => {
+        if (cancelled) return;
+        const json = res.object.json as Record<string, unknown> | null;
+        if (!json) return;
+        const root = (json.credential_root as string) ?? "0";
+        const keyArr = json.auditor_key;
+        const pubKey = Array.isArray(keyArr)
+          ? new Uint8Array(keyArr as number[])
+          : new Uint8Array(65);
+        setChainConfig({ credentialRoot: root, auditorPublicKey: pubKey });
+      })
+      .catch(() => { /* compliance config not available */ });
+    return () => { cancelled = true; };
+  }, [hasComplianceConfig, client]);
   const validCredentials = credentials.filter(
     (c) => c.kycLevel >= REQUIRED_KYC_LEVEL && c.expiry > Math.floor(Date.now() / 1000),
   );
@@ -110,17 +133,16 @@ export function CompliantTransferForm({
       }
 
       const txAmountRaw = parseAmountToBigInt(amount, VEIL_DECIMALS);
-      const salt = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+      const saltBytes = new Uint8Array(8);
+      crypto.getRandomValues(saltBytes);
+      const salt = saltBytes.reduce((acc, b, i) => acc | (BigInt(b) << BigInt(i * 8)), 0n);
 
-      // Build ComplianceConfig from constants and selected credential
-      // The auditor public key and credential root would come from on-chain;
-      // for now we use mock values when config is not deployed
       const complianceConfig: ComplianceConfig = {
         configId: COMPLIANCE_CONFIG_ID,
         poolId: POOL_ID,
-        credentialRoot: "0",
+        credentialRoot: chainConfig?.credentialRoot ?? "0",
         requiredKycLevel: REQUIRED_KYC_LEVEL,
-        auditorPublicKey: new Uint8Array(65), // Fetched from chain in production
+        auditorPublicKey: chainConfig?.auditorPublicKey ?? new Uint8Array(65),
       };
 
       // Inject selected credential into private state for the hook

@@ -89,7 +89,10 @@ export function DepositForm({ privateState, onTxAppended }: DepositFormProps) {
   };
 
   const displayAmount = (raw: bigint): string => {
-    return (Number(raw) / 10 ** VEIL_DECIMALS).toString();
+    const str = raw.toString().padStart(VEIL_DECIMALS + 1, "0");
+    const whole = str.slice(0, -VEIL_DECIMALS);
+    const frac = str.slice(-VEIL_DECIMALS).replace(/0+$/, "");
+    return frac ? `${whole}.${frac}` : whole;
   };
 
   return (
