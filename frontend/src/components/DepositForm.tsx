@@ -1,19 +1,32 @@
 "use client";
 
-import {
-  useCurrentAccount,
-  useSignAndExecuteTransaction,
-  useSuiClientQuery,
-} from "@mysten/dapp-kit";
-import { Transaction } from "@mysten/sui/transactions";
-import { type FormEvent, useCallback, useState } from "react";
-import { PACKAGE_ID, POOL_ID } from "@/lib/constants";
+import { useCallback, useState } from "react";
+import { useDepositAndRegister } from "@/hooks/useDepositAndRegister";
+import type { VeilPrivateState } from "@/lib/types";
 import { appendTx } from "@/lib/txHistory";
 import styles from "./components.module.css";
 
-const VEIL_DECIMALS = 6;
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const SUISCAN_TX_URL = "https://suiscan.xyz/testnet/tx";
-const TOKEN_TYPE = `${PACKAGE_ID}::token::TOKEN`;
+const VEIL_DECIMALS = 6;
+
+interface Denomination {
+  readonly label: string;
+  readonly raw: bigint;
+}
+
+const DENOMINATIONS: readonly Denomination[] = [
+  { label: "100", raw: 100_000_000n },
+  { label: "500", raw: 500_000_000n },
+  { label: "1000", raw: 1_000_000_000n },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface TxResult {
   readonly success: boolean;
@@ -22,95 +35,107 @@ interface TxResult {
 }
 
 interface DepositFormProps {
+  readonly privateState: VeilPrivateState | null;
   readonly onTxAppended?: () => void;
 }
 
-export function DepositForm({ onTxAppended }: DepositFormProps) {
-  const account = useCurrentAccount();
-  const { mutateAsync: signAndExecute, isPending } =
-    useSignAndExecuteTransaction();
-  const [amount, setAmount] = useState("");
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function DepositForm({ privateState, onTxAppended }: DepositFormProps) {
+  const { executeDeposit, step, isPending, reset } =
+    useDepositAndRegister();
+
+  const [selectedDenom, setSelectedDenom] = useState<bigint>(
+    DENOMINATIONS[0].raw,
+  );
   const [result, setResult] = useState<TxResult | null>(null);
 
-  const { data: tokenCoins } = useSuiClientQuery(
-    "getCoins",
-    { owner: account?.address ?? "", coinType: TOKEN_TYPE },
-    { enabled: !!account },
-  );
-  const tokenCoinId = tokenCoins?.data?.[0]?.coinObjectId ?? "";
-
   const handleSubmit = useCallback(
-    async (e: FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       setResult(null);
+      reset();
 
-      const parsed = Number.parseFloat(amount);
-      if (Number.isNaN(parsed) || parsed <= 0) {
-        setResult({ success: false, error: "Invalid amount" });
+      if (!privateState) {
+        setResult({ success: false, error: "Private state not initialized" });
         return;
       }
 
-      if (!account) {
-        setResult({ success: false, error: "Wallet not connected" });
-        return;
-      }
+      const depositResult = await executeDeposit(privateState, selectedDenom);
 
-      const amountRaw = BigInt(Math.floor(parsed * 10 ** VEIL_DECIMALS));
-
-      try {
-        const tx = new Transaction();
-
-        const coins = tx.splitCoins(tx.object(tokenCoinId), [tx.pure.u64(amountRaw)]);
-        tx.moveCall({
-          target: `${PACKAGE_ID}::pool::deposit`,
-          arguments: [tx.object(POOL_ID), coins[0]],
+      if (depositResult.success && depositResult.digest) {
+        appendTx({
+          type: "deposit",
+          amount: selectedDenom,
+          digest: depositResult.digest,
         });
-
-        const txResult = await signAndExecute({ transaction: tx });
-
-        appendTx({ type: "deposit", amount: amountRaw, digest: txResult.digest });
         onTxAppended?.();
-        setResult({ success: true, digest: txResult.digest });
-        setAmount("");
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Transaction failed";
-        setResult({ success: false, error: message });
       }
+
+      setResult(depositResult);
     },
-    [amount, account, signAndExecute, onTxAppended],
+    [privateState, selectedDenom, executeDeposit, reset, onTxAppended],
   );
 
-  const isDisabled = isPending || !account || !amount || !tokenCoinId;
+  const isDisabled = isPending || !privateState;
+
+  const stepLabel = (): string => {
+    switch (step) {
+      case "computing-commitment":
+        return "Computing commitment...";
+      case "submitting-tx":
+        return "Signing transaction...";
+      case "done":
+        return "Done";
+      default:
+        return "Deposit & Register";
+    }
+  };
+
+  const displayAmount = (raw: bigint): string => {
+    return (Number(raw) / 10 ** VEIL_DECIMALS).toString();
+  };
 
   return (
     <form className={styles.depositForm} onSubmit={handleSubmit}>
       <div className={styles.depositFormAccent} />
-      <span className={styles.depositTitle}>Deposit</span>
+      <span className={styles.depositTitle}>Deposit & Register</span>
 
       <div className={styles.depositInputGroup}>
-        <label htmlFor="deposit-amount" className={styles.depositInputLabel}>
-          Amount (VEIL)
+        <label className={styles.depositInputLabel}>
+          Amount (VEIL) — standard denominations only
         </label>
-        <input
-          id="deposit-amount"
-          type="number"
-          min="0"
-          step="0.000001"
-          placeholder="0.00"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className={styles.depositInput}
-          disabled={isPending}
-        />
+        <div className={styles.denomSelector}>
+          {DENOMINATIONS.map((d) => (
+            <button
+              key={d.label}
+              type="button"
+              className={`${styles.denomBtn} ${
+                selectedDenom === d.raw ? styles.denomBtnActive : ""
+              }`}
+              onClick={() => setSelectedDenom(d.raw)}
+              disabled={isPending}
+            >
+              {displayAmount(d.raw)} VEIL
+            </button>
+          ))}
+        </div>
       </div>
+
+      {step !== "idle" && step !== "done" && step !== "error" && (
+        <div className={styles.depositStepIndicator}>
+          {stepLabel()}
+        </div>
+      )}
 
       <button
         type="submit"
         className={styles.depositSubmitBtn}
         disabled={isDisabled}
       >
-        {isPending ? "Signing..." : "Deposit to Pool"}
+        {isPending ? stepLabel() : "Deposit & Register"}
       </button>
 
       {result && (
@@ -123,7 +148,7 @@ export function DepositForm({ onTxAppended }: DepositFormProps) {
         >
           {result.success ? (
             <>
-              Transaction confirmed.{" "}
+              Deposit confirmed — genesis commitment registered.{" "}
               <a
                 href={`${SUISCAN_TX_URL}/${result.digest}`}
                 target="_blank"

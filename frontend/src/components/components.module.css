@@ -334,6 +334,47 @@
   font-size: 0.7rem;
 }
 
+.denomSelector {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.denomBtn {
+  flex: 1;
+  padding: var(--spacing-3) var(--spacing-3);
+  background-color: var(--bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.denomBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.denomBtnActive {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.denomBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.depositStepIndicator {
+  font-size: 0.7rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
 /* === EpochDisplay === */
 .epochPanel {
   background-color: var(--surface);
@@ -593,6 +634,17 @@
   color: var(--text-secondary);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.withdrawAdminNotice {
+  font-size: 0.75rem;
+  color: var(--warning);
+  border: 1px solid var(--warning);
+  background-color: rgba(255, 170, 0, 0.05);
+  padding: var(--spacing-3);
+  border-radius: var(--radius);
+  letter-spacing: 0.02em;
+  line-height: 1.6;
 }
 
 .withdrawInputGroup {

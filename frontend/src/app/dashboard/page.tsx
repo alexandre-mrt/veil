@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { POOL_ID, THRESHOLD } from "@/lib/constants";
+import type { Credential } from "@/lib/types";
 import { usePrivateState } from "@/hooks/usePrivateState";
 import { useVeilPool } from "@/hooks/useVeilPool";
 import { Header } from "@/components/Header";
@@ -10,7 +11,11 @@ import { DepositForm } from "@/components/DepositForm";
 import { TransferForm } from "@/components/TransferForm";
 import { WithdrawForm } from "@/components/WithdrawForm";
 import { TransactionHistory } from "@/components/TransactionHistory";
-import { PrivacyStatusPanel } from "@/components/PrivacyStatus";
+import { ComplianceStatus } from "@/components/ComplianceStatus";
+import { EpochDisplay } from "@/components/EpochDisplay";
+import { AuditorInfo } from "@/components/AuditorInfo";
+import { FaucetButton } from "@/components/FaucetButton";
+import { CredentialManager } from "@/components/CredentialManager";
 import componentStyles from "@/components/components.module.css";
 import styles from "./page.module.css";
 
@@ -20,7 +25,7 @@ import styles from "./page.module.css";
 
 type Tab = "deposit" | "transfer" | "withdraw" | "history";
 
-const TABS: { id: Tab; label: string }[] = [
+const TABS: readonly { id: Tab; label: string }[] = [
   { id: "deposit", label: "Deposit" },
   { id: "transfer", label: "Transfer" },
   { id: "withdraw", label: "Withdraw" },
@@ -37,6 +42,7 @@ export default function DashboardPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("deposit");
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [credentials, setCredentials] = useState<Credential[]>([]);
 
   const spending = state?.cumulativeSpending ?? 0n;
 
@@ -53,6 +59,14 @@ export default function DashboardPage() {
     setHistoryRefreshKey((k) => k + 1);
   }, []);
 
+  const handleCredentialImport = useCallback((credential: Credential) => {
+    setCredentials((prev) => [...prev, credential]);
+  }, []);
+
+  const handleCredentialRemove = useCallback((index: number) => {
+    setCredentials((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   return (
     <div className={styles.dashboard}>
       <Header />
@@ -60,56 +74,80 @@ export default function DashboardPage() {
       <main className={styles.content}>
         <BalanceDisplay />
 
-        {isInitialized && (
-          <PrivacyStatusPanel
-            cumulativeSpending={spending}
-            threshold={THRESHOLD}
-          />
-        )}
-
-        <div className={styles.tabPanel}>
-          <nav className={componentStyles.tabNav} aria-label="Actions">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`${componentStyles.tabBtn} ${
-                  activeTab === tab.id ? componentStyles.tabBtnActive : ""
-                }`}
-                onClick={() => setActiveTab(tab.id)}
-                aria-current={activeTab === tab.id ? "page" : undefined}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-
-          {activeTab === "deposit" && (
-            <div className={styles.singlePanel}>
-              <DepositForm onTxAppended={handleTxAppended} />
-            </div>
-          )}
-
-          {activeTab === "transfer" && (
-            <div className={styles.singlePanel}>
-              <TransferForm
-                privateState={state}
-                frozen={frozen}
-                onStateUpdate={handleStateUpdate}
-                onTxAppended={handleTxAppended}
+        <div className={styles.layout}>
+          {/* Sidebar */}
+          <aside className={styles.sidebar}>
+            {isInitialized && (
+              <ComplianceStatus
+                cumulativeSpending={spending}
+                threshold={THRESHOLD}
+                credentials={credentials}
               />
-            </div>
-          )}
+            )}
 
-          {activeTab === "withdraw" && (
-            <div className={styles.singlePanel}>
-              <WithdrawForm onTxAppended={handleTxAppended} />
-            </div>
-          )}
+            <EpochDisplay />
 
-          {activeTab === "history" && (
-            <TransactionHistory refreshKey={historyRefreshKey} />
-          )}
+            <AuditorInfo
+              auditorPublicKey={null}
+              lastEncryptedDigest={null}
+            />
+
+            <FaucetButton />
+
+            <CredentialManager
+              credentials={credentials}
+              onImport={handleCredentialImport}
+              onRemove={handleCredentialRemove}
+            />
+          </aside>
+
+          {/* Main panel */}
+          <div className={styles.mainPanel}>
+            <div className={styles.tabPanel}>
+              <nav className={componentStyles.tabNav} aria-label="Actions">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={`${componentStyles.tabBtn} ${
+                      activeTab === tab.id ? componentStyles.tabBtnActive : ""
+                    }`}
+                    onClick={() => setActiveTab(tab.id)}
+                    aria-current={activeTab === tab.id ? "page" : undefined}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+
+              {activeTab === "deposit" && (
+                <div className={styles.singlePanel}>
+                  <DepositForm privateState={state} onTxAppended={handleTxAppended} />
+                </div>
+              )}
+
+              {activeTab === "transfer" && (
+                <div className={styles.singlePanel}>
+                  <TransferForm
+                    privateState={state}
+                    frozen={frozen}
+                    onStateUpdate={handleStateUpdate}
+                    onTxAppended={handleTxAppended}
+                  />
+                </div>
+              )}
+
+              {activeTab === "withdraw" && (
+                <div className={styles.singlePanel}>
+                  <WithdrawForm onTxAppended={handleTxAppended} />
+                </div>
+              )}
+
+              {activeTab === "history" && (
+                <TransactionHistory refreshKey={historyRefreshKey} />
+              )}
+            </div>
+          </div>
         </div>
       </main>
 
