@@ -30,6 +30,13 @@ const E_COMPLIANCE_REQUIRED: u64 = 15;
 const E_COMMITMENT_NOT_MATURE: u64 = 16;
 const E_VK_UPDATE_PENDING: u64 = 17;
 const E_INVALID_VK_LENGTH: u64 = 18;
+const E_COMPLIANCE_TOGGLE_PENDING: u64 = 19;
+const E_POOL_NOT_FROZEN: u64 = 20;
+const E_WITHDRAWAL_PENDING: u64 = 21;
+const E_WITHDRAWAL_NOT_READY: u64 = 22;
+const E_NO_PENDING_WITHDRAWAL: u64 = 23;
+const E_NO_PENDING_COMPLIANCE_TOGGLE: u64 = 24;
+const E_COMPLIANCE_CONFIG_ALREADY_SET: u64 = 25;
 const MIN_VK_LENGTH: u64 = 232;
 
 public struct Pool has key {
@@ -41,6 +48,15 @@ public struct Pool has key {
     pending_vk: vector<u8>,
     vk_update_epoch: u64,
     compliance_required: bool,
+    // FIX 1: Compliance toggle timelock
+    pending_compliance_required: Option<bool>,
+    pending_compliance_epoch: u64,
+    // FIX 2: Single ComplianceConfig per pool
+    compliance_config: Option<ID>,
+    // FIX 3: Withdrawal timelock
+    pending_withdrawal: Option<u64>,
+    pending_withdrawal_recipient: Option<address>,
+    pending_withdrawal_epoch: u64,
 }
 
 public struct AdminCap has key, store {
@@ -58,6 +74,14 @@ public struct WithdrawEvent has copy, drop { pool_id: ID }
 public struct VKUpdateProposedEvent has copy, drop { pool_id: ID, effective_epoch: u64 }
 public struct FreezeEvent has copy, drop { pool_id: ID, frozen: bool }
 public struct ComplianceRequiredEvent has copy, drop { pool_id: ID, required: bool }
+// FIX 1: Compliance toggle timelock events
+public struct ComplianceToggleProposedEvent has copy, drop { pool_id: ID, proposed_value: bool, effective_epoch: u64 }
+public struct ComplianceToggleCancelledEvent has copy, drop { pool_id: ID }
+public struct ComplianceToggleAppliedEvent has copy, drop { pool_id: ID, new_value: bool }
+// FIX 3: Withdrawal timelock events
+public struct WithdrawalProposedEvent has copy, drop { pool_id: ID, amount: u64, recipient: address, effective_epoch: u64 }
+public struct WithdrawalCancelledEvent has copy, drop { pool_id: ID }
+public struct WithdrawalExecutedEvent has copy, drop { pool_id: ID, amount: u64, recipient: address }
 
 public fun create_pool(transfer_vk: vector<u8>, threshold: u64, ctx: &mut TxContext) {
     assert!(transfer_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
@@ -72,6 +96,12 @@ public fun create_pool(transfer_vk: vector<u8>, threshold: u64, ctx: &mut TxCont
         pending_vk: vector[],
         vk_update_epoch: 0,
         compliance_required: false,
+        pending_compliance_required: option::none(),
+        pending_compliance_epoch: 0,
+        compliance_config: option::none(),
+        pending_withdrawal: option::none(),
+        pending_withdrawal_recipient: option::none(),
+        pending_withdrawal_epoch: 0,
     };
     let cap = AdminCap { id: object::new(ctx), pool_id };
     transfer::share_object(pool);
@@ -99,6 +129,8 @@ public fun shielded_transfer(
     _ctx: &TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
+    // FIX 1: Apply pending compliance toggle lazily
+    apply_pending_compliance_internal(pool, clock);
     assert!(!pool.compliance_required, E_COMPLIANCE_REQUIRED);
     execute_transfer(pool, proof_bytes, public_inputs_bytes, clock);
 }
@@ -199,8 +231,57 @@ public fun deposit_and_register(
     event::emit(DepositEvent { pool_id: pool.id.to_inner() });
 }
 
-// Admin-gated emergency withdraw (documented as custodial — timelock in production)
-public fun withdraw(
+// FIX 3: Propose withdrawal with 1-epoch timelock
+public fun propose_withdrawal(
+    pool: &mut Pool,
+    cap: &AdminCap,
+    amount: u64,
+    recipient: address,
+    clock: &sui::clock::Clock,
+) {
+    assert_pool_admin(cap, pool);
+    assert!(pool.pending_withdrawal.is_none(), E_WITHDRAWAL_PENDING);
+    assert!(pool.balance.value() >= amount, E_INSUFFICIENT_BALANCE);
+    let effective = current_epoch(clock) + 1;
+    pool.pending_withdrawal = option::some(amount);
+    pool.pending_withdrawal_recipient = option::some(recipient);
+    pool.pending_withdrawal_epoch = effective;
+    event::emit(WithdrawalProposedEvent {
+        pool_id: pool.id.to_inner(),
+        amount,
+        recipient,
+        effective_epoch: effective,
+    });
+}
+
+public fun cancel_withdrawal(pool: &mut Pool, cap: &AdminCap) {
+    assert_pool_admin(cap, pool);
+    pool.pending_withdrawal = option::none();
+    pool.pending_withdrawal_recipient = option::none();
+    pool.pending_withdrawal_epoch = 0;
+    event::emit(WithdrawalCancelledEvent { pool_id: pool.id.to_inner() });
+}
+
+public fun execute_pending_withdrawal(
+    pool: &mut Pool,
+    cap: &AdminCap,
+    clock: &sui::clock::Clock,
+    ctx: &mut TxContext,
+) {
+    assert_pool_admin(cap, pool);
+    assert!(pool.pending_withdrawal.is_some(), E_NO_PENDING_WITHDRAWAL);
+    assert!(current_epoch(clock) >= pool.pending_withdrawal_epoch, E_WITHDRAWAL_NOT_READY);
+    let amount = pool.pending_withdrawal.extract();
+    let recipient = pool.pending_withdrawal_recipient.extract();
+    pool.pending_withdrawal_epoch = 0;
+    assert!(pool.balance.value() >= amount, E_INSUFFICIENT_BALANCE);
+    let withdrawn = coin::from_balance(balance::split(&mut pool.balance, amount), ctx);
+    transfer::public_transfer(withdrawn, recipient);
+    event::emit(WithdrawalExecutedEvent { pool_id: pool.id.to_inner(), amount, recipient });
+}
+
+// Emergency withdraw — only works when pool is FROZEN
+public fun emergency_withdraw(
     pool: &mut Pool,
     cap: &AdminCap,
     amount: u64,
@@ -208,6 +289,7 @@ public fun withdraw(
     ctx: &mut TxContext,
 ) {
     assert_pool_admin(cap, pool);
+    assert!(pool.frozen, E_POOL_NOT_FROZEN);
     assert!(pool.balance.value() >= amount, E_INSUFFICIENT_BALANCE);
     let withdrawn = coin::from_balance(balance::split(&mut pool.balance, amount), ctx);
     transfer::public_transfer(withdrawn, recipient);
@@ -260,14 +342,56 @@ public fun unfreeze_pool(pool: &mut Pool, cap: &AdminCap) {
     event::emit(FreezeEvent { pool_id: pool.id.to_inner(), frozen: false });
 }
 
-public fun set_compliance_required(pool: &mut Pool, cap: &AdminCap, required: bool) {
+// FIX 1: Compliance toggle with 1-epoch timelock
+public fun propose_compliance_toggle(
+    pool: &mut Pool,
+    cap: &AdminCap,
+    required: bool,
+    clock: &sui::clock::Clock,
+) {
     assert_pool_admin(cap, pool);
-    pool.compliance_required = required;
-    event::emit(ComplianceRequiredEvent { pool_id: pool.id.to_inner(), required });
+    assert!(pool.pending_compliance_required.is_none(), E_COMPLIANCE_TOGGLE_PENDING);
+    let effective = current_epoch(clock) + 1;
+    pool.pending_compliance_required = option::some(required);
+    pool.pending_compliance_epoch = effective;
+    event::emit(ComplianceToggleProposedEvent {
+        pool_id: pool.id.to_inner(),
+        proposed_value: required,
+        effective_epoch: effective,
+    });
+}
+
+public fun cancel_compliance_toggle(pool: &mut Pool, cap: &AdminCap) {
+    assert_pool_admin(cap, pool);
+    assert!(pool.pending_compliance_required.is_some(), E_NO_PENDING_COMPLIANCE_TOGGLE);
+    pool.pending_compliance_required = option::none();
+    pool.pending_compliance_epoch = 0;
+    event::emit(ComplianceToggleCancelledEvent { pool_id: pool.id.to_inner() });
+}
+
+fun apply_pending_compliance_internal(pool: &mut Pool, clock: &sui::clock::Clock) {
+    if (pool.pending_compliance_required.is_some() && current_epoch(clock) >= pool.pending_compliance_epoch) {
+        let new_value = pool.pending_compliance_required.extract();
+        pool.compliance_required = new_value;
+        pool.pending_compliance_epoch = 0;
+        event::emit(ComplianceToggleAppliedEvent { pool_id: pool.id.to_inner(), new_value });
+    };
+}
+
+/// Called by compliance.move to apply pending compliance toggle lazily during compliant_transfer.
+public(package) fun apply_pending_compliance(pool: &mut Pool, clock: &sui::clock::Clock) {
+    apply_pending_compliance_internal(pool, clock);
 }
 
 public(package) fun pool_uid(pool: &Pool): &UID { &pool.id }
 public(package) fun pool_uid_mut(pool: &mut Pool): &mut UID { &mut pool.id }
+
+// FIX 2: Single ComplianceConfig per pool
+public(package) fun set_pool_compliance_config(pool: &mut Pool, config_id: ID) {
+    assert!(pool.compliance_config.is_none(), E_COMPLIANCE_CONFIG_ALREADY_SET);
+    pool.compliance_config = option::some(config_id);
+}
+public fun pool_compliance_config(pool: &Pool): Option<ID> { pool.compliance_config }
 
 public fun is_frozen(pool: &Pool): bool { pool.frozen }
 public fun pool_balance(pool: &Pool): u64 { pool.balance.value() }

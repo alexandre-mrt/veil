@@ -12,6 +12,7 @@ import {
   PACKAGE_ID,
   POOL_ID,
   ADMIN_CAP_ID,
+  COMPLIANCE_CONFIG_ID,
   VEIL_DECIMALS,
   EXPLORER_TX_URL,
   REFETCH_INTERVAL_MS,
@@ -84,6 +85,11 @@ export function AdminPanel() {
   // Emergency withdraw form
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawRecipient, setWithdrawRecipient] = useState("");
+
+  // Compliance config forms
+  const [newCredentialRootHex, setNewCredentialRootHex] = useState("");
+  const [newAuditorKeyHex, setNewAuditorKeyHex] = useState("");
+  const [newKycLevel, setNewKycLevel] = useState("");
 
   // -----------------------------------------------------------------------
   // Fetch pool data
@@ -215,11 +221,12 @@ export function AdminPanel() {
 
     execTx(label, (tx) => {
       tx.moveCall({
-        target: `${PACKAGE_ID}::pool::set_compliance_required`,
+        target: `${PACKAGE_ID}::pool::propose_compliance_toggle`,
         arguments: [
           tx.object(POOL_ID),
           tx.object(ADMIN_CAP_ID),
           tx.pure.bool(!current),
+          tx.object("0x6"),
         ],
       });
     });
@@ -240,7 +247,7 @@ export function AdminPanel() {
 
     execTx("Emergency withdraw", (tx) => {
       tx.moveCall({
-        target: `${PACKAGE_ID}::pool::withdraw`,
+        target: `${PACKAGE_ID}::pool::emergency_withdraw`,
         arguments: [
           tx.object(POOL_ID),
           tx.object(ADMIN_CAP_ID),
@@ -250,6 +257,124 @@ export function AdminPanel() {
       });
     });
   }, [withdrawAmount, withdrawRecipient, account?.address, execTx]);
+
+  // -----------------------------------------------------------------------
+  // Compliance config actions
+  // -----------------------------------------------------------------------
+
+  const handleProposeCredentialRoot = useCallback(() => {
+    const hex = newCredentialRootHex.trim();
+    if (hex.length === 0) {
+      setResult({ success: false, message: "Credential root hex cannot be empty" });
+      return;
+    }
+
+    execTx("Credential root update proposed", (tx) => {
+      const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
+      const rootBytes = Array.from(
+        { length: cleanHex.length / 2 },
+        (_, i) => Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16),
+      );
+
+      tx.moveCall({
+        target: `${PACKAGE_ID}::compliance::update_credential_root`,
+        arguments: [
+          tx.object(COMPLIANCE_CONFIG_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.object(POOL_ID),
+          tx.pure.vector("u8", rootBytes),
+          tx.object("0x6"),
+        ],
+      });
+    });
+  }, [newCredentialRootHex, execTx]);
+
+  const handleCancelCredentialRoot = useCallback(() => {
+    execTx("Credential root update cancelled", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::compliance::cancel_credential_root_update`,
+        arguments: [
+          tx.object(COMPLIANCE_CONFIG_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.object(POOL_ID),
+        ],
+      });
+    });
+  }, [execTx]);
+
+  const handleProposeAuditorKey = useCallback(() => {
+    const hex = newAuditorKeyHex.trim();
+    if (hex.length === 0) {
+      setResult({ success: false, message: "Auditor key hex cannot be empty" });
+      return;
+    }
+
+    execTx("Auditor key update proposed", (tx) => {
+      const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
+      const keyBytes = Array.from(
+        { length: cleanHex.length / 2 },
+        (_, i) => Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16),
+      );
+
+      tx.moveCall({
+        target: `${PACKAGE_ID}::compliance::propose_auditor_key_update`,
+        arguments: [
+          tx.object(COMPLIANCE_CONFIG_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.object(POOL_ID),
+          tx.pure.vector("u8", keyBytes),
+          tx.object("0x6"),
+        ],
+      });
+    });
+  }, [newAuditorKeyHex, execTx]);
+
+  const handleCancelAuditorKey = useCallback(() => {
+    execTx("Auditor key update cancelled", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::compliance::cancel_auditor_key_update`,
+        arguments: [
+          tx.object(COMPLIANCE_CONFIG_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.object(POOL_ID),
+        ],
+      });
+    });
+  }, [execTx]);
+
+  const handleProposeKycLevel = useCallback(() => {
+    const level = Number.parseInt(newKycLevel.trim(), 10);
+    if (Number.isNaN(level) || level < 0) {
+      setResult({ success: false, message: "KYC level must be a non-negative integer" });
+      return;
+    }
+
+    execTx("KYC level update proposed", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::compliance::propose_kyc_level_update`,
+        arguments: [
+          tx.object(COMPLIANCE_CONFIG_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.object(POOL_ID),
+          tx.pure.u64(level),
+          tx.object("0x6"),
+        ],
+      });
+    });
+  }, [newKycLevel, execTx]);
+
+  const handleCancelKycLevel = useCallback(() => {
+    execTx("KYC level update cancelled", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::compliance::cancel_kyc_level_update`,
+        arguments: [
+          tx.object(COMPLIANCE_CONFIG_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.object(POOL_ID),
+        ],
+      });
+    });
+  }, [execTx]);
 
   // -----------------------------------------------------------------------
   // Render
@@ -395,6 +520,108 @@ export function AdminPanel() {
                 Cancel Pending VK
               </button>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Compliance Configuration */}
+      <div className={styles.adminSection}>
+        <span className={styles.adminSectionTitle}>
+          Compliance Configuration
+        </span>
+
+        {/* Credential Root Update */}
+        <div className={styles.adminVkForm}>
+          <span className={styles.adminRowLabel}>Credential Root</span>
+          <input
+            type="text"
+            placeholder="New credential root hex (0x... 32 bytes)"
+            value={newCredentialRootHex}
+            onChange={(e) => setNewCredentialRootHex(e.target.value)}
+            className={styles.adminInput}
+            disabled={txPending}
+          />
+          <div className={styles.adminVkButtons}>
+            <button
+              type="button"
+              className={styles.adminBtnAccent}
+              disabled={txPending || !account || newCredentialRootHex.trim().length === 0}
+              onClick={handleProposeCredentialRoot}
+            >
+              {txPending ? "Signing..." : "Propose Root Update"}
+            </button>
+            <button
+              type="button"
+              className={styles.adminBtnDanger}
+              disabled={txPending || !account}
+              onClick={handleCancelCredentialRoot}
+            >
+              Cancel Root Update
+            </button>
+          </div>
+        </div>
+
+        {/* Auditor Key Update */}
+        <div className={styles.adminVkForm}>
+          <span className={styles.adminRowLabel}>Auditor Key</span>
+          <input
+            type="text"
+            placeholder="New auditor public key hex (0x...)"
+            value={newAuditorKeyHex}
+            onChange={(e) => setNewAuditorKeyHex(e.target.value)}
+            className={styles.adminInput}
+            disabled={txPending}
+          />
+          <div className={styles.adminVkButtons}>
+            <button
+              type="button"
+              className={styles.adminBtnAccent}
+              disabled={txPending || !account || newAuditorKeyHex.trim().length === 0}
+              onClick={handleProposeAuditorKey}
+            >
+              {txPending ? "Signing..." : "Propose Key Update"}
+            </button>
+            <button
+              type="button"
+              className={styles.adminBtnDanger}
+              disabled={txPending || !account}
+              onClick={handleCancelAuditorKey}
+            >
+              Cancel Key Update
+            </button>
+          </div>
+        </div>
+
+        {/* KYC Level Update */}
+        <div className={styles.adminVkForm}>
+          <span className={styles.adminRowLabel}>Required KYC Level</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            placeholder="New KYC level (e.g. 1)"
+            value={newKycLevel}
+            onChange={(e) => setNewKycLevel(e.target.value)}
+            className={styles.adminInput}
+            disabled={txPending}
+          />
+          <div className={styles.adminVkButtons}>
+            <button
+              type="button"
+              className={styles.adminBtnAccent}
+              disabled={txPending || !account || newKycLevel.trim().length === 0}
+              onClick={handleProposeKycLevel}
+            >
+              {txPending ? "Signing..." : "Propose Level Update"}
+            </button>
+            <button
+              type="button"
+              className={styles.adminBtnDanger}
+              disabled={txPending || !account}
+              onClick={handleCancelKycLevel}
+            >
+              Cancel Level Update
+            </button>
           </div>
         </div>
       </div>

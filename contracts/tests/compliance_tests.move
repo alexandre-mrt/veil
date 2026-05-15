@@ -75,11 +75,11 @@ fun test_create_compliance_config() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -109,11 +109,11 @@ fun test_update_credential_root() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -150,11 +150,11 @@ fun test_update_credential_root_double_proposal_blocked() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -196,11 +196,11 @@ fun test_cancel_credential_root_update() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -238,11 +238,11 @@ fun test_propose_auditor_key_update() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -278,11 +278,11 @@ fun test_propose_kyc_level_update() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -319,11 +319,11 @@ fun test_propose_kyc_level_update_double_proposal_blocked() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -359,11 +359,11 @@ fun test_cancel_kyc_level_update() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -401,11 +401,11 @@ fun test_accessors() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -443,12 +443,12 @@ fun test_create_compliance_config_short_vk() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         let short_vk = make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             short_vk,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -471,12 +471,12 @@ fun test_create_compliance_config_short_auditor_key() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         let short_key = vector[0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8]; // 5 bytes < 33
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -499,11 +499,11 @@ fun test_propose_auditor_key_short() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -539,11 +539,11 @@ fun test_propose_compliance_vk_short() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -579,7 +579,7 @@ fun test_create_config_invalid_root_length() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         let short_root = vector[
             1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
@@ -587,7 +587,7 @@ fun test_create_config_invalid_root_length() {
         ]; // 16 bytes — must be 32
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             short_root,
             REQUIRED_KYC_LEVEL,
@@ -610,11 +610,11 @@ fun test_create_config_empty_root_fails() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             vector[],
             REQUIRED_KYC_LEVEL,
@@ -637,11 +637,11 @@ fun test_update_root_invalid_length() {
     };
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -686,11 +686,11 @@ fun test_attacker_cannot_create_config() {
     scenario.next_tx(ATTACKER);
     {
         // Attacker's cap (from pool 2) used against pool 1
-        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -712,11 +712,11 @@ fun test_attacker_cannot_update_root() {
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
-        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -752,11 +752,11 @@ fun test_attacker_cannot_update_key() {
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
-        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -792,11 +792,11 @@ fun test_attacker_cannot_update_kyc_level() {
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
-        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -837,11 +837,11 @@ fun test_update_root_pool_mismatch() {
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
-        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,

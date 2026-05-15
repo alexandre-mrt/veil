@@ -53,7 +53,7 @@ export function useWithdraw(): UseWithdrawReturn {
       try {
         const tx = new Transaction();
         tx.moveCall({
-          target: `${PACKAGE_ID}::pool::withdraw`,
+          target: `${PACKAGE_ID}::pool::emergency_withdraw`,
           arguments: [
             tx.object(POOL_ID),
             tx.object(ADMIN_CAP_ID),

@@ -4,7 +4,7 @@
 ZK privacy payments with cumulative spending proofs and UTXO-style commitments on Sui.
 Circuit v2: Poseidon(4) identity-bound commitments, note-based nullifiers, domain-separated txAmountHash.
 4-loop security audit + sui-critic review (88/100). 85 Move tests, 0 failures.
-Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), epoch-scoped credential nullifiers, ECDH P-256 + AES-GCM auditor encryption.
+Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), context-bound credential nullifiers (unique per transfer), ECDH P-256 + AES-GCM auditor encryption.
 Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-end.
 
 ## Structure

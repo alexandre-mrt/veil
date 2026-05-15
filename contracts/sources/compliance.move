@@ -123,7 +123,7 @@ public struct ComplianceVkAppliedEvent has copy, drop {
 
 public fun create_compliance_config(
     cap: &AdminCap,
-    pool: &Pool,
+    pool: &mut Pool,
     compliance_vk: vector<u8>,
     credential_root: vector<u8>,
     required_kyc_level: u64,
@@ -138,6 +138,9 @@ public fun create_compliance_config(
     let config_uid = object::new(ctx);
     let config_id = config_uid.to_inner();
     let pool_id = object::id(pool);
+
+    // FIX 2: Enforce single ComplianceConfig per pool
+    pool::set_pool_compliance_config(pool, config_id);
 
     let config = ComplianceConfig {
         id: config_uid,
@@ -212,6 +215,9 @@ public fun compliant_transfer(
 
     // [M9] Validate encrypted_amount minimum length (ephemeral key + IV + GCM tag)
     assert!(encrypted_amount.length() >= MIN_ENCRYPTED_AMOUNT_LEN, E_INVALID_ENCRYPTED_AMOUNT);
+
+    // FIX 1: Apply pending compliance toggle lazily
+    pool::apply_pending_compliance(pool, clock);
 
     // Apply pending timelocked updates before checking state
     apply_pending_credential_root(config, clock);
