@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veil — Architecture Documentation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --fg: #e0e0e0;
+    --accent: #00ff88;
+    --accent-dim: #00cc66;
+    --border: #1f1f1f;
+    --surface: #111;
+    --muted: #888;
+    --blue: #4488ff;
+    --purple: #bb66ff;
+    --orange: #ff9900;
+    --yellow: #ffcc00;
+    --red: #ff4444;
+    --cyan: #44ccff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* Print styles */
+  @media print {
+    body { background: white; color: #111; font-size: 11pt; }
+    .page-break { page-break-before: always; }
+    .no-print { display: none; }
+    h1, h2, h3 { color: #111; }
+    .section { border-color: #ddd; }
+    table { border-color: #ccc; }
+    th { background: #f5f5f5; color: #111; }
+    td { border-color: #ddd; color: #333; }
+    code, pre { background: #f5f5f5; color: #111; border-color: #ddd; }
+    .accent { color: #006633; }
+    @page {
+      margin: 2cm;
+      size: A4;
+      @bottom-center { content: "Veil Architecture Documentation — Page " counter(page); font-size: 9pt; color: #999; }
+    }
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 30px;
+  }
+
+  /* ═══ Title Page ═══ */
+  .title-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 40px;
+  }
+
+  .title-page h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+  }
+
+  .title-page .tagline {
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin-bottom: 48px;
+    max-width: 500px;
+  }
+
+  .title-page .doc-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--fg);
+    margin-bottom: 8px;
+  }
+
+  .title-page .doc-subtitle {
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin-bottom: 48px;
+  }
+
+  .title-page .meta-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: #555;
+    line-height: 2;
+  }
+
+  /* ═══ Section headers ═══ */
+  .section {
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+    margin-top: 48px;
+  }
+
+  h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+  }
+
+  h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--fg);
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+
+  p { margin-bottom: 16px; color: #ccc; }
+
+  .accent { color: var(--accent); }
+
+  /* ═══ TOC ═══ */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px 32px;
+  }
+
+  .toc ol {
+    list-style: none;
+    counter-reset: toc;
+    padding: 0;
+  }
+
+  .toc li {
+    counter-increment: toc;
+    padding: 6px 0;
+    border-bottom: 1px solid #1a1a1a;
+  }
+
+  .toc li:last-child { border-bottom: none; }
+
+  .toc li::before {
+    content: counter(toc) ".";
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    margin-right: 12px;
+    font-size: 0.9rem;
+  }
+
+  .toc a {
+    color: var(--fg);
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+
+  .toc a:hover { color: var(--accent); }
+
+  /* ═══ Tables ═══ */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 0.9rem;
+  }
+
+  th {
+    background: var(--surface);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: #bbb;
+    vertical-align: top;
+  }
+
+  tr:hover td { background: #0d0d0d; }
+
+  /* ═══ Code ═══ */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 6px;
+    color: var(--accent);
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: #ccc;
+  }
+
+  /* ═══ Diagram embed ═══ */
+  .diagram-ref {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    margin: 16px 0 24px;
+    text-align: center;
+  }
+
+  .diagram-ref .filename {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .diagram-ref .desc {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 6px;
+  }
+
+  /* ═══ Lists ═══ */
+  ul, ol { margin: 8px 0 16px 24px; color: #bbb; }
+  li { margin-bottom: 6px; }
+
+  /* ═══ Inline diagram (SVG) ═══ */
+  .inline-diagram {
+    margin: 20px 0;
+    text-align: center;
+  }
+
+  .inline-diagram svg { max-width: 100%; }
+
+  /* ═══ Footer ═══ */
+  .footer {
+    text-align: center;
+    padding: 40px;
+    color: #444;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    border-top: 1px solid var(--border);
+    margin-top: 60px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TITLE PAGE -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="title-page">
+  <h1>VEIL</h1>
+  <p class="tagline">Anonymous below threshold. Compliant above. Zero-knowledge proofs protect your spending.</p>
+  <p class="doc-title">Architecture Documentation</p>
+  <p class="doc-subtitle">Privacy Payment Protocol on Sui</p>
+  <div class="meta-info">
+    <div>Version 2.0 (post-audit)</div>
+    <div>Sui Overflow 2026 &mdash; DeFi &amp; Payments</div>
+    <div>BN254 Groth16 / Circom 2.1 / Sui Move 2024</div>
+    <div>Generated: May 2026</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- TABLE OF CONTENTS -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section page-break" id="toc">
+  <h2>Table of Contents</h2>
+  <nav class="toc">
+    <ol>
+      <li><a href="#executive-summary">Executive Summary</a></li>
+      <li><a href="#system-context">C4 Level 1 &mdash; System Context</a></li>
+      <li><a href="#container">C4 Level 2 &mdash; Container Diagram</a></li>
+      <li><a href="#component">C4 Level 3 &mdash; Component Diagram (pool.move)</a></li>
+      <li><a href="#circuit">ZK Circuit Constraint Flow</a></li>
+      <li><a href="#security">Security Properties</a></li>
+      <li><a href="#api">API Reference &mdash; Contract Functions</a></li>
+      <li><a href="#data-layout">Public Input Byte Layout</a></li>
+      <li><a href="#epoch">Epoch Design</a></li>
+    </ol>
+  </nav>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 1. EXECUTIVE SUMMARY -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section page-break" id="executive-summary">
+  <h2>1. Executive Summary</h2>
+  <p>
+    Veil is a privacy payment protocol on Sui that introduces <strong>cumulative spending proofs</strong> &mdash; a novel ZK primitive enabling users to transact anonymously below a regulatory threshold (CHF 1,000 per epoch, aligned with FINMA) while proving KYC compliance above it, without revealing amounts or identity. Each user's on-chain footprint is a single Poseidon commitment: a hash of their cumulative spending for the current epoch, updated atomically via Groth16 zero-knowledge proofs verified natively on Sui.
+  </p>
+  <p>
+    The protocol uses a UTXO-style commitment model with note-based nullifiers, enabling multiple transfers per epoch without linkability. The circuit enforces 11 constraints including domain-separated Poseidon hashes (3 tags), 64-bit range proofs on all arithmetic values, and threshold enforcement &mdash; all proven client-side in ~2 seconds via snarkjs WASM. The Move contract (<code>pool.move</code>) verifies proofs using Sui's native <code>sui::groth16</code> BN254 verifier, manages nullifier/commitment dynamic fields, and provides emergency controls via <code>AdminCap</code>. The architecture is designed for production deployment with a 1-epoch VK timelock, freeze mechanism, and privacy-preserving events that leak no sender, recipient, or amount information.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 2. SYSTEM CONTEXT -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section page-break" id="system-context">
+  <h2>2. C4 Level 1 &mdash; System Context</h2>
+  <p>
+    The System Context diagram shows Veil's position in the broader ecosystem and identifies three actor types: Users who hold wallets and generate ZK proofs, Auditors/Regulators who can request selective disclosure (planned for Tier 2 via ElGamal), and Admins who hold the <code>AdminCap</code> object for pool governance.
+  </p>
+
+  <div class="diagram-ref">
+    <div class="filename">docs/c4-context.html</div>
+    <div class="desc">Open in browser to view the interactive C4 Level 1 diagram</div>
+  </div>
+
+  <h3>Actors</h3>
+  <table>
+    <thead><tr><th>Actor</th><th>Role</th><th>Interaction</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>User</strong></td>
+        <td>Wallet holder, proof generator</td>
+        <td>Deposits tokens, generates Groth16 proofs client-side, submits shielded transfers</td>
+      </tr>
+      <tr>
+        <td><strong>Auditor / Regulator</strong></td>
+        <td>Compliance oversight</td>
+        <td>Requests selective disclosure via ElGamal decryption (Tier 2, future)</td>
+      </tr>
+      <tr>
+        <td><strong>Admin</strong></td>
+        <td>Pool governance</td>
+        <td>Holds AdminCap: freeze/unfreeze pool, update VK (1-epoch timelock), emergency withdraw</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>External Systems</h3>
+  <table>
+    <thead><tr><th>System</th><th>Technology</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Sui Blockchain</strong></td>
+        <td>L1, Move VM, BN254 verifier</td>
+        <td>Hosts contracts, verifies proofs natively, provides Clock for epochs</td>
+      </tr>
+      <tr>
+        <td><strong>Browser</strong></td>
+        <td>Next.js 14, snarkjs WASM</td>
+        <td>Runs frontend, generates proofs client-side (~2s), manages encrypted private state</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 3. CONTAINER DIAGRAM -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section page-break" id="container">
+  <h2>3. C4 Level 2 &mdash; Container Diagram</h2>
+  <p>
+    The Container diagram decomposes Veil into its five runtime components, showing how data flows from circuit compilation through proof generation to on-chain verification.
+  </p>
+
+  <div class="diagram-ref">
+    <div class="filename">docs/c4-container.html</div>
+    <div class="desc">Open in browser to view the interactive C4 Level 2 diagram</div>
+  </div>
+
+  <h3>Containers</h3>
+  <table>
+    <thead><tr><th>Container</th><th>Technology</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Sui Move Contracts</strong></td>
+        <td>Move 2024 (pool.move, verifier.move, token.move)</td>
+        <td>Protocol core: shielded transfers, UTXO commitments, nullifier tracking, proof verification, token minting</td>
+      </tr>
+      <tr>
+        <td><strong>Circom Circuit</strong></td>
+        <td>Circom 2.1, BN254 Groth16</td>
+        <td>Defines 11 constraints (~1,250 R1CS), compiled to WASM + zkey for client-side proving</td>
+      </tr>
+      <tr>
+        <td><strong>Frontend</strong></td>
+        <td>Next.js 14, @mysten/dapp-kit</td>
+        <td>Wallet connection, proof generation (snarkjs WASM in Web Worker), encrypted localStorage state</td>
+      </tr>
+      <tr>
+        <td><strong>Proof Converter</strong></td>
+        <td>TypeScript (proof-converter.ts)</td>
+        <td>Converts snarkjs JSON proof to Sui arkworks compressed bytes (G2 compression, sign bit)</td>
+      </tr>
+      <tr>
+        <td><strong>E2E Pipeline</strong></td>
+        <td>TypeScript / Bun</td>
+        <td>End-to-end testing: deploy contracts, mint tokens, deposit, prove, verify on testnet</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Data Flow</h3>
+  <ol>
+    <li>Circuit compiled to <code>.wasm</code> + <code>.zkey</code> (build artifacts) and <code>vk.json</code> (verifying key)</li>
+    <li>VK embedded in Pool at creation time (<code>transfer_vk</code> field)</li>
+    <li>Frontend loads WASM + zkey for client-side proving via snarkjs</li>
+    <li>User generates proof in browser (~2s), proof converter encodes to Sui bytes</li>
+    <li>Signed transaction calls <code>shielded_transfer(pool, proof_bytes, public_inputs_bytes, clock)</code></li>
+    <li>On-chain: <code>verifier.move</code> calls <code>sui::groth16::verify_groth16_proof()</code> with BN254 curve</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 4. COMPONENT DIAGRAM -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section page-break" id="component">
+  <h2>4. C4 Level 3 &mdash; Component Diagram (pool.move)</h2>
+  <p>
+    The Component diagram decomposes <code>pool.move</code> (254 lines) into its internal objects, entry functions, dynamic fields, internal helpers, and events. This is the core module that implements the shielded transfer protocol.
+  </p>
+
+  <div class="diagram-ref">
+    <div class="filename">docs/c4-component.html</div>
+    <div class="desc">Open in browser to view the interactive C4 Level 3 diagram</div>
+  </div>
+
+  <h3>Shared Objects</h3>
+  <table>
+    <thead><tr><th>Object</th><th>Type</th><th>Fields</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Pool</strong></td>
+        <td>Shared (has key)</td>
+        <td>
+          <code>id: UID</code>, <code>balance: Balance&lt;TOKEN&gt;</code>, <code>transfer_vk: vector&lt;u8&gt;</code>,
+          <code>threshold: u64</code>, <code>frozen: bool</code>, <code>pending_vk: vector&lt;u8&gt;</code>,
+          <code>vk_update_epoch: u64</code>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>AdminCap</strong></td>
+        <td>Owned (has key)</td>
+        <td><code>id: UID</code>, <code>pool_id: ID</code> (bound to specific pool)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Dynamic Fields</h3>
+  <table>
+    <thead><tr><th>Key Type</th><th>Value</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>NullifierKey { bytes }</code></td>
+        <td><code>bool</code></td>
+        <td>Tracks spent nullifiers. Poseidon(2, secret, epoch, randOld). Permanent storage.</td>
+      </tr>
+      <tr>
+        <td><code>CommitmentKey { bytes }</code></td>
+        <td><code>bool</code></td>
+        <td>UTXO commitments. Consumed on spend, created on receive. Poseidon(1, cum, rand, secret).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Proof Verification Pipeline (shielded_transfer)</h3>
+  <p>The 10-step pipeline in <code>shielded_transfer()</code>:</p>
+  <ol>
+    <li><strong>Freeze check</strong> &mdash; <code>assert!(!pool.frozen)</code></li>
+    <li><strong>Input length</strong> &mdash; <code>assert!(inputs.length() == 192)</code> (6 x 32 bytes)</li>
+    <li><strong>VK update</strong> &mdash; Apply pending VK if current epoch >= <code>vk_update_epoch</code></li>
+    <li><strong>Threshold check</strong> &mdash; Extract LE u64 from bytes [64..72], assert == <code>pool.threshold</code></li>
+    <li><strong>Epoch check</strong> &mdash; Extract LE u64 from bytes [96..104], assert == <code>current_epoch(clock)</code></li>
+    <li><strong>Groth16 verify</strong> &mdash; <code>verifier::verify_transfer_proof(vk, proof, inputs)</code></li>
+    <li><strong>Consume old commitment</strong> &mdash; Assert exists, then <code>dynamic_field::remove()</code></li>
+    <li><strong>Check nullifier</strong> &mdash; Assert not already spent</li>
+    <li><strong>Store nullifier</strong> &mdash; <code>dynamic_field::add(nullifier_key, true)</code></li>
+    <li><strong>Create new commitment</strong> &mdash; Assert not exists, then <code>dynamic_field::add()</code></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 5. ZK CIRCUIT FLOW -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section page-break" id="circuit">
+  <h2>5. ZK Circuit Constraint Flow</h2>
+  <p>
+    The transfer circuit (<code>transfer.circom</code>) defines 11 constraints over 7 private and 6 public inputs.
+    All hashes use Poseidon from circomlib with domain separation tags. The circuit compiles to ~1,250 R1CS constraints
+    on the BN254 curve, verified on-chain via <code>sui::groth16</code>.
+  </p>
+
+  <div class="diagram-ref">
+    <div class="filename">docs/c4-circuit.html</div>
+    <div class="desc">Open in browser to view the interactive circuit constraint flow diagram</div>
+  </div>
+
+  <h3>Inputs</h3>
+  <table>
+    <thead><tr><th>Type</th><th>Signal</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Public [0]</td><td><code>oldCommitment</code></td><td>Poseidon(1, cumOld, randOld, userSecret)</td></tr>
+      <tr><td>Public [1]</td><td><code>newCommitment</code></td><td>Poseidon(1, cumNew, randNew, userSecret)</td></tr>
+      <tr><td>Public [2]</td><td><code>threshold</code></td><td>KYC-free epoch limit</td></tr>
+      <tr><td>Public [3]</td><td><code>epochId</code></td><td>Current epoch from on-chain Clock</td></tr>
+      <tr><td>Public [4]</td><td><code>nullifier</code></td><td>Poseidon(2, userSecret, epochId, randOld)</td></tr>
+      <tr><td>Public [5]</td><td><code>txAmountHash</code></td><td>Poseidon(3, txAmount, salt)</td></tr>
+      <tr><td>Private</td><td><code>cumulativeOld</code></td><td>Previous cumulative spending this epoch</td></tr>
+      <tr><td>Private</td><td><code>cumulativeNew</code></td><td>cumOld + txAmount</td></tr>
+      <tr><td>Private</td><td><code>txAmount</code></td><td>This transaction's amount</td></tr>
+      <tr><td>Private</td><td><code>randomnessOld</code></td><td>Blinding factor for old commitment</td></tr>
+      <tr><td>Private</td><td><code>randomnessNew</code></td><td>Blinding factor for new commitment</td></tr>
+      <tr><td>Private</td><td><code>userSecret</code></td><td>Master secret (never revealed)</td></tr>
+      <tr><td>Private</td><td><code>salt</code></td><td>Salt for txAmountHash</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Constraints</h3>
+  <table>
+    <thead><tr><th>#</th><th>Category</th><th>Constraint</th><th>Component</th></tr></thead>
+    <tbody>
+      <tr><td>C1</td><td>Commitment</td><td><code>Poseidon(1, cumOld, randOld, secret) === oldCommitment</code></td><td>Poseidon(4)</td></tr>
+      <tr><td>C2</td><td>Commitment</td><td><code>Poseidon(1, cumNew, randNew, secret) === newCommitment</code></td><td>Poseidon(4)</td></tr>
+      <tr><td>C3</td><td>Arithmetic</td><td><code>cumNew === cumOld + txAmount</code></td><td>Addition</td></tr>
+      <tr><td>C4</td><td>Arithmetic</td><td><code>txAmount > 0</code></td><td>GreaterThan(64)</td></tr>
+      <tr><td>C5</td><td>Range</td><td><code>cumulativeOld in [0, 2^64)</code></td><td>Num2Bits(64)</td></tr>
+      <tr><td>C6</td><td>Range</td><td><code>txAmount in [0, 2^64)</code></td><td>Num2Bits(64)</td></tr>
+      <tr><td>C7</td><td>Range</td><td><code>cumulativeNew in [0, 2^64)</code></td><td>Num2Bits(64)</td></tr>
+      <tr><td>C8</td><td>Range</td><td><code>threshold in [0, 2^64)</code></td><td>Num2Bits(64)</td></tr>
+      <tr><td>C9</td><td>Threshold</td><td><code>cumNew &lt;= threshold</code></td><td>LessEqThan(64)</td></tr>
+      <tr><td>C10</td><td>Nullifier</td><td><code>Poseidon(2, secret, epoch, randOld) === nullifier</code></td><td>Poseidon(4)</td></tr>
+      <tr><td>C11</td><td>Amount Hash</td><td><code>Poseidon(3, txAmount, salt) === txAmountHash</code></td><td>Poseidon(3)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Domain Separation Tags</h3>
+  <table>
+    <thead><tr><th>Tag</th><th>Domain</th><th>Hash Function</th></tr></thead>
+    <tbody>
+      <tr><td><code>1</code></td><td>Commitment hashes</td><td><code>Poseidon(1, cumulative, randomness, userSecret)</code></td></tr>
+      <tr><td><code>2</code></td><td>Nullifier hashes</td><td><code>Poseidon(2, userSecret, epochId, randomnessOld)</code></td></tr>
+      <tr><td><code>3</code></td><td>Amount hashes</td><td><code>Poseidon(3, txAmount, salt)</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Audit Fixes (v2)</h3>
+  <ul>
+    <li><strong>CRYPTO-004:</strong> Commitments now bound to <code>userSecret</code> via Poseidon(4) &mdash; prevents commitment theft</li>
+    <li><strong>CRYPTO-006:</strong> Note-based nullifiers include <code>randomnessOld</code> &mdash; enables multiple transfers per epoch</li>
+    <li><strong>CRYPTO-011:</strong> txAmountHash uses domain tag 3 &mdash; prevents cross-domain hash collision</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 6. SECURITY PROPERTIES -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section page-break" id="security">
+  <h2>6. Security Properties</h2>
+
+  <table>
+    <thead><tr><th>Property</th><th>Mechanism</th><th>Error Code</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Amount privacy</strong></td>
+        <td>Amounts never appear in public inputs. Only Poseidon commitment hashes are stored on-chain.</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td><strong>Sender privacy</strong></td>
+        <td>No address in transfer events. Commitments are pseudonymous. Events emit only nullifier + new commitment.</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td><strong>Replay prevention</strong></td>
+        <td>Nullifier stored in dynamic field after use. Deterministic: Poseidon(2, secret, epoch, randOld).</td>
+        <td><code>E_NULLIFIER_SPENT (2)</code></td>
+      </tr>
+      <tr>
+        <td><strong>Overflow prevention</strong></td>
+        <td>Num2Bits(64) applied independently to <code>cumulativeOld</code>, <code>txAmount</code>, <code>cumulativeNew</code>, and <code>threshold</code>.</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td><strong>Epoch binding</strong></td>
+        <td>Nullifier includes <code>epochId</code> from on-chain Clock. Contract verifies proof epoch matches chain epoch.</td>
+        <td><code>E_EPOCH_MISMATCH (8)</code></td>
+      </tr>
+      <tr>
+        <td><strong>Domain separation</strong></td>
+        <td>Three Poseidon tags (1=commit, 2=nullifier, 3=amount). No cross-type hash collision possible.</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td><strong>Commitment chain</strong></td>
+        <td>UTXO model: old commitment must exist (consumed), new commitment must not exist (created).</td>
+        <td><code>E_COMMITMENT_CHAIN_BROKEN (9)</code>, <code>E_COMMITMENT_EXISTS (10)</code></td>
+      </tr>
+      <tr>
+        <td><strong>VK integrity</strong></td>
+        <td><code>sui::groth16</code> internally enforces <code>gamma_g2 != delta_g2</code>, preventing FOOM-style VK attacks.</td>
+        <td><code>E_INVALID_PROOF (3)</code></td>
+      </tr>
+      <tr>
+        <td><strong>VK update safety</strong></td>
+        <td>1-epoch timelock via <code>propose_vk_update()</code>. Applied only on next <code>shielded_transfer</code> after epoch boundary.</td>
+        <td><code>E_VK_UPDATE_LOCKED (12)</code></td>
+      </tr>
+      <tr>
+        <td><strong>Emergency stop</strong></td>
+        <td><code>freeze_pool()</code> / <code>unfreeze_pool()</code> via AdminCap. All entry functions check <code>pool.frozen</code> first.</td>
+        <td><code>E_FROZEN (1)</code></td>
+      </tr>
+      <tr>
+        <td><strong>Dust prevention</strong></td>
+        <td>Minimum deposit of 0.001 TOKEN (<code>MIN_DEPOSIT = 1_000</code> at 6 decimals).</td>
+        <td><code>E_DUST_DEPOSIT (11)</code></td>
+      </tr>
+      <tr>
+        <td><strong>Trusted setup</strong></td>
+        <td>Hermez Powers of Tau (pot15). Dev contribution for testing. Production requires ceremony.</td>
+        <td>&mdash;</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 7. API REFERENCE -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section page-break" id="api">
+  <h2>7. API Reference &mdash; Contract Functions</h2>
+
+  <h3>veil::pool</h3>
+  <table>
+    <thead><tr><th>Function</th><th>Access</th><th>Parameters</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>create_pool</code></td>
+        <td>public</td>
+        <td><code>transfer_vk, threshold, ctx</code></td>
+        <td>Creates shared Pool + AdminCap. AdminCap sent to caller.</td>
+      </tr>
+      <tr>
+        <td><code>deposit_and_register</code></td>
+        <td>public</td>
+        <td><code>pool, coin, commitment, ctx</code></td>
+        <td>Deposit tokens + register genesis commitment. Anti-griefing: requires MIN_DEPOSIT.</td>
+      </tr>
+      <tr>
+        <td><code>deposit</code></td>
+        <td>public</td>
+        <td><code>pool, coin, ctx</code></td>
+        <td>Deposit additional tokens (no commitment registration).</td>
+      </tr>
+      <tr>
+        <td><code>shielded_transfer</code></td>
+        <td>public</td>
+        <td><code>pool, proof_bytes, public_inputs_bytes, clock, ctx</code></td>
+        <td>Core privacy transfer: verify proof, consume old commitment, store nullifier, create new commitment.</td>
+      </tr>
+      <tr>
+        <td><code>withdraw</code></td>
+        <td>public (AdminCap)</td>
+        <td><code>pool, cap, amount, recipient, ctx</code></td>
+        <td>Emergency withdraw. AdminCap-gated. Transfers tokens to recipient.</td>
+      </tr>
+      <tr>
+        <td><code>propose_vk_update</code></td>
+        <td>public (AdminCap)</td>
+        <td><code>pool, cap, new_vk, clock</code></td>
+        <td>Stage VK update with 1-epoch timelock. Applied on next shielded_transfer.</td>
+      </tr>
+      <tr>
+        <td><code>freeze_pool</code></td>
+        <td>public (AdminCap)</td>
+        <td><code>pool, cap</code></td>
+        <td>Emergency stop. Sets <code>pool.frozen = true</code>.</td>
+      </tr>
+      <tr>
+        <td><code>unfreeze_pool</code></td>
+        <td>public (AdminCap)</td>
+        <td><code>pool, cap</code></td>
+        <td>Resume operations. Sets <code>pool.frozen = false</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>veil::pool &mdash; View Functions</h3>
+  <table>
+    <thead><tr><th>Function</th><th>Returns</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>is_frozen(pool)</code></td><td><code>bool</code></td><td>Current freeze state</td></tr>
+      <tr><td><code>pool_balance(pool)</code></td><td><code>u64</code></td><td>Total shielded balance</td></tr>
+      <tr><td><code>threshold(pool)</code></td><td><code>u64</code></td><td>KYC-free epoch limit</td></tr>
+      <tr><td><code>current_epoch(clock)</code></td><td><code>u64</code></td><td>timestamp_ms / 2,592,000,000</td></tr>
+    </tbody>
+  </table>
+
+  <h3>veil::verifier</h3>
+  <table>
+    <thead><tr><th>Function</th><th>Access</th><th>Parameters</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>verify_transfer_proof</code></td>
+        <td>public(package)</td>
+        <td><code>vk_bytes, proof_bytes, public_inputs_bytes</code></td>
+        <td>Wraps <code>sui::groth16</code> BN254 verification. Returns <code>bool</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>veil::token</h3>
+  <table>
+    <thead><tr><th>Function</th><th>Parameters</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>mint</code></td><td><code>treasury, amount, recipient, ctx</code></td><td>Mint arbitrary amount to recipient</td></tr>
+      <tr><td><code>faucet</code></td><td><code>treasury, ctx</code></td><td>Mint 1,000 VEIL (1_000_000_000 base units) to caller</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Error Codes</h3>
+  <table>
+    <thead><tr><th>Code</th><th>Name</th><th>Trigger</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>E_FROZEN</code></td><td>Pool is frozen</td></tr>
+      <tr><td>2</td><td><code>E_NULLIFIER_SPENT</code></td><td>Nullifier already used (replay attempt)</td></tr>
+      <tr><td>3</td><td><code>E_INVALID_PROOF</code></td><td>Groth16 verification failed</td></tr>
+      <tr><td>4</td><td><code>E_NOT_POOL_ADMIN</code></td><td>AdminCap.pool_id does not match pool</td></tr>
+      <tr><td>5</td><td><code>E_THRESHOLD_MISMATCH</code></td><td>Proof threshold != pool threshold</td></tr>
+      <tr><td>6</td><td><code>E_INSUFFICIENT_BALANCE</code></td><td>Withdraw amount exceeds pool balance</td></tr>
+      <tr><td>7</td><td><code>E_INVALID_INPUTS_LENGTH</code></td><td>Public inputs != 192 bytes or commitment != 32 bytes</td></tr>
+      <tr><td>8</td><td><code>E_EPOCH_MISMATCH</code></td><td>Proof epoch != on-chain Clock epoch</td></tr>
+      <tr><td>9</td><td><code>E_COMMITMENT_CHAIN_BROKEN</code></td><td>Old commitment not found in pool</td></tr>
+      <tr><td>10</td><td><code>E_COMMITMENT_EXISTS</code></td><td>New commitment already exists (collision)</td></tr>
+      <tr><td>11</td><td><code>E_DUST_DEPOSIT</code></td><td>Deposit below MIN_DEPOSIT (0.001 TOKEN)</td></tr>
+      <tr><td>12</td><td><code>E_VK_UPDATE_LOCKED</code></td><td>VK update already pending</td></tr>
+      <tr><td>13</td><td><code>E_NULLIFIER_NOT_CANONICAL</code></td><td>Nullifier bytes not canonical</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 8. DATA LAYOUT -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section page-break" id="data-layout">
+  <h2>8. Public Input Byte Layout</h2>
+  <p>
+    The Sui verifier reads public inputs as a flat byte array. Each input is 32 bytes (little-endian field element on BN254 scalar field).
+    Total: 192 bytes (6 inputs x 32 bytes).
+  </p>
+
+  <table>
+    <thead><tr><th>Offset</th><th>Field</th><th>Index</th><th>On-chain Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>0..32</code></td><td>oldCommitment</td><td>0</td><td>Consumed from CommitmentKey dynamic field</td></tr>
+      <tr><td><code>32..64</code></td><td>newCommitment</td><td>1</td><td>Created as new CommitmentKey dynamic field</td></tr>
+      <tr><td><code>64..96</code></td><td>threshold</td><td>2</td><td>LE u64 at [64..72], upper bytes asserted zero</td></tr>
+      <tr><td><code>96..128</code></td><td>epochId</td><td>3</td><td>LE u64 at [96..104], compared to Clock epoch</td></tr>
+      <tr><td><code>128..160</code></td><td>nullifier</td><td>4</td><td>Full 32 bytes stored as NullifierKey</td></tr>
+      <tr><td><code>160..192</code></td><td>txAmountHash</td><td>5</td><td>Not extracted on-chain (receiver-side)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 9. EPOCH DESIGN -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="section" id="epoch">
+  <h2>9. Epoch Design</h2>
+  <p>
+    Spending counters reset every 30 days at epoch boundaries. The epoch ID is deterministically derived from the
+    on-chain <code>Clock</code> object's timestamp.
+  </p>
+
+  <pre>epoch_id = Clock::timestamp_ms() / EPOCH_DURATION_MS
+EPOCH_DURATION_MS = 2,592,000,000  (30 days in milliseconds)</pre>
+
+  <h3>Epoch Boundary Behavior</h3>
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Duration</td><td>30 days (2,592,000,000 ms)</td></tr>
+      <tr><td>Genesis commitment</td><td><code>Poseidon(1, 0, 0, userSecret)</code> &mdash; deterministic per user, no interaction required</td></tr>
+      <tr><td>Genesis nullifier</td><td>N/A &mdash; genesis commitment registered via <code>deposit_and_register()</code></td></tr>
+      <tr><td>Cumulative reset</td><td><code>cumulativeOld = 0</code> at new epoch start</td></tr>
+      <tr><td>Cross-epoch linkability</td><td>None &mdash; new commitment with fresh randomness, no linkage to previous epoch</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Tiered Compliance</h3>
+  <table>
+    <thead><tr><th>Tier</th><th>Condition</th><th>Privacy Level</th><th>Compliance</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>0</td>
+        <td>Cumulative &lt; CHF 1,000/epoch</td>
+        <td>Fully anonymous</td>
+        <td>None required</td>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>Cumulative &gt;= CHF 1,000/epoch</td>
+        <td>Identity hidden</td>
+        <td>ZK proof of KYC credential (compliance circuit, ~7,200 constraints)</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Regulatory request</td>
+        <td>Auditor view only</td>
+        <td>ElGamal selective disclosure (future stretch goal)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+
+<div class="footer">
+  <p>Veil &mdash; Privacy Payment Protocol on Sui</p>
+  <p>Sui Overflow 2026 &mdash; DeFi &amp; Payments Track</p>
+  <p>MIT License</p>
+</div>
+
+</div><!-- .container -->
+</body>
+</html>
