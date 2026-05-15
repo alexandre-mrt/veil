@@ -7,6 +7,7 @@ import {
   useDAppKit,
 } from "@mysten/dapp-kit-react";
 import { Transaction } from "@mysten/sui/transactions";
+import { parseAmountToBigInt } from "@/lib/utils";
 import {
   PACKAGE_ID,
   POOL_ID,
@@ -230,9 +231,7 @@ export function AdminPanel() {
       setResult({ success: false, message: "Invalid withdraw amount" });
       return;
     }
-    const rawAmount = BigInt(
-      Math.round(parsed * 10 ** VEIL_DECIMALS),
-    );
+    const rawAmount = parseAmountToBigInt(withdrawAmount, VEIL_DECIMALS);
     const recipient = withdrawRecipient.trim() || account?.address;
     if (!recipient) {
       setResult({ success: false, message: "No recipient address" });
