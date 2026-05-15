@@ -281,6 +281,9 @@ public fun set_compliance_required(pool: &mut Pool, cap: &AdminCap, required: bo
     pool.compliance_required = required;
 }
 
+public(package) fun pool_uid(pool: &Pool): &UID { &pool.id }
+public(package) fun pool_uid_mut(pool: &mut Pool): &mut UID { &mut pool.id }
+
 public fun is_frozen(pool: &Pool): bool { pool.frozen }
 public fun pool_balance(pool: &Pool): u64 { pool.balance.value() }
 public fun threshold(pool: &Pool): u64 { pool.threshold }
