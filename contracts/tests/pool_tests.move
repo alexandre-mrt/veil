@@ -663,9 +663,9 @@ fun test_multiple_deposits_different_users() {
     scenario.next_tx(RECIPIENT);
     {
         let mut pool = scenario.take_shared<Pool>();
-        let coin3 = coin::mint_for_testing<TOKEN>(MIN_DEPOSIT, scenario.ctx());
+        let coin3 = coin::mint_for_testing<TOKEN>(100_000_000, scenario.ctx());
         pool::deposit(&mut pool, coin3, scenario.ctx());
-        assert!(pool.pool_balance() == DEPOSIT_AMOUNT * 3 + MIN_DEPOSIT, 2);
+        assert!(pool.pool_balance() == DEPOSIT_AMOUNT * 3 + 100_000_000, 2);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -785,9 +785,9 @@ fun test_deposit_exact_min_deposit() {
     scenario.next_tx(USER);
     {
         let mut pool = scenario.take_shared<Pool>();
-        let min_coin = coin::mint_for_testing<TOKEN>(MIN_DEPOSIT, scenario.ctx());
+        let min_coin = coin::mint_for_testing<TOKEN>(100_000_000, scenario.ctx());
         pool::deposit(&mut pool, min_coin, scenario.ctx());
-        assert!(pool.pool_balance() == MIN_DEPOSIT, 0);
+        assert!(pool.pool_balance() == 100_000_000, 0);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -881,9 +881,9 @@ fun test_deposit_and_register_exact_min_deposit() {
     scenario.next_tx(USER);
     {
         let mut pool = scenario.take_shared<Pool>();
-        let min_coin = coin::mint_for_testing<TOKEN>(MIN_DEPOSIT, scenario.ctx());
+        let min_coin = coin::mint_for_testing<TOKEN>(100_000_000, scenario.ctx());
         pool::deposit_and_register(&mut pool, min_coin, valid_commitment(1), scenario.ctx());
-        assert!(pool.pool_balance() == MIN_DEPOSIT, 0);
+        assert!(pool.pool_balance() == 100_000_000, 0);
         test_scenario::return_shared(pool);
     };
     scenario.end();

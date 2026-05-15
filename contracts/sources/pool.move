@@ -8,7 +8,11 @@ use veil::token::TOKEN;
 use veil::verifier;
 
 const EPOCH_DURATION_MS: u64 = 2_592_000_000;
-const MIN_DEPOSIT: u64 = 1_000; // 0.001 TOKEN minimum
+const MIN_DEPOSIT: u64 = 1_000;
+const E_NON_STANDARD_AMOUNT: u64 = 14;
+const DENOM_SMALL: u64 = 100_000_000;  // 100 TOKEN
+const DENOM_MEDIUM: u64 = 500_000_000; // 500 TOKEN
+const DENOM_LARGE: u64 = 1_000_000_000; // 1000 TOKEN
 
 const E_FROZEN: u64 = 1;
 const E_NULLIFIER_SPENT: u64 = 2;
@@ -70,7 +74,9 @@ fun assert_pool_admin(cap: &AdminCap, pool: &Pool) {
 
 public fun deposit(pool: &mut Pool, coin: Coin<TOKEN>, _ctx: &TxContext) {
     assert!(!pool.frozen, E_FROZEN);
-    assert!(coin.value() >= MIN_DEPOSIT, E_DUST_DEPOSIT);
+    let amount = coin.value();
+    assert!(amount >= MIN_DEPOSIT, E_DUST_DEPOSIT);
+    assert!(is_standard_amount(amount), E_NON_STANDARD_AMOUNT);
     balance::join(&mut pool.balance, coin.into_balance());
     event::emit(DepositEvent { pool_id: pool.id.to_inner() });
 }
@@ -142,7 +148,9 @@ public fun deposit_and_register(
     _ctx: &TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
-    assert!(coin.value() >= MIN_DEPOSIT, E_DUST_DEPOSIT);
+    let amount = coin.value();
+    assert!(amount >= MIN_DEPOSIT, E_DUST_DEPOSIT);
+    assert!(is_standard_amount(amount), E_NON_STANDARD_AMOUNT);
     assert!(commitment.length() == 32, E_INVALID_INPUTS_LENGTH);
     let comm_key = CommitmentKey { bytes: commitment };
     assert!(
@@ -213,6 +221,10 @@ public fun threshold(pool: &Pool): u64 { pool.threshold }
 
 public fun current_epoch(clock: &sui::clock::Clock): u64 {
     sui::clock::timestamp_ms(clock) / EPOCH_DURATION_MS
+}
+
+fun is_standard_amount(amount: u64): bool {
+    amount == DENOM_SMALL || amount == DENOM_MEDIUM || amount == DENOM_LARGE
 }
 
 fun assert_upper_bytes_zero(data: &vector<u8>, start: u64, end: u64) {
