@@ -96,6 +96,26 @@ public fun shielded_transfer(
 ) {
     assert!(!pool.frozen, E_FROZEN);
     assert!(!pool.compliance_required, E_COMPLIANCE_REQUIRED);
+    execute_transfer(pool, proof_bytes, public_inputs_bytes, clock);
+}
+
+public(package) fun verify_and_execute_transfer(
+    pool: &mut Pool,
+    proof_bytes: vector<u8>,
+    public_inputs_bytes: vector<u8>,
+    clock: &sui::clock::Clock,
+) {
+    assert!(!pool.frozen, E_FROZEN);
+    execute_transfer(pool, proof_bytes, public_inputs_bytes, clock);
+}
+
+/// Shared transfer logic: verify proof, consume old commitment, add nullifier, create new commitment.
+fun execute_transfer(
+    pool: &mut Pool,
+    proof_bytes: vector<u8>,
+    public_inputs_bytes: vector<u8>,
+    clock: &sui::clock::Clock,
+) {
     assert!(public_inputs_bytes.length() == 192, E_INVALID_INPUTS_LENGTH);
 
     // Apply pending VK update if epoch has passed
@@ -137,61 +157,6 @@ public fun shielded_transfer(
     dynamic_field::add(&mut pool.id, nullifier_key, true);
 
     // New commitment: bytes 32..64
-    let new_commitment = extract_bytes(&public_inputs_bytes, 32, 64);
-    let new_comm_key = CommitmentKey { bytes: new_commitment };
-    assert!(
-        !dynamic_field::exists_(&pool.id, new_comm_key),
-        E_COMMITMENT_EXISTS,
-    );
-    dynamic_field::add(&mut pool.id, new_comm_key, current_epoch(clock));
-
-    event::emit(TransferEvent { nullifier, new_commitment });
-}
-
-public(package) fun verify_and_execute_transfer(
-    pool: &mut Pool,
-    proof_bytes: vector<u8>,
-    public_inputs_bytes: vector<u8>,
-    clock: &sui::clock::Clock,
-) {
-    assert!(!pool.frozen, E_FROZEN);
-    assert!(public_inputs_bytes.length() == 192, E_INVALID_INPUTS_LENGTH);
-
-    apply_pending_vk(pool, clock);
-
-    let proof_threshold = le_bytes_to_u64(&public_inputs_bytes, 64);
-    assert_upper_bytes_zero(&public_inputs_bytes, 72, 96);
-    assert!(proof_threshold == pool.threshold, E_THRESHOLD_MISMATCH);
-
-    let proof_epoch = le_bytes_to_u64(&public_inputs_bytes, 96);
-    assert_upper_bytes_zero(&public_inputs_bytes, 104, 128);
-    let on_chain_epoch = current_epoch(clock);
-    assert!(proof_epoch == on_chain_epoch, E_EPOCH_MISMATCH);
-
-    let valid = verifier::verify_transfer_proof(
-        &pool.transfer_vk,
-        proof_bytes,
-        public_inputs_bytes,
-    );
-    assert!(valid, E_INVALID_PROOF);
-
-    let old_commitment = extract_bytes(&public_inputs_bytes, 0, 32);
-    let old_comm_key = CommitmentKey { bytes: old_commitment };
-    assert!(
-        dynamic_field::exists_(&pool.id, old_comm_key),
-        E_COMMITMENT_CHAIN_BROKEN,
-    );
-    let created_epoch = dynamic_field::remove<CommitmentKey, u64>(&mut pool.id, old_comm_key);
-    assert!(current_epoch(clock) > created_epoch, E_COMMITMENT_NOT_MATURE);
-
-    let nullifier = extract_bytes(&public_inputs_bytes, 128, 160);
-    let nullifier_key = NullifierKey { bytes: nullifier };
-    assert!(
-        !dynamic_field::exists_(&pool.id, nullifier_key),
-        E_NULLIFIER_SPENT,
-    );
-    dynamic_field::add(&mut pool.id, nullifier_key, true);
-
     let new_commitment = extract_bytes(&public_inputs_bytes, 32, 64);
     let new_comm_key = CommitmentKey { bytes: new_commitment };
     assert!(
