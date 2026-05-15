@@ -25,8 +25,10 @@ const E_EPOCH_MISMATCH: u64 = 8;
 const E_COMMITMENT_CHAIN_BROKEN: u64 = 9;
 const E_COMMITMENT_EXISTS: u64 = 10;
 const E_DUST_DEPOSIT: u64 = 11;
+// 12, 13 reserved for future use
 const E_COMPLIANCE_REQUIRED: u64 = 15;
 const E_COMMITMENT_NOT_MATURE: u64 = 16;
+const E_VK_UPDATE_PENDING: u64 = 17;
 
 public struct Pool has key {
     id: UID,
@@ -76,7 +78,7 @@ public(package) fun assert_pool_admin(cap: &AdminCap, pool: &Pool) {
     assert!(cap.pool_id == pool.id.to_inner(), E_NOT_POOL_ADMIN);
 }
 
-public fun deposit(pool: &mut Pool, coin: Coin<TOKEN>, _ctx: &TxContext) {
+public(package) fun deposit(pool: &mut Pool, coin: Coin<TOKEN>, _ctx: &TxContext) {
     assert!(!pool.frozen, E_FROZEN);
     let amount = coin.value();
     assert!(amount >= MIN_DEPOSIT, E_DUST_DEPOSIT);
@@ -247,6 +249,8 @@ public fun propose_vk_update(
     clock: &sui::clock::Clock,
 ) {
     assert_pool_admin(cap, pool);
+    assert!(pool.pending_vk.length() == 0, E_VK_UPDATE_PENDING);
+    // Safe from overflow: max epoch = u64::MAX / EPOCH_DURATION_MS ≈ 7.1B epochs
     let effective = current_epoch(clock) + 1;
     pool.pending_vk = new_vk;
     pool.vk_update_epoch = effective;
@@ -254,6 +258,12 @@ public fun propose_vk_update(
         pool_id: pool.id.to_inner(),
         effective_epoch: effective,
     });
+}
+
+public fun cancel_vk_update(pool: &mut Pool, cap: &AdminCap) {
+    assert_pool_admin(cap, pool);
+    pool.pending_vk = vector[];
+    pool.vk_update_epoch = 0;
 }
 
 fun apply_pending_vk(pool: &mut Pool, clock: &sui::clock::Clock) {
@@ -307,10 +317,11 @@ fun assert_upper_bytes_zero(data: &vector<u8>, start: u64, end: u64) {
 
 fun le_bytes_to_u64(data: &vector<u8>, offset: u64): u64 {
     let mut result: u64 = 0;
-    let mut i: u8 = 0;
+    let mut i: u64 = 0;
     while (i < 8) {
-        let byte_val = data[offset + (i as u64)] as u64;
-        result = result | (byte_val << ((i as u8) * 8));
+        let byte_val = data[offset + i] as u64;
+        // Safe: max shift = 7 * 8 = 56, fits u8 and is valid for u64 shift
+        result = result | (byte_val << ((i * 8) as u8));
         i = i + 1;
     };
     result
