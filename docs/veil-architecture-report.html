@@ -283,11 +283,11 @@
 
 <div class="title-page">
   <h1>VEIL</h1>
-  <p class="tagline">Anonymous below threshold. Compliant above. Zero-knowledge proofs protect your spending.</p>
+  <p class="tagline">Confidential compliance proofs on Sui. Amounts hidden. Threshold enforced. Zero-knowledge.</p>
   <p class="doc-title">Architecture Documentation</p>
   <p class="doc-subtitle">Privacy Payment Protocol on Sui</p>
   <div class="meta-info">
-    <div>Version 2.0 (post-audit)</div>
+    <div>Version 2.0 (post-audit final &mdash; 4 loops, 186 tests)</div>
     <div>Sui Overflow 2026 &mdash; DeFi &amp; Payments</div>
     <div>BN254 Groth16 / Circom 2.1 / Sui Move 2024</div>
     <div>Generated: May 2026</div>
@@ -413,7 +413,7 @@
       <tr>
         <td><strong>Circom Circuit</strong></td>
         <td>Circom 2.1, BN254 Groth16</td>
-        <td>Defines 11 constraints (~1,250 R1CS), compiled to WASM + zkey for client-side proving</td>
+        <td>Defines 11 constraints, compiled to WASM + zkey for client-side proving</td>
       </tr>
       <tr>
         <td><strong>Frontend</strong></td>
@@ -521,8 +521,8 @@
   <h2>5. ZK Circuit Constraint Flow</h2>
   <p>
     The transfer circuit (<code>transfer.circom</code>) defines 11 constraints over 7 private and 6 public inputs.
-    All hashes use Poseidon from circomlib with domain separation tags. The circuit compiles to ~1,250 R1CS constraints
-    on the BN254 curve, verified on-chain via <code>sui::groth16</code>.
+    All hashes use Poseidon from circomlib with domain separation tags. The circuit compiles on the BN254 curve
+    and is verified on-chain via <code>sui::groth16</code>.
   </p>
 
   <div class="diagram-ref">
@@ -639,7 +639,7 @@
       <tr>
         <td><strong>VK update safety</strong></td>
         <td>1-epoch timelock via <code>propose_vk_update()</code>. Applied only on next <code>shielded_transfer</code> after epoch boundary.</td>
-        <td><code>E_VK_UPDATE_LOCKED (12)</code></td>
+        <td>&mdash;</td>
       </tr>
       <tr>
         <td><strong>Emergency stop</strong></td>
@@ -652,10 +652,37 @@
         <td><code>E_DUST_DEPOSIT (11)</code></td>
       </tr>
       <tr>
+        <td><strong>Amount correlation resistance</strong></td>
+        <td>Standard deposit denominations only (100/500/1000 TOKEN). Non-standard amounts rejected.</td>
+        <td><code>E_NON_STANDARD_AMOUNT (14)</code></td>
+      </tr>
+      <tr>
         <td><strong>Trusted setup</strong></td>
         <td>Hermez Powers of Tau (pot15). Dev contribution for testing. Production requires ceremony.</td>
         <td>&mdash;</td>
       </tr>
+    </tbody>
+  </table>
+
+  <h3>Audit Summary (4 loops, 8 agents per loop)</h3>
+  <table>
+    <thead><tr><th>Loop</th><th>Findings</th><th>Critical Fixes</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>92 findings</td><td>16 critical: commitment chain, VK timelock, AdminCap binding</td></tr>
+      <tr><td>2</td><td>24 findings</td><td>UTXO model, frontend v2 hashes, anti-griefing deposit</td></tr>
+      <tr><td>3</td><td>5 findings</td><td>UTXO verified correct, E2E updated</td></tr>
+      <tr><td>4</td><td>CLEAN</td><td>0 critical, 0 high, 0 medium</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Test Coverage</h3>
+  <table>
+    <thead><tr><th>Layer</th><th>Tests</th><th>Coverage</th></tr></thead>
+    <tbody>
+      <tr><td>Move contract</td><td>37</td><td>Every function, every error code, edge cases</td></tr>
+      <tr><td>Circom circuit</td><td>40</td><td>Every constraint (C1-C11), boundaries, domain separation</td></tr>
+      <tr><td>Proof converter</td><td>109</td><td>bigintToLE32, G1/G2 compression, sign bits, VK layout</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>186</strong></td><td><strong>0 failures</strong></td></tr>
     </tbody>
   </table>
 </div>
@@ -770,8 +797,7 @@
       <tr><td>9</td><td><code>E_COMMITMENT_CHAIN_BROKEN</code></td><td>Old commitment not found in pool</td></tr>
       <tr><td>10</td><td><code>E_COMMITMENT_EXISTS</code></td><td>New commitment already exists (collision)</td></tr>
       <tr><td>11</td><td><code>E_DUST_DEPOSIT</code></td><td>Deposit below MIN_DEPOSIT (0.001 TOKEN)</td></tr>
-      <tr><td>12</td><td><code>E_VK_UPDATE_LOCKED</code></td><td>VK update already pending</td></tr>
-      <tr><td>13</td><td><code>E_NULLIFIER_NOT_CANONICAL</code></td><td>Nullifier bytes not canonical</td></tr>
+      <tr><td>14</td><td><code>E_NON_STANDARD_AMOUNT</code></td><td>Deposit not a standard denomination (100/500/1000 TOKEN)</td></tr>
     </tbody>
   </table>
 </div>

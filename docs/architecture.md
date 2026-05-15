@@ -1,78 +1,84 @@
-# Veil — Architecture
+# Veil -- Architecture
 
 ## Overview
 
-Veil is a privacy payment protocol on Sui. It combines Circom ZK circuits with native Sui Groth16 verification to let users transact anonymously below a regulatory threshold, and prove KYC compliance above it — without revealing amounts or identity.
+Veil is a privacy payment protocol on Sui. It combines Circom ZK circuits with native Sui Groth16 verification to let users transact with hidden amounts while enforcing spending limits in zero-knowledge. The protocol uses a UTXO-style commitment model with note-based nullifiers, enabling multiple transfers per epoch without linkability.
 
 ## System Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                         USER WALLET                                   │
-│  (zkLogin onboarding, private state encrypted in localStorage)        │
+│                         USER BROWSER                                  │
+│  (encrypted localStorage: userSecret, cumulative, randomness, epoch)  │
 │                                                                        │
 │  VeilPrivateState {                                                    │
 │    userSecret: bigint      // master secret, never leaves browser      │
 │    currentEpoch: number    // from on-chain Clock                      │
 │    cumulativeSpending: bigint                                          │
-│    randomness: bigint      // blinding factor for commitment           │
+│    randomness: bigint      // blinding factor for current commitment   │
 │  }                                                                     │
-└──────────┬────────────────────────────────────┬───────────────────────┘
-           │                                    │
-    amount < CHF 1,000/epoch           amount >= CHF 1,000/epoch
-           │                                    │
-           ▼                                    ▼
-┌──────────────────────┐           ┌────────────────────────────────┐
-│   TRANSFER PROOF      │           │  TRANSFER + COMPLIANCE PROOF   │
-│   (transfer.circom)   │           │  (transfer.circom +            │
-│                       │           │   compliance.circom)           │
-│   6 public inputs:    │           │                                │
-│   • oldCommitment     │           │   6 + 4 public inputs:         │
-│   • newCommitment     │           │   • all transfer inputs        │
-│   • threshold         │           │   • credential_root (Merkle)   │
-│   • epochId           │           │   • nullifier_hash             │
-│   • nullifier         │           │   • current_time               │
-│   • txAmountHash      │           │   • min_kyc_level              │
-│                       │           │                                │
-│   ~1,250 constraints  │           │   ~8,450 constraints           │
-│   BN254 Groth16       │           │   BN254 Groth16                │
-│   snarkjs WASM        │           │   snarkjs WASM                 │
-│   (~2s browser)       │           │   (~8s browser)                │
-└──────────┬───────────┘           └───────────────┬────────────────┘
-           │                                        │
-           └────────────────────┬───────────────────┘
-                                │
-                    proof_bytes + public_inputs_bytes
-                                │
-                                ▼
+└──────────┬─────────────────────────────────────────────────────────────┘
+           │
+           │  Generate Groth16 proof (snarkjs WASM, ~2s)
+           │  11 constraints, 6 public + 7 private inputs
+           │
+           ▼
+┌──────────────────────┐
+│   TRANSFER PROOF      │
+│   (transfer.circom)   │
+│                       │
+│   6 public inputs:    │
+│   • oldCommitment     │  Poseidon(1, cumOld, randOld, userSecret)
+│   • newCommitment     │  Poseidon(1, cumNew, randNew, userSecret)
+│   • threshold         │  KYC-free limit
+│   • epochId           │  From on-chain Clock
+│   • nullifier         │  Poseidon(2, userSecret, epochId, randOld)
+│   • txAmountHash      │  Poseidon(3, txAmount, salt)
+│                       │
+│   BN254 Groth16       │
+│   snarkjs WASM        │
+└──────────┬───────────┘
+           │
+           │  proof_bytes (128) + public_inputs_bytes (192)
+           │  Converted via proof-converter.ts (arkworks compressed)
+           │
+           ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                  SUI MOVE CONTRACT (veil::pool)                       │
 │                                                                        │
 │  ┌─────────────────────┐   ┌──────────────────┐   ┌───────────────┐  │
-│  │   veil::verifier     │   │  Nullifier Set   │   │  Commitment   │  │
-│  │                      │   │                  │   │    Store      │  │
+│  │   veil::verifier     │   │  Nullifier Set   │   │  UTXO         │  │
+│  │                      │   │                  │   │  Commitments  │  │
 │  │  sui::groth16        │   │  dynamic_field   │   │               │  │
 │  │  (BN254 native)      │   │  NullifierKey    │   │  dynamic_field│  │
 │  │  prepare_vk()        │   │  → bool          │   │  CommitmentKey│  │
-│  │  verify_proof()      │   │                  │   │  → bytes      │  │
-│  └──────────┬──────────┘   └──────────────────┘   └───────────────┘  │
-│             │                                                          │
-│             │ valid proof                                              │
+│  │  verify_proof()      │   │  (permanent)     │   │  → bool       │  │
+│  └──────────┬──────────┘   └──────────────────┘   │  (consumed/   │  │
+│             │                                      │   created)    │  │
+│             │ valid proof                          └───────────────┘  │
 │             ▼                                                          │
 │  ┌─────────────────────┐   ┌──────────────────┐   ┌───────────────┐  │
-│  │   Shielded Pool      │   │   Epoch Mgmt     │   │    Freeze     │  │
-│  │                      │   │                  │   │   Mechanism   │  │
-│  │  Balance<TOKEN>      │   │  Clock object    │   │               │  │
-│  │  deposit()           │   │  epoch_id =      │   │  AdminCap     │  │
-│  │  withdraw()          │   │  ts_ms / 30days  │   │  frozen: bool │  │
+│  │   Shielded Pool      │   │   Epoch Mgmt     │   │    Controls   │  │
+│  │                      │   │                  │   │               │  │
+│  │  Balance<TOKEN>      │   │  Clock object    │   │  AdminCap     │  │
+│  │  deposit()           │   │  epoch_id =      │   │  frozen: bool │  │
+│  │  deposit_and_register│   │  ts_ms / 30days  │   │  VK timelock  │  │
+│  │  withdraw()          │   │                  │   │               │  │
 │  └─────────────────────┘   └──────────────────┘   └───────────────┘  │
 │                                                                        │
-│  Entry functions: deposit | shielded_transfer | withdraw | freeze     │
-│  Error codes: E_FROZEN(1) | E_NULLIFIER_SPENT(2) | E_INVALID_PROOF(3)│
+│  Standard deposits: 100 | 500 | 1000 TOKEN (amount correlation resist)│
+│                                                                        │
+│  Error codes:                                                          │
+│  E_FROZEN(1) | E_NULLIFIER_SPENT(2) | E_INVALID_PROOF(3) |            │
+│  E_NOT_POOL_ADMIN(4) | E_THRESHOLD_MISMATCH(5) |                      │
+│  E_INSUFFICIENT_BALANCE(6) | E_INVALID_INPUTS_LENGTH(7) |             │
+│  E_EPOCH_MISMATCH(8) | E_COMMITMENT_CHAIN_BROKEN(9) |                 │
+│  E_COMMITMENT_EXISTS(10) | E_DUST_DEPOSIT(11) |                       │
+│  E_NON_STANDARD_AMOUNT(14)                                             │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-## Circuit Architecture
+## Circuit Architecture (v2 -- post-audit)
 
 ### transfer.circom
 
@@ -87,68 +93,99 @@ nullifier                            randomnessNew
 txAmountHash                         userSecret
                                      salt
 
-CONSTRAINTS (9 total, ~1,250 R1CS):
+CONSTRAINTS (11 total):
 
-[1] oldCommitment == Poseidon(1, cumulativeOld, randomnessOld)
-[2] newCommitment == Poseidon(1, cumulativeNew, randomnessNew)
-[3] cumulativeNew == cumulativeOld + txAmount
-[4] txAmount > 0              (GreaterThan(64))
-[5] cumulativeOld in [0, 2^64)  (Num2Bits(64))
-[6] txAmount in [0, 2^64)       (Num2Bits(64))
-[7] cumulativeNew in [0, 2^64)  (Num2Bits(64))
-[8] nullifier == Poseidon(2, userSecret, epochId)
-[9] txAmountHash == Poseidon(txAmount, salt)
+[C1]  oldCommitment == Poseidon(1, cumOld, randOld, userSecret)   ← Poseidon(4)
+[C2]  newCommitment == Poseidon(1, cumNew, randNew, userSecret)   ← Poseidon(4)
+[C3]  cumNew == cumOld + txAmount
+[C4]  txAmount > 0                                                ← GreaterThan(64)
+[C5]  cumulativeOld in [0, 2^64)                                  ← Num2Bits(64)
+[C6]  txAmount in [0, 2^64)                                       ← Num2Bits(64)
+[C7]  cumulativeNew in [0, 2^64)                                  ← Num2Bits(64)
+[C8]  threshold in [0, 2^64)                                      ← Num2Bits(64)
+[C9]  cumNew <= threshold                                         ← LessEqThan(64)
+[C10] nullifier == Poseidon(2, userSecret, epochId, randOld)      ← Poseidon(4)
+[C11] txAmountHash == Poseidon(3, txAmount, salt)                 ← Poseidon(3)
 
-Domain separation:
-  tag 1 → commitment hashes  H(1, cumulative, randomness)
-  tag 2 → nullifier hashes   H(2, userSecret, epochId)
+Domain separation tags:
+  tag 1 → commitment hashes  H(1, cumulative, randomness, userSecret)
+  tag 2 → nullifier hashes   H(2, userSecret, epochId, randomnessOld)
+  tag 3 → amount hashes      H(3, txAmount, salt)
 ```
 
-### compliance.circom (stretch goal, ~7,200 constraints)
+### Key Changes from v1 (audit fixes)
+- **CRYPTO-004**: Commitments bound to `userSecret` via Poseidon(4) -- prevents commitment theft
+- **CRYPTO-006**: Note-based nullifiers include `randomnessOld` -- multiple transfers per epoch
+- **CRYPTO-011**: txAmountHash uses domain tag 3 -- prevents cross-domain hash collision
+- **Threshold range proof (C8)**: Added Num2Bits(64) on threshold -- was unconstrained in v1
 
-```
-PUBLIC INPUTS (4)                    PRIVATE INPUTS (5)
-─────────────────                    ──────────────────
-credential_root                      credential_leaf
-nullifier_hash    ──────────────►    merkle_proof[20]
-current_time      CONSTRAINTS        userSecret
-min_kyc_level                        kyc_level
-                                     expiry
+## Contract Architecture (v2 -- UTXO model)
 
-CONSTRAINTS:
-[1] credential_leaf = Poseidon(userSecret, kyc_level, expiry)
-[2] MerkleProof(credential_leaf, merkle_proof) == credential_root
-[3] kyc_level >= min_kyc_level
-[4] expiry > current_time
-[5] nullifier_hash == Poseidon(3, userSecret, credential_root)
-```
+### State Model: UTXO-style commitments
+
+Each shielded transfer performs an atomic state transition:
+1. **Consume**: old commitment removed from dynamic fields (assert exists)
+2. **Nullify**: nullifier stored permanently (assert not exists)
+3. **Create**: new commitment added to dynamic fields (assert not exists)
+
+This prevents parallel chain attacks where a user could create multiple spending chains from the same commitment.
+
+### Functions
+
+| Function | Access | Description |
+|----------|--------|-------------|
+| `create_pool(vk, threshold, ctx)` | Public | Creates shared Pool + AdminCap |
+| `deposit_and_register(pool, coin, commitment, ctx)` | Public | Deposit + register genesis commitment |
+| `deposit(pool, coin, ctx)` | Public | Deposit additional tokens (standard amounts only) |
+| `shielded_transfer(pool, proof, inputs, clock, ctx)` | Public | Core: verify + consume old + store nullifier + create new |
+| `withdraw(pool, cap, amount, recipient, ctx)` | AdminCap | Emergency withdraw |
+| `propose_vk_update(pool, cap, new_vk, clock)` | AdminCap | Stage VK update (1-epoch timelock) |
+| `freeze_pool(pool, cap)` / `unfreeze_pool(pool, cap)` | AdminCap | Emergency stop/resume |
+
+### Standard Deposit Denominations
+- `DENOM_SMALL`: 100,000,000 (100 TOKEN at 6 decimals)
+- `DENOM_MEDIUM`: 500,000,000 (500 TOKEN)
+- `DENOM_LARGE`: 1,000,000,000 (1000 TOKEN)
+
+Non-standard amounts are rejected with `E_NON_STANDARD_AMOUNT (14)`.
 
 ## Transaction Flow
 
-### Shielded Transfer (below threshold)
+### Shielded Transfer
 
 ```
 1. BROWSER
    ├── Load VeilPrivateState from encrypted localStorage
    ├── Compute Poseidon hashes (circomlibjs)
-   │     oldCommitment = Poseidon(1, cumulativeOld, randomnessOld)
-   │     newCommitment = Poseidon(1, cumulativeOld + amount, randomnessNew)
-   │     nullifier     = Poseidon(2, userSecret, epochId)
-   │     txAmountHash  = Poseidon(amount, salt)
+   │     oldCommitment = Poseidon(1, cumOld, randOld, userSecret)
+   │     newCommitment = Poseidon(1, cumOld + amount, randNew, userSecret)
+   │     nullifier     = Poseidon(2, userSecret, epochId, randOld)
+   │     txAmountHash  = Poseidon(3, amount, salt)
    ├── Generate Groth16 proof (snarkjs WASM in Web Worker)
-   └── Convert proof to Sui byte format (proofToSuiBytes, publicInputsToSuiBytes)
+   └── Convert proof to Sui bytes (proof-converter.ts)
 
 2. SUI TRANSACTION
    └── pool::shielded_transfer(pool, proof_bytes, public_inputs_bytes, clock)
-         |
-         ├── assert!(!pool.frozen)
+         ├── assert!(!pool.frozen)                        → E_FROZEN(1)
+         ├── assert!(inputs.length() == 192)              → E_INVALID_INPUTS_LENGTH(7)
+         ├── apply_pending_vk(pool, clock)                → VK timelock check
+         ├── Extract threshold from bytes[64..72] (LE u64)
+         │   assert_upper_bytes_zero(bytes, 72, 96)       → E_INVALID_INPUTS_LENGTH(7)
+         │   assert!(proof_threshold == pool.threshold)   → E_THRESHOLD_MISMATCH(5)
+         ├── Extract epoch from bytes[96..104] (LE u64)
+         │   assert_upper_bytes_zero(bytes, 104, 128)     → E_INVALID_INPUTS_LENGTH(7)
+         │   assert!(proof_epoch == current_epoch(clock))  → E_EPOCH_MISMATCH(8)
          ├── verifier::verify_transfer_proof(vk, proof, inputs)
-         │     └── sui::groth16::verify_groth16_proof(&bn254(), ...)
-         ├── Extract nullifier from public_inputs_bytes[128..160]
-         ├── assert! nullifier not in dynamic_field set
-         ├── dynamic_field::add(nullifier_key -> true)
-         ├── Extract new_commitment from public_inputs_bytes[32..64]
-         ├── dynamic_field::add(commitment_key -> new_commitment)
+         │     └── sui::groth16::verify_groth16_proof()   → E_INVALID_PROOF(3)
+         ├── Extract old_commitment[0..32]
+         │   assert!(CommitmentKey exists)                → E_COMMITMENT_CHAIN_BROKEN(9)
+         │   dynamic_field::remove()  ← UTXO consumed
+         ├── Extract nullifier[128..160]
+         │   assert!(!NullifierKey exists)                → E_NULLIFIER_SPENT(2)
+         │   dynamic_field::add(nullifier → true)
+         ├── Extract new_commitment[32..64]
+         │   assert!(!CommitmentKey exists)               → E_COMMITMENT_EXISTS(10)
+         │   dynamic_field::add(commitment → true)
          └── event::emit(TransferEvent { nullifier, new_commitment })
 
 3. BROWSER (after tx confirmed)
@@ -157,23 +194,18 @@ CONSTRAINTS:
    └── Persist VeilPrivateState to encrypted localStorage
 ```
 
-### Deposit
+### Deposit and Register (genesis)
 
 ```
-User → pool::deposit(pool, Coin<TOKEN>)
-         ├── assert!(!pool.frozen)
-         ├── balance::join(&mut pool.balance, coin.into_balance())
-         └── event::emit(DepositEvent { sender, amount })
-```
-
-### Withdraw
-
-```
-User → pool::withdraw(pool, amount, recipient)
-         ├── assert!(!pool.frozen)
-         ├── assert!(pool.balance.value() >= amount)
-         ├── coin::from_balance(balance::split(..., amount))
-         └── transfer::public_transfer(coin, recipient)
+User → pool::deposit_and_register(pool, Coin<TOKEN>, commitment)
+         ├── assert!(!pool.frozen)                       → E_FROZEN(1)
+         ├── assert!(coin.value() >= MIN_DEPOSIT)        → E_DUST_DEPOSIT(11)
+         ├── assert!(is_standard_amount(amount))         → E_NON_STANDARD_AMOUNT(14)
+         ├── assert!(commitment.length() == 32)          → E_INVALID_INPUTS_LENGTH(7)
+         ├── assert!(!CommitmentKey exists)               → E_COMMITMENT_EXISTS(10)
+         ├── balance::join(pool.balance, coin)
+         ├── dynamic_field::add(commitment → true)
+         └── event::emit(DepositEvent { pool_id })
 ```
 
 ## Epoch Design
@@ -184,13 +216,13 @@ Timeline:
 │  Epoch 0          │  Epoch 1          │  Epoch 2
 │  [0, 30 days)     │  [30, 60 days)    │  [60, 90 days)
 │
-│  Genesis commitment: Poseidon(1, 0, 0)
-│  Nullifier:          Poseidon(2, userSecret, 0)
+│  Genesis: Poseidon(1, 0, 0, userSecret) ← user-specific
 │
 │                   │ Epoch boundary
-│                   │  New genesis:    Poseidon(1, 0, 0)   (same)
-│                   │  New nullifier:  Poseidon(2, userSecret, 1)
+│                   │  New genesis:    Poseidon(1, 0, 0, userSecret)
 │                   │  cumulativeOld reset to 0
+│                   │  randomness reset to 0
+│                   │  New nullifier is unique (different randOld)
 │
 │  epoch_id = Clock::timestamp_ms() / EPOCH_DURATION_MS
 │  EPOCH_DURATION_MS = 2_592_000_000  (30 days in ms)
@@ -198,59 +230,75 @@ Timeline:
 
 ## Public Input Byte Layout
 
-The Sui verifier reads public inputs as a flat byte array. Each input is 32 bytes (big-endian field element).
+The Sui verifier reads public inputs as a flat byte array. Each input is 32 bytes (little-endian BN254 scalar field element).
 
 ```
-Offset   Field
-0..32    oldCommitment       (index 0)
-32..64   newCommitment       (index 1)
-64..96   threshold           (index 2)
-96..128  epochId             (index 3)
-128..160 nullifier           (index 4) ← pool extracts this for replay check
-160..192 txAmountHash        (index 5)
+Offset     Field            Index  On-chain Usage
+0..32      oldCommitment    [0]    Consumed from CommitmentKey dynamic field
+32..64     newCommitment    [1]    Created as new CommitmentKey dynamic field
+64..96     threshold        [2]    LE u64 at [64..72], upper [72..96] asserted zero
+96..128    epochId          [3]    LE u64 at [96..104], upper [104..128] asserted zero
+128..160   nullifier        [4]    Full 32 bytes stored as NullifierKey
+160..192   txAmountHash     [5]    Not extracted on-chain (receiver-side verification)
 ```
 
 ## Security Properties
 
-| Property | Mechanism |
-|----------|-----------|
-| Amount privacy | Never in public inputs; only commitment hashes on-chain |
-| Sender privacy | No address in transfer; commitments are pseudonymous |
-| Replay prevention | Nullifier stored in dynamic field after use (E_NULLIFIER_SPENT) |
-| Overflow prevention | Num2Bits(64) on old, tx, and new values independently |
-| Epoch binding | nullifier = Poseidon(2, userSecret, epochId); epochId from Clock |
-| Domain separation | Commitment tag 1, nullifier tag 2 — no cross-type collision |
-| VK integrity | sui::groth16 enforces gamma_g2 != delta_g2 internally |
-| Emergency stop | freeze_pool / unfreeze_pool via AdminCap |
-| Trusted setup | Hermez Powers of Tau (pot15); dev contribution for testing |
+| Property | Mechanism | Error Code |
+|----------|-----------|-----------|
+| Amount privacy | Amounts never in public inputs; only Poseidon commitment hashes on-chain | -- |
+| Sender privacy | No address in transfer events; commitments are pseudonymous | -- |
+| Replay prevention | Nullifier stored in dynamic field after use (permanent) | E_NULLIFIER_SPENT (2) |
+| UTXO integrity | Old commitment consumed, new commitment created atomically | E_COMMITMENT_CHAIN_BROKEN (9), E_COMMITMENT_EXISTS (10) |
+| Overflow prevention | Num2Bits(64) on cumOld, txAmount, cumNew, and threshold independently | -- |
+| Threshold enforcement | LessEqThan(64) in-circuit: cumNew <= threshold | -- |
+| Epoch binding | Nullifier includes epochId from Clock; contract verifies match | E_EPOCH_MISMATCH (8) |
+| Domain separation | Three Poseidon tags (1=commit, 2=nullifier, 3=amount); no cross-type collision | -- |
+| Identity binding | Commitments include userSecret via Poseidon(4); prevents commitment theft | -- |
+| VK integrity | sui::groth16 enforces gamma_g2 != delta_g2 internally | E_INVALID_PROOF (3) |
+| VK update safety | 1-epoch timelock via propose_vk_update(); applied on next transfer | -- |
+| Emergency stop | freeze_pool / unfreeze_pool via AdminCap; all functions check pool.frozen first | E_FROZEN (1) |
+| AdminCap isolation | AdminCap.pool_id checked against pool.id on all admin operations | E_NOT_POOL_ADMIN (4) |
+| Dust prevention | MIN_DEPOSIT = 1,000 base units (0.001 TOKEN) | E_DUST_DEPOSIT (11) |
+| Amount correlation resistance | Standard deposit denominations only (100/500/1000 TOKEN) | E_NON_STANDARD_AMOUNT (14) |
+| Upper bytes safety | Bytes [72..96] and [104..128] asserted zero for u64 public inputs | E_INVALID_INPUTS_LENGTH (7) |
+| Trusted setup | Hermez Powers of Tau (pot15); production requires MPC ceremony | -- |
 
 ## Monorepo Structure
 
 ```
 veil/
 ├── circuits/
-│   ├── transfer.circom              # Main privacy circuit
-│   ├── scripts/compile.sh           # Compilation + Groth16 setup
-│   ├── test/transfer.test.mjs       # Constraint tests
+│   ├── transfer.circom              # 11-constraint transfer circuit (v2)
+│   ├── scripts/compile.sh           # Circom compilation + Groth16 setup
+│   ├── test/transfer.test.mjs       # 40 circuit tests
 │   └── build/                       # r1cs, wasm, zkey, vk.json
 ├── contracts/
 │   ├── Move.toml
-│   └── sources/
-│       ├── pool.move                # Protocol core
-│       ├── verifier.move            # sui::groth16 wrapper
-│       └── token.move               # VEIL token
+│   ├── Published.toml               # Testnet deployment record
+│   ├── sources/
+│   │   ├── pool.move                # Core: UTXO, transfer, deposit, admin
+│   │   ├── verifier.move            # sui::groth16 BN254 wrapper
+│   │   └── token.move               # VEIL token (6 decimals)
+│   └── tests/pool_tests.move        # 37 Move tests
 ├── frontend/
+│   ├── DESIGN.md                    # Design system (dark terminal aesthetic)
 │   └── src/
-│       ├── app/                     # Next.js pages (page.tsx, dashboard)
-│       ├── components/              # UI components
-│       ├── hooks/                   # useProof, useWallet, useVeilState
-│       └── lib/                     # snarkjs helpers, state management
-└── scripts/
-    ├── init.sh
-    └── src/
-        ├── e2e-test.ts              # End-to-end pipeline
-        ├── deploy.ts                # Contract deployment
-        └── proof-converter.ts       # snarkjs → Sui bytes
+│       ├── app/                     # Next.js 14 pages
+│       ├── components/              # UI components (12 total)
+│       ├── hooks/                   # 6 hooks: proof, transfer, pool, epoch, state, withdraw
+│       └── lib/                     # proof-converter, constants, types, txHistory
+├── scripts/
+│   ├── init.sh                      # Monorepo dependency installer
+│   └── src/
+│       ├── e2e-test.ts              # Full E2E pipeline (10 steps)
+│       ├── deploy.ts                # Contract deployment
+│       ├── proof-converter.ts       # snarkjs to Sui bytes (G1/G2 compression)
+│       └── test-converter.ts        # 109 converter tests
+└── docs/
+    ├── architecture.md              # This file
+    ├── veil-architecture-report.html # Print-ready HTML report
+    └── c4-*.html                    # Interactive C4 diagrams (4 levels)
 ```
 
 ## Development Commands
@@ -261,8 +309,11 @@ cd contracts && sui move build
 cd contracts && sui move test
 
 # ZK circuit
-cd circuits && bash scripts/compile.sh   # compile + trusted setup
-cd circuits && npm test                  # test constraints
+cd circuits && bash scripts/compile.sh
+cd circuits && npm test
+
+# Proof converter
+cd scripts && bun run src/test-converter.ts
 
 # End-to-end (testnet)
 cd scripts && bun run src/e2e-test.ts
