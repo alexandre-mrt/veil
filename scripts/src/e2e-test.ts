@@ -352,6 +352,7 @@ async function createPool(
   success(`Pool created: ${poolId}`);
   info(`Gas used: ${result.effects?.gasUsed ? JSON.stringify(result.effects.gasUsed) : "unknown"}`);
 
+  await client.waitForTransaction({ digest: result.digest });
   return poolId;
 }
 
