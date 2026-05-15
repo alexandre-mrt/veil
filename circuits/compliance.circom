@@ -76,6 +76,10 @@ template Compliance(merkleDepth) {
     kycCheck.in[0] <== kycLevel;
     kycCheck.in[1] <== requiredKycLevel;
 
+    // Defense-in-depth: enforce comparator outputs are binary (L7 audit fix)
+    expiryCheck.out * (1 - expiryCheck.out) === 0;
+    kycCheck.out * (1 - kycCheck.out) === 0;
+
     // --- C6: validCredential = expiryValid AND kycValid ---
     signal computedValid;
     computedValid <== expiryCheck.out * kycCheck.out;
