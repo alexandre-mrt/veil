@@ -871,6 +871,136 @@ fun test_update_root_pool_mismatch() {
 }
 
 // ===========================================================================
+// ERROR PATH TESTS — DUPLICATE CONFIG / DOUBLE PROPOSALS
+// ===========================================================================
+
+// 14. create_compliance_config on pool that already has one — must fail E_COMPLIANCE_CONFIG_ALREADY_SET
+#[test]
+#[expected_failure(abort_code = 25, location = veil::pool)]
+fun test_create_second_compliance_config() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        // Second compliance config on same pool — must abort
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 15. propose_compliance_vk_update twice — must fail E_COMPLIANCE_VK_UPDATE_PENDING
+#[test]
+#[expected_failure(abort_code = 34, location = veil::compliance)]
+fun test_propose_compliance_vk_double() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::propose_compliance_vk_update(&mut config, &cap, &pool, DUMMY_VK, &test_clock);
+        // Second proposal while first is pending — must abort
+        compliance::propose_compliance_vk_update(&mut config, &cap, &pool, DUMMY_VK, &test_clock);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 16. propose_auditor_key_update twice — must fail E_AUDITOR_KEY_UPDATE_PENDING
+#[test]
+#[expected_failure(abort_code = 31, location = veil::compliance)]
+fun test_propose_auditor_key_double() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::propose_auditor_key_update(&mut config, &cap, &pool, UPDATED_AUDITOR_KEY, &test_clock);
+        // Second proposal while first is pending — must abort
+        compliance::propose_auditor_key_update(&mut config, &cap, &pool, UPDATED_AUDITOR_KEY, &test_clock);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
 // HELPERS
 // ===========================================================================
 

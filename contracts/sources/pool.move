@@ -256,6 +256,7 @@ public fun propose_withdrawal(
 
 public fun cancel_withdrawal(pool: &mut Pool, cap: &AdminCap) {
     assert_pool_admin(cap, pool);
+    assert!(pool.pending_withdrawal.is_some(), E_NO_PENDING_WITHDRAWAL);
     pool.pending_withdrawal = option::none();
     pool.pending_withdrawal_recipient = option::none();
     pool.pending_withdrawal_epoch = 0;
