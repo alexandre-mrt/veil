@@ -220,6 +220,45 @@ async function proveAndVerify(groth16, vk, inputs) {
   return { proof, publicSignals, valid };
 }
 
+/**
+ * Assert that a witness is rejected by the circuit.
+ * In full proof mode, fullProve must throw. In hash-only mode, simulateTransfer
+ * must return at least one error matching the expected constraint prefix.
+ */
+async function assertRejected(groth16, vk, poseidon, witness, expectedConstraintPrefix, label) {
+  if (FULL_PROOF_AVAILABLE) {
+    let threw = false;
+    try {
+      await proveAndVerify(groth16, vk, witness);
+    } catch {
+      threw = true;
+    }
+    assert(threw, `${label}: Proof generation must fail`);
+  } else {
+    const errors = simulateTransfer(poseidon, witness);
+    assert(errors.length > 0, `${label}: Expected constraint violations`);
+    if (expectedConstraintPrefix) {
+      assert(
+        errors.some(e => e.startsWith(expectedConstraintPrefix)),
+        `${label}: Expected ${expectedConstraintPrefix} violation, got: ${errors.join("; ")}`,
+      );
+    }
+  }
+}
+
+/**
+ * Assert that a witness is accepted by the circuit.
+ */
+async function assertAccepted(groth16, vk, poseidon, witness, label) {
+  if (FULL_PROOF_AVAILABLE) {
+    const { valid } = await proveAndVerify(groth16, vk, witness);
+    assert(valid, `${label}: Groth16 proof must verify`);
+  } else {
+    const errors = simulateTransfer(poseidon, witness);
+    assert(errors.length === 0, `${label}: Constraint violations: ${errors.join("; ")}`);
+  }
+}
+
 // ── Main test suite ───────────────────────────────────────────────────────────
 
 async function main() {
@@ -234,36 +273,33 @@ async function main() {
     vk = JSON.parse(readFileSync(VK_PATH, "utf8"));
   }
 
-  console.log("--- Valid inputs ---");
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HAPPY PATHS
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log("--- Happy paths ---");
 
-  // Test 1: Valid first-epoch transfer (genesis: cumOld=0, randOld=0, userSecret-bound)
-  await test("T1: Valid first-epoch transfer (genesis commitment bound to userSecret)", async () => {
+  // T1: Genesis transfer (cumOld=0, randOld=0)
+  await test("T1: Genesis transfer (cumOld=0, randOld=0, first-ever transfer)", async () => {
     const userSecret = 111n;
     const w = buildValidWitness(poseidon, {
       cumulativeOld: 0n,
       txAmount: 100n,
-      randomnessOld: 0n,  // genesis: randOld=0
+      randomnessOld: 0n,
       randomnessNew: 42n,
       userSecret,
       epochId: 1n,
       salt: 7n,
     });
 
-    // Genesis check: oldCommitment = Poseidon(1, 0, 0, userSecret) — now user-specific
+    // Genesis check: oldCommitment = Poseidon(1, 0, 0, userSecret)
     const genesisCommitment = toBI(poseidon([DOMAIN_COMMITMENT, 0n, 0n, userSecret]));
     assertEqual(w.oldCommitment, genesisCommitment, "genesis oldCommitment");
 
-    if (FULL_PROOF_AVAILABLE) {
-      const { valid } = await proveAndVerify(groth16, vk, w);
-      assert(valid, "Groth16 proof must verify");
-    } else {
-      const errors = simulateTransfer(poseidon, w);
-      assert(errors.length === 0, `Constraint violations: ${errors.join("; ")}`);
-    }
+    await assertAccepted(groth16, vk, poseidon, w, "T1");
   });
 
-  // Test 2: Valid subsequent transfer (cumOld=100, txAmount=50)
-  await test("T2: Valid subsequent transfer (cumOld=100, txAmount=50)", async () => {
+  // T2: Subsequent transfer
+  await test("T2: Subsequent transfer (cumOld=100, txAmount=50)", async () => {
     const w = buildValidWitness(poseidon, {
       cumulativeOld: 100n,
       txAmount: 50n,
@@ -273,18 +309,11 @@ async function main() {
       epochId: 1n,
       salt: 13n,
     });
-
-    if (FULL_PROOF_AVAILABLE) {
-      const { valid } = await proveAndVerify(groth16, vk, w);
-      assert(valid, "Groth16 proof must verify");
-    } else {
-      const errors = simulateTransfer(poseidon, w);
-      assert(errors.length === 0, `Constraint violations: ${errors.join("; ")}`);
-    }
+    await assertAccepted(groth16, vk, poseidon, w, "T2");
   });
 
-  // Test 3: Chain of 3 transfers (output commitment becomes next input)
-  await test("T3: Chain of 3 transfers", async () => {
+  // T3: Chain of 3 transfers
+  await test("T3: Chain of 3 transfers (state continuity)", async () => {
     const secret = 333n;
     const epoch = 2n;
     let cumulative = 0n;
@@ -308,15 +337,8 @@ async function main() {
         salt,
       });
 
-      if (FULL_PROOF_AVAILABLE) {
-        const { valid } = await proveAndVerify(groth16, vk, w);
-        assert(valid, `Transfer ${i + 1}: Groth16 proof must verify`);
-      } else {
-        const errors = simulateTransfer(poseidon, w);
-        assert(errors.length === 0, `Transfer ${i + 1}: ${errors.join("; ")}`);
-      }
+      await assertAccepted(groth16, vk, poseidon, w, `T3 transfer ${i + 1}`);
 
-      // State transition: next tx starts where this one ended
       cumulative = cumulative + txAmount;
       randomness = nextRandomness;
     }
@@ -324,51 +346,178 @@ async function main() {
     assertEqual(cumulative, 60n, "final cumulative after 3 transfers");
   });
 
-  console.log("\n--- Invalid inputs (must be rejected) ---");
-
-  // Test 4: FAIL — wrong old commitment (bad randomness)
-  await test("T4: FAIL: wrong old commitment (tampered randomness)", async () => {
+  // T4: Transfer at exactly threshold (cumNew == threshold, LessEqThan)
+  await test("T4: Transfer at exactly threshold (cumNew == threshold)", async () => {
+    const threshold = 500n;
     const w = buildValidWitness(poseidon, {
-      cumulativeOld: 100n,
-      txAmount: 50n,
-      randomnessOld: 55n,
-      randomnessNew: 66n,
+      cumulativeOld: 400n,
+      txAmount: 100n,
+      randomnessOld: 10n,
+      randomnessNew: 20n,
       userSecret: 444n,
       epochId: 1n,
-      salt: 9n,
+      threshold,
+      salt: 55n,
     });
-
-    // Tamper: use wrong randomness for the old commitment (off by one)
-    const tampered = { ...w, randomnessOld: 56n };
-
-    if (FULL_PROOF_AVAILABLE) {
-      let threw = false;
-      try {
-        await proveAndVerify(groth16, vk, tampered);
-      } catch {
-        threw = true;
-      }
-      assert(threw, "Proof generation must fail with invalid witness");
-    } else {
-      const errors = simulateTransfer(poseidon, tampered);
-      assert(errors.length > 0, "Expected constraint violations for bad randomness");
-      assert(
-        errors.some(e => e.startsWith("C1:")),
-        `Expected C1 violation, got: ${errors.join("; ")}`,
-      );
-    }
+    // cumNew = 400 + 100 = 500 == threshold
+    assertEqual(w.cumulativeNew, threshold, "cumNew should equal threshold");
+    await assertAccepted(groth16, vk, poseidon, w, "T4");
   });
 
-  // Test 5: FAIL — txAmount = 0 (GreaterThan fails)
-  await test("T5: FAIL: txAmount=0 (zero transfer rejected)", async () => {
+  // T5: Large values near 2^64 boundary (valid)
+  await test("T5: Large values near 2^64 boundary (cumOld=2^64-200, txAmount=100)", async () => {
+    const cumOld = MAX_U64 - 200n;
+    const txAmt = 100n;
+    const cumNew = cumOld + txAmt; // 2^64 - 100, still < 2^64
+    const thresholdVal = MAX_U64 - 1n; // max valid threshold
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: cumOld,
+      txAmount: txAmt,
+      randomnessOld: 1000n,
+      randomnessNew: 2000n,
+      userSecret: 555n,
+      epochId: 5n,
+      threshold: thresholdVal,
+      salt: 77n,
+    });
+    await assertAccepted(groth16, vk, poseidon, w, "T5");
+  });
+
+  // T6: Different userSecrets produce isolated commitments
+  await test("T6: Different userSecrets produce isolated commitments", async () => {
+    const w1 = buildValidWitness(poseidon, {
+      cumulativeOld: 50n, txAmount: 25n,
+      randomnessOld: 10n, randomnessNew: 20n,
+      userSecret: 1111n, epochId: 1n, salt: 1n,
+    });
+    const w2 = buildValidWitness(poseidon, {
+      cumulativeOld: 50n, txAmount: 25n,
+      randomnessOld: 10n, randomnessNew: 20n,
+      userSecret: 2222n, epochId: 1n, salt: 1n,
+    });
+
+    // Same amounts/randomness but different secrets = different commitments
+    assert(w1.oldCommitment !== w2.oldCommitment, "oldCommitments must differ");
+    assert(w1.newCommitment !== w2.newCommitment, "newCommitments must differ");
+    assert(w1.nullifier !== w2.nullifier, "nullifiers must differ");
+
+    // Both must be valid
+    await assertAccepted(groth16, vk, poseidon, w1, "T6 user1");
+    await assertAccepted(groth16, vk, poseidon, w2, "T6 user2");
+  });
+
+  // T7: Multiple transfers same epoch, different randomness = unique nullifiers
+  await test("T7: Same epoch different randomness produces unique nullifiers", async () => {
+    const secret = 777n;
+    const epoch = 3n;
+
+    const w1 = buildValidWitness(poseidon, {
+      cumulativeOld: 0n, txAmount: 10n,
+      randomnessOld: 100n, randomnessNew: 200n,
+      userSecret: secret, epochId: epoch, salt: 1n,
+    });
+    const w2 = buildValidWitness(poseidon, {
+      cumulativeOld: 10n, txAmount: 10n,
+      randomnessOld: 200n, randomnessNew: 300n,
+      userSecret: secret, epochId: epoch, salt: 2n,
+    });
+
+    // Same user, same epoch, but different randomnessOld => different nullifiers
+    assert(w1.nullifier !== w2.nullifier, "Nullifiers must be unique per transfer (CRYPTO-006)");
+
+    await assertAccepted(groth16, vk, poseidon, w1, "T7 tx1");
+    await assertAccepted(groth16, vk, poseidon, w2, "T7 tx2");
+  });
+
+  // T8: txAmount = 1 (smallest valid transfer)
+  await test("T8: Smallest valid transfer (txAmount=1)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 0n,
+      txAmount: 1n,
+      randomnessOld: 0n,
+      randomnessNew: 1n,
+      userSecret: 888n,
+      epochId: 1n,
+      salt: 1n,
+    });
+    await assertAccepted(groth16, vk, poseidon, w, "T8");
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONSTRAINT VIOLATION TESTS (each should FAIL)
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log("\n--- Constraint violations (must be rejected) ---");
+
+  // T9: C1 — wrong old commitment (tampered randomness)
+  await test("T9: C1 — wrong old commitment (tampered randomness)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 100n, txAmount: 50n,
+      randomnessOld: 55n, randomnessNew: 66n,
+      userSecret: 444n, epochId: 1n, salt: 9n,
+    });
+    // Tamper randomnessOld: oldCommitment was computed with 55, but witness says 56
+    const tampered = { ...w, randomnessOld: 56n };
+    await assertRejected(groth16, vk, poseidon, tampered, "C1:", "T9");
+  });
+
+  // T10: C1 — wrong old commitment (wrong userSecret)
+  await test("T10: C1 — wrong old commitment (wrong userSecret in witness)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 100n, txAmount: 50n,
+      randomnessOld: 55n, randomnessNew: 66n,
+      userSecret: 444n, epochId: 1n, salt: 9n,
+    });
+    // Tamper: change userSecret but keep old/new commitments computed with 444
+    // The circuit will recompute Poseidon(1, 100, 55, 999) != oldCommitment
+    const tampered = { ...w, userSecret: 999n };
+    await assertRejected(groth16, vk, poseidon, tampered, "C1:", "T10");
+  });
+
+  // T11: C2 — wrong new commitment (tampered randomness)
+  await test("T11: C2 — wrong new commitment (tampered randomnessNew)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 100n, txAmount: 50n,
+      randomnessOld: 55n, randomnessNew: 66n,
+      userSecret: 444n, epochId: 1n, salt: 9n,
+    });
+    // Recompute newCommitment with wrong randomnessNew, keeping the bad randomness in witness
+    const badNewCommitment = toBI(poseidon([DOMAIN_COMMITMENT, w.cumulativeNew, 67n, w.userSecret]));
+    const tampered = { ...w, randomnessNew: 67n, newCommitment: badNewCommitment };
+    // oldCommitment still expects randomnessOld=55, but now let's only break newCommitment
+    // Actually, let's just set wrong randomnessNew while keeping original newCommitment
+    const tampered2 = { ...w, randomnessNew: 67n };
+    await assertRejected(groth16, vk, poseidon, tampered2, "C2:", "T11");
+  });
+
+  // T12: C3 — cumNew != cumOld + txAmount
+  await test("T12: C3 — cumNew != cumOld + txAmount (arithmetic mismatch)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 100n, txAmount: 50n,
+      randomnessOld: 55n, randomnessNew: 66n,
+      userSecret: 444n, epochId: 1n, salt: 9n,
+    });
+    // Set cumulativeNew to wrong value, recompute newCommitment to match
+    const wrongCumNew = 200n;
+    const wrongNewCommitment = toBI(poseidon([DOMAIN_COMMITMENT, wrongCumNew, w.randomnessNew, w.userSecret]));
+    const tampered = {
+      ...w,
+      cumulativeNew: wrongCumNew,
+      newCommitment: wrongNewCommitment,
+    };
+    await assertRejected(groth16, vk, poseidon, tampered, "C3:", "T12");
+  });
+
+  // T13: C4 — txAmount = 0 (zero transfer)
+  await test("T13: C4 — txAmount=0 (zero transfer rejected)", async () => {
     const cumulativeOld = 100n;
     const txAmount = 0n;
-    const cumulativeNew = cumulativeOld; // C3 holds, but C4 fails
+    const cumulativeNew = cumulativeOld;
     const randomnessOld = 55n;
     const randomnessNew = 66n;
     const userSecret = 555n;
     const epochId = 1n;
     const salt = 17n;
+    const threshold = 1_000_000_000n;
 
     const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
@@ -376,36 +525,68 @@ async function main() {
     const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
     const tampered = {
-      oldCommitment, newCommitment,
-      threshold: 1_000_000_000n, epochId, nullifier, txAmountHash,
+      oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
     };
-
-    if (FULL_PROOF_AVAILABLE) {
-      let threw = false;
-      try {
-        await proveAndVerify(groth16, vk, tampered);
-      } catch {
-        threw = true;
-      }
-      assert(threw, "Proof generation must fail for txAmount=0");
-    } else {
-      const errors = simulateTransfer(poseidon, tampered);
-      assert(errors.length > 0, "Expected constraint violation for txAmount=0");
-      assert(
-        errors.some(e => e.startsWith("C4:")),
-        `Expected C4 violation, got: ${errors.join("; ")}`,
-      );
-    }
+    await assertRejected(groth16, vk, poseidon, tampered, "C4:", "T13");
   });
 
-  // Test 6: FAIL — cumulativeNew overflow (exceeds 2^64)
-  await test("T6: FAIL: cumulativeNew overflow (> 2^64)", async () => {
+  // T14: C5 — cumulativeOld >= 2^64
+  await test("T14: C5 — cumulativeOld >= 2^64 (overflow)", async () => {
+    const cumulativeOld = MAX_U64; // exactly 2^64, out of [0, 2^64)
+    const txAmount = 1n;
+    const cumulativeNew = cumulativeOld + txAmount;
+    const randomnessOld = 10n;
+    const randomnessNew = 20n;
+    const userSecret = 600n;
+    const epochId = 1n;
+    const salt = 1n;
+    const threshold = MAX_U64 + 100n; // would also fail C8 but we test C5
+
+    const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
+    const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
+    const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
+
+    const tampered = {
+      oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
+      cumulativeOld, cumulativeNew, txAmount,
+      randomnessOld, randomnessNew, userSecret, salt,
+    };
+    await assertRejected(groth16, vk, poseidon, tampered, "C5:", "T14");
+  });
+
+  // T15: C6 — txAmount >= 2^64
+  await test("T15: C6 — txAmount >= 2^64 (overflow)", async () => {
+    const cumulativeOld = 0n;
+    const txAmount = MAX_U64; // exactly 2^64
+    const cumulativeNew = cumulativeOld + txAmount;
+    const randomnessOld = 10n;
+    const randomnessNew = 20n;
+    const userSecret = 601n;
+    const epochId = 1n;
+    const salt = 1n;
+    const threshold = MAX_U64 + 100n;
+
+    const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
+    const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
+    const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
+
+    const tampered = {
+      oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
+      cumulativeOld, cumulativeNew, txAmount,
+      randomnessOld, randomnessNew, userSecret, salt,
+    };
+    await assertRejected(groth16, vk, poseidon, tampered, "C6:", "T15");
+  });
+
+  // T16: C7 — cumulativeNew >= 2^64 (overflow from addition)
+  await test("T16: C7 — cumulativeNew overflow from addition (> 2^64)", async () => {
     const cumulativeOld = MAX_U64 - 10n;
     const txAmount = 100n;
-    const cumulativeNew = cumulativeOld + txAmount; // > 2^64, fails Num2Bits(64)
-
+    const cumulativeNew = cumulativeOld + txAmount; // > 2^64
     const randomnessOld = 77n;
     const randomnessNew = 88n;
     const userSecret = 666n;
@@ -423,75 +604,231 @@ async function main() {
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
     };
-
-    if (FULL_PROOF_AVAILABLE) {
-      let threw = false;
-      try {
-        await proveAndVerify(groth16, vk, tampered);
-      } catch {
-        threw = true;
-      }
-      assert(threw, "Proof generation must fail for u64 overflow");
-    } else {
-      const errors = simulateTransfer(poseidon, tampered);
-      assert(errors.length > 0, "Expected constraint violation for overflow");
-      assert(
-        errors.some(e => e.startsWith("C5:") || e.startsWith("C7:")),
-        `Expected C5 or C7 violation, got: ${errors.join("; ")}`,
-      );
-    }
+    await assertRejected(groth16, vk, poseidon, tampered, "C7:", "T16");
   });
 
-  // Test 7: FAIL — wrong nullifier (bad user secret)
-  await test("T7: FAIL: wrong nullifier (mismatched userSecret)", async () => {
+  // T17: C8 — threshold >= 2^64
+  await test("T17: C8 — threshold >= 2^64 (range proof fails)", async () => {
+    const threshold = MAX_U64; // exactly 2^64, fails Num2Bits(64)
     const w = buildValidWitness(poseidon, {
-      cumulativeOld: 50n,
-      txAmount: 25n,
-      randomnessOld: 11n,
-      randomnessNew: 22n,
-      userSecret: 777n,
-      epochId: 3n,
-      salt: 33n,
+      cumulativeOld: 0n, txAmount: 1n,
+      randomnessOld: 0n, randomnessNew: 1n,
+      userSecret: 700n, epochId: 1n,
+      threshold,
+      salt: 1n,
     });
+    await assertRejected(groth16, vk, poseidon, w, "C8:", "T17");
+  });
 
-    // Tamper: use a different secret to compute a wrong nullifier
+  // T18: C9 — cumNew > threshold
+  await test("T18: C9 — cumNew > threshold (exceeds spending limit)", async () => {
+    const threshold = 100n;
+    // Build a valid witness first, then override threshold to be too low
+    const cumulativeOld = 50n;
+    const txAmount = 60n;
+    const cumulativeNew = cumulativeOld + txAmount; // 110 > 100
+    const randomnessOld = 10n;
+    const randomnessNew = 20n;
+    const userSecret = 800n;
+    const epochId = 1n;
+    const salt = 1n;
+
+    const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
+    const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
+    const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
+
+    const tampered = {
+      oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
+      cumulativeOld, cumulativeNew, txAmount,
+      randomnessOld, randomnessNew, userSecret, salt,
+    };
+    await assertRejected(groth16, vk, poseidon, tampered, "C9:", "T18");
+  });
+
+  // T19: C10 — wrong nullifier (wrong userSecret)
+  await test("T19: C10 — wrong nullifier (mismatched userSecret)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 50n, txAmount: 25n,
+      randomnessOld: 11n, randomnessNew: 22n,
+      userSecret: 777n, epochId: 3n, salt: 33n,
+    });
     const wrongNullifier = toBI(poseidon([DOMAIN_NULLIFIER, 999999n, w.epochId, w.randomnessOld]));
     const tampered = { ...w, nullifier: wrongNullifier };
+    await assertRejected(groth16, vk, poseidon, tampered, "C10:", "T19");
+  });
+
+  // T20: C10 — wrong nullifier (wrong epochId)
+  await test("T20: C10 — wrong nullifier (wrong epochId)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 50n, txAmount: 25n,
+      randomnessOld: 11n, randomnessNew: 22n,
+      userSecret: 777n, epochId: 3n, salt: 33n,
+    });
+    const wrongNullifier = toBI(poseidon([DOMAIN_NULLIFIER, w.userSecret, 999n, w.randomnessOld]));
+    const tampered = { ...w, nullifier: wrongNullifier, epochId: 999n };
+    // The epochId is public, so we must also change it in the witness for consistency
+    // But the old nullifier was computed with epochId=3, so mismatch
+    // Actually: we change epochId in witness AND provide matching nullifier for wrong epoch
+    // The circuit checks nullifier == Poseidon(2, userSecret, epochId, randOld)
+    // If we change epochId to 999 but keep the nullifier computed with 3 → mismatch
+    const tampered2 = { ...w, nullifier: toBI(poseidon([DOMAIN_NULLIFIER, w.userSecret, 3n, w.randomnessOld])), epochId: 999n };
+    // This way: epochId in circuit = 999, but nullifier was computed with epochId=3
+    // But wait — epochId is a public input, the circuit uses it to verify the nullifier
+    // So if we pass epochId=999 and a nullifier matching epochId=3, the circuit recalculates
+    // Poseidon(2, userSecret, 999, randOld) and compares to our nullifier (computed with 3) → fail
+    // We need the public input to be wrong, not the private
+    // Simplest: keep epochId=3 as public but pass nullifier for epochId=999
+    const wrongEpochNullifier = toBI(poseidon([DOMAIN_NULLIFIER, w.userSecret, 999n, w.randomnessOld]));
+    const tampered3 = { ...w, nullifier: wrongEpochNullifier };
+    await assertRejected(groth16, vk, poseidon, tampered3, "C10:", "T20");
+  });
+
+  // T21: C10 — wrong nullifier (wrong randomnessOld)
+  await test("T21: C10 — wrong nullifier (wrong randomnessOld)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 50n, txAmount: 25n,
+      randomnessOld: 11n, randomnessNew: 22n,
+      userSecret: 777n, epochId: 3n, salt: 33n,
+    });
+    // Provide nullifier with wrong randomnessOld while keeping correct randomnessOld in witness
+    const wrongNullifier = toBI(poseidon([DOMAIN_NULLIFIER, w.userSecret, w.epochId, 9999n]));
+    const tampered = { ...w, nullifier: wrongNullifier };
+    await assertRejected(groth16, vk, poseidon, tampered, "C10:", "T21");
+  });
+
+  // T22: C11 — wrong txAmountHash (wrong salt)
+  await test("T22: C11 — wrong txAmountHash (wrong salt)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 0n, txAmount: 100n,
+      randomnessOld: 0n, randomnessNew: 1n,
+      userSecret: 900n, epochId: 1n, salt: 42n,
+    });
+    // Provide txAmountHash with wrong salt, but correct salt in witness
+    const wrongHash = toBI(poseidon([DOMAIN_TX_AMOUNT, w.txAmount, 999n]));
+    const tampered = { ...w, txAmountHash: wrongHash };
+    await assertRejected(groth16, vk, poseidon, tampered, "C11:", "T22");
+  });
+
+  // T23: C11 — wrong txAmountHash (missing domain tag 3)
+  await test("T23: C11 — wrong txAmountHash (wrong domain tag, using 1 instead of 3)", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 0n, txAmount: 100n,
+      randomnessOld: 0n, randomnessNew: 1n,
+      userSecret: 901n, epochId: 1n, salt: 42n,
+    });
+    // Compute hash with domain tag 1 (commitment tag) instead of 3
+    const wrongDomainHash = toBI(poseidon([DOMAIN_COMMITMENT, w.txAmount, w.salt]));
+    const tampered = { ...w, txAmountHash: wrongDomainHash };
+    await assertRejected(groth16, vk, poseidon, tampered, "C11:", "T23");
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EDGE CASES
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log("\n--- Edge cases ---");
+
+  // T24: Threshold = 0 — should reject all transfers (txAmount > 0 => cumNew > 0 > threshold=0)
+  await test("T24: Threshold=0 rejects all transfers (cumNew > 0 > threshold)", async () => {
+    const cumulativeOld = 0n;
+    const txAmount = 1n;
+    const cumulativeNew = 1n;
+    const randomnessOld = 0n;
+    const randomnessNew = 1n;
+    const userSecret = 1000n;
+    const epochId = 1n;
+    const salt = 1n;
+    const threshold = 0n;
+
+    const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
+    const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
+    const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
+
+    const w = {
+      oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
+      cumulativeOld, cumulativeNew, txAmount,
+      randomnessOld, randomnessNew, userSecret, salt,
+    };
+    await assertRejected(groth16, vk, poseidon, w, "C9:", "T24");
+  });
+
+  // T25: All private inputs = 0 except txAmount (minimal genesis)
+  await test("T25: Minimal genesis — all private 0 except txAmount", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 0n,
+      txAmount: 1n,
+      randomnessOld: 0n,
+      randomnessNew: 0n,
+      userSecret: 0n,
+      epochId: 0n,
+      threshold: 1n,
+      salt: 0n,
+    });
+    await assertAccepted(groth16, vk, poseidon, w, "T25");
+  });
+
+  // T26: Same commitment inputs with different userSecrets produce different hashes
+  await test("T26: Same commitment inputs, different secrets = different hashes", async () => {
+    const cumOld = 100n;
+    const randOld = 50n;
+
+    const commit1 = toBI(poseidon([DOMAIN_COMMITMENT, cumOld, randOld, 1n]));
+    const commit2 = toBI(poseidon([DOMAIN_COMMITMENT, cumOld, randOld, 2n]));
+
+    assert(commit1 !== commit2, "Commitments with different userSecrets must differ");
+  });
+
+  // T27: Same nullifier inputs, different epoch = different nullifiers
+  await test("T27: Same nullifier inputs, different epoch = different nullifiers", async () => {
+    const secret = 777n;
+    const randOld = 11n;
+
+    const nf1 = toBI(poseidon([DOMAIN_NULLIFIER, secret, 1n, randOld]));
+    const nf2 = toBI(poseidon([DOMAIN_NULLIFIER, secret, 2n, randOld]));
+
+    assert(nf1 !== nf2, "Nullifiers with different epochIds must differ");
+  });
+
+  // T28: Deterministic proofs (same inputs produce same verification result)
+  await test("T28: Deterministic — same inputs produce consistent verification", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 10n, txAmount: 5n,
+      randomnessOld: 1n, randomnessNew: 2n,
+      userSecret: 123n, epochId: 1n, salt: 7n,
+    });
+
+    // Run simulation twice — must produce same result
+    const errors1 = simulateTransfer(poseidon, w);
+    const errors2 = simulateTransfer(poseidon, w);
+    assertEqual(errors1.length, 0, "first simulation");
+    assertEqual(errors2.length, 0, "second simulation");
 
     if (FULL_PROOF_AVAILABLE) {
-      let threw = false;
-      try {
-        await proveAndVerify(groth16, vk, tampered);
-      } catch {
-        threw = true;
-      }
-      assert(threw, "Proof generation must fail for wrong nullifier");
-    } else {
-      const errors = simulateTransfer(poseidon, tampered);
-      assert(errors.length > 0, "Expected constraint violation for wrong nullifier");
-      assert(
-        errors.some(e => e.startsWith("C10:")),
-        `Expected C10 violation, got: ${errors.join("; ")}`,
+      const r1 = await proveAndVerify(groth16, vk, w);
+      const r2 = await proveAndVerify(groth16, vk, w);
+      assert(r1.valid, "first proof must verify");
+      assert(r2.valid, "second proof must verify");
+      // Public signals must be identical (proof itself may differ due to randomness in Groth16)
+      assertEqual(
+        JSON.stringify(r1.publicSignals),
+        JSON.stringify(r2.publicSignals),
+        "public signals must be deterministic",
       );
     }
   });
 
-  // ── Additional edge cases ──────────────────────────────────────────────────
-  console.log("\n--- Edge cases ---");
-
-  // Test 8: Genesis commitment is user-specific (different users → different genesis)
-  await test("T8: Genesis commitment is user-specific (bound to userSecret)", async () => {
+  // T29: Genesis commitment is user-specific (different users, different genesis)
+  await test("T29: Genesis commitment is user-specific (bound to userSecret)", async () => {
     const secret1 = 1n;
     const secret2 = 2n;
 
-    // Genesis for each user: Poseidon(1, 0, 0, userSecret)
     const genesis1 = toBI(poseidon([DOMAIN_COMMITMENT, 0n, 0n, secret1]));
     const genesis2 = toBI(poseidon([DOMAIN_COMMITMENT, 0n, 0n, secret2]));
 
     assert(genesis1 > 0n, "Genesis commitment must be a non-zero field element");
     assert(genesis1 !== genesis2, "Different userSecrets must produce different genesis commitments");
 
-    // Build witnesses for both users — verify both are valid
     const w1 = buildValidWitness(poseidon, {
       cumulativeOld: 0n, txAmount: 1n, randomnessNew: 1n,
       userSecret: secret1, salt: 1n,
@@ -501,16 +838,274 @@ async function main() {
       userSecret: secret2, salt: 2n,
     });
 
-    // Genesis commitments are now different (bound to userSecret)
     assert(w1.oldCommitment !== w2.oldCommitment, "Different users must have different genesis commitments");
-    assert(w1.newCommitment !== w2.newCommitment, "Different randomness + secret → different new commitments");
-    assert(w1.nullifier !== w2.nullifier, "Different secrets → different nullifiers");
 
-    // Both must pass simulation
     const errors1 = simulateTransfer(poseidon, w1);
     const errors2 = simulateTransfer(poseidon, w2);
     assert(errors1.length === 0, `User 1 violations: ${errors1.join("; ")}`);
     assert(errors2.length === 0, `User 2 violations: ${errors2.join("; ")}`);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECURITY-SPECIFIC TESTS
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log("\n--- Security-specific ---");
+
+  // T30: Field overflow — cumOld + txAmount wraps in BN254 but exceeds 2^64
+  await test("T30: Field overflow — sum wraps in BN254 but fails Num2Bits(64)", async () => {
+    // Pick values where cumOld + txAmount > 2^64 but < BN254 field prime
+    // Num2Bits(64) on cumulativeNew will fail because it doesn't fit in 64 bits
+    const cumulativeOld = MAX_U64 - 5n;
+    const txAmount = 10n;
+    const cumulativeNew = cumulativeOld + txAmount; // 2^64 + 5, overflows 64 bits
+    const randomnessOld = 1n;
+    const randomnessNew = 2n;
+    const userSecret = 1100n;
+    const epochId = 1n;
+    const salt = 1n;
+    // threshold must be >= cumulativeNew for C9 to not also trigger, but
+    // threshold itself must be < 2^64 for C8. So both C7 and C9 will fire.
+    const threshold = MAX_U64 - 1n;
+
+    const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
+    const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
+    const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
+
+    const w = {
+      oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
+      cumulativeOld, cumulativeNew, txAmount,
+      randomnessOld, randomnessNew, userSecret, salt,
+    };
+
+    if (FULL_PROOF_AVAILABLE) {
+      let threw = false;
+      try {
+        await proveAndVerify(groth16, vk, w);
+      } catch {
+        threw = true;
+      }
+      assert(threw, "T30: Proof must fail for field overflow");
+    } else {
+      const errors = simulateTransfer(poseidon, w);
+      assert(errors.length > 0, "T30: Expected constraint violations for overflow");
+      assert(
+        errors.some(e => e.startsWith("C7:") || e.startsWith("C9:")),
+        `T30: Expected C7 or C9 violation, got: ${errors.join("; ")}`,
+      );
+    }
+  });
+
+  // T31: Domain separation — commitment tag (1) vs nullifier tag (2)
+  await test("T31: Domain separation — commitment with tag 2 does NOT match valid commitment", async () => {
+    const cumOld = 100n;
+    const randOld = 50n;
+    const secret = 999n;
+
+    // Correct commitment uses domain tag 1
+    const correctCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumOld, randOld, secret]));
+    // Wrong: uses domain tag 2 (nullifier tag)
+    const wrongTagCommitment = toBI(poseidon([DOMAIN_NULLIFIER, cumOld, randOld, secret]));
+
+    assert(
+      correctCommitment !== wrongTagCommitment,
+      "Domain tags must produce different hashes (commitment tag 1 vs nullifier tag 2)",
+    );
+  });
+
+  // T32: Domain separation — txAmountHash tag (3) vs commitment tag (1)
+  await test("T32: Domain separation — txAmountHash tag 3 vs commitment tag 1", async () => {
+    const amount = 100n;
+    const salt = 50n;
+
+    const correctHash = toBI(poseidon([DOMAIN_TX_AMOUNT, amount, salt]));
+    const wrongTagHash = toBI(poseidon([DOMAIN_COMMITMENT, amount, salt]));
+
+    assert(
+      correctHash !== wrongTagHash,
+      "Domain tags must produce different hashes (txAmount tag 3 vs commitment tag 1)",
+    );
+  });
+
+  // T33: Changing ANY single private input invalidates the proof
+  await test("T33: Changing any single private input invalidates the proof", async () => {
+    const baseW = buildValidWitness(poseidon, {
+      cumulativeOld: 50n, txAmount: 25n,
+      randomnessOld: 11n, randomnessNew: 22n,
+      userSecret: 333n, epochId: 1n, salt: 7n,
+    });
+
+    // Verify base witness is valid
+    const baseErrors = simulateTransfer(poseidon, baseW);
+    assert(baseErrors.length === 0, `Base witness must be valid: ${baseErrors.join("; ")}`);
+
+    // Each private input mutation (keeping all public signals unchanged)
+    const mutations = [
+      { field: "cumulativeOld", value: 51n },
+      { field: "cumulativeNew", value: 76n },  // correct would be 75
+      { field: "txAmount", value: 26n },
+      { field: "randomnessOld", value: 12n },
+      { field: "randomnessNew", value: 23n },
+      { field: "userSecret", value: 334n },
+      { field: "salt", value: 8n },
+    ];
+
+    for (const { field, value } of mutations) {
+      const mutated = { ...baseW, [field]: value };
+      const errors = simulateTransfer(poseidon, mutated);
+      assert(
+        errors.length > 0,
+        `Mutating ${field} to ${value} must cause constraint violations`,
+      );
+    }
+  });
+
+  // T34: Changing any single public input invalidates the proof
+  await test("T34: Changing any single public input invalidates the proof", async () => {
+    const baseW = buildValidWitness(poseidon, {
+      cumulativeOld: 50n, txAmount: 25n,
+      randomnessOld: 11n, randomnessNew: 22n,
+      userSecret: 334n, epochId: 1n, salt: 8n,
+    });
+
+    const baseErrors = simulateTransfer(poseidon, baseW);
+    assert(baseErrors.length === 0, `Base witness must be valid: ${baseErrors.join("; ")}`);
+
+    // Each public input mutation (keeping private inputs unchanged)
+    const mutations = [
+      { field: "oldCommitment", value: baseW.oldCommitment + 1n },
+      { field: "newCommitment", value: baseW.newCommitment + 1n },
+      { field: "nullifier", value: baseW.nullifier + 1n },
+      { field: "txAmountHash", value: baseW.txAmountHash + 1n },
+      // threshold: lower it so cumNew exceeds it
+      { field: "threshold", value: 10n },
+    ];
+
+    for (const { field, value } of mutations) {
+      const mutated = { ...baseW, [field]: value };
+      const errors = simulateTransfer(poseidon, mutated);
+      assert(
+        errors.length > 0,
+        `Mutating ${field} must cause constraint violations`,
+      );
+    }
+  });
+
+  // T35: C9 boundary — cumNew = threshold + 1 (off by one)
+  await test("T35: C9 boundary — cumNew = threshold + 1 (off by one, must reject)", async () => {
+    const threshold = 100n;
+    const cumulativeOld = 50n;
+    const txAmount = 51n;
+    const cumulativeNew = cumulativeOld + txAmount; // 101 > 100
+    const randomnessOld = 10n;
+    const randomnessNew = 20n;
+    const userSecret = 1200n;
+    const epochId = 1n;
+    const salt = 1n;
+
+    const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
+    const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
+    const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
+
+    const w = {
+      oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
+      cumulativeOld, cumulativeNew, txAmount,
+      randomnessOld, randomnessNew, userSecret, salt,
+    };
+    await assertRejected(groth16, vk, poseidon, w, "C9:", "T35");
+  });
+
+  // T36: C9 boundary — cumNew = threshold - 1 (just under, must accept)
+  await test("T36: C9 boundary — cumNew = threshold - 1 (just under, must accept)", async () => {
+    const threshold = 100n;
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 50n,
+      txAmount: 49n,
+      randomnessOld: 10n,
+      randomnessNew: 20n,
+      userSecret: 1201n,
+      epochId: 1n,
+      threshold,
+      salt: 1n,
+    });
+    // cumNew = 50 + 49 = 99 < 100
+    assertEqual(w.cumulativeNew, 99n, "cumNew should be threshold - 1");
+    await assertAccepted(groth16, vk, poseidon, w, "T36");
+  });
+
+  // T37: Nullifier uniqueness across different randomnessOld (same user, same epoch)
+  await test("T37: Nullifier uniqueness — same user & epoch, different randomnessOld", async () => {
+    const secret = 500n;
+    const epoch = 1n;
+
+    const nf1 = toBI(poseidon([DOMAIN_NULLIFIER, secret, epoch, 100n]));
+    const nf2 = toBI(poseidon([DOMAIN_NULLIFIER, secret, epoch, 200n]));
+    const nf3 = toBI(poseidon([DOMAIN_NULLIFIER, secret, epoch, 300n]));
+
+    assert(nf1 !== nf2, "nf1 != nf2");
+    assert(nf2 !== nf3, "nf2 != nf3");
+    assert(nf1 !== nf3, "nf1 != nf3");
+  });
+
+  // T38: All three domain tags produce different hashes for same payload
+  await test("T38: All domain tags (1,2,3) produce different hashes for same inputs", async () => {
+    const a = 100n;
+    const b = 200n;
+    const c = 300n;
+
+    const h1 = toBI(poseidon([1n, a, b, c]));
+    const h2 = toBI(poseidon([2n, a, b, c]));
+    // Domain 3 uses only 3 inputs (Poseidon(3)), so compare with 2-input variant
+    const h3 = toBI(poseidon([3n, a, b]));
+
+    assert(h1 !== h2, "tag 1 vs tag 2 must differ");
+    assert(h1 !== h3, "tag 1 vs tag 3 must differ");
+    assert(h2 !== h3, "tag 2 vs tag 3 must differ");
+  });
+
+  // T39: Large randomness values (near field boundary but valid in 64 bits)
+  await test("T39: Large randomness values near 2^64 boundary", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 0n,
+      txAmount: 1n,
+      randomnessOld: MAX_U64 - 1n,
+      randomnessNew: MAX_U64 - 2n,
+      userSecret: MAX_U64 - 3n,
+      epochId: MAX_U64 - 4n,
+      threshold: 1n,
+      salt: MAX_U64 - 5n,
+    });
+    // Randomness/secret/epochId/salt are not range-checked by the circuit
+    // (only cumulative and txAmount and threshold have Num2Bits(64))
+    // So this should be valid as long as they're valid field elements
+    await assertAccepted(groth16, vk, poseidon, w, "T39");
+  });
+
+  // T40: Chain continuity — second transfer uses first transfer's newCommitment as oldCommitment
+  await test("T40: Chain continuity — newCommitment becomes next oldCommitment", async () => {
+    const secret = 4040n;
+    const epoch = 1n;
+
+    // First transfer: 0 -> 100
+    const w1 = buildValidWitness(poseidon, {
+      cumulativeOld: 0n, txAmount: 100n,
+      randomnessOld: 0n, randomnessNew: 42n,
+      userSecret: secret, epochId: epoch, salt: 1n,
+    });
+    await assertAccepted(groth16, vk, poseidon, w1, "T40 first tx");
+
+    // Second transfer: 100 -> 200, must chain from first
+    const w2 = buildValidWitness(poseidon, {
+      cumulativeOld: 100n, txAmount: 100n,
+      randomnessOld: 42n, // Must match randomnessNew from first tx
+      randomnessNew: 84n,
+      userSecret: secret, epochId: epoch, salt: 2n,
+    });
+
+    // Verify chaining: w2.oldCommitment must equal w1.newCommitment
+    assertEqual(w2.oldCommitment, w1.newCommitment, "chain: w2.oldCommitment == w1.newCommitment");
+    await assertAccepted(groth16, vk, poseidon, w2, "T40 second tx");
   });
 
   // ── Summary ───────────────────────────────────────────────────────────────
