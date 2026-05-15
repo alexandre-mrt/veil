@@ -7,7 +7,7 @@ use sui::event;
 use veil::token::TOKEN;
 use veil::verifier;
 
-const EPOCH_DURATION_MS: u64 = 2_592_000_000;
+const EPOCH_DURATION_MS: u64 = 3_600_000; // 1 hour for testnet (production: 2_592_000_000 = 30 days)
 const MIN_DEPOSIT: u64 = 1_000;
 const E_NON_STANDARD_AMOUNT: u64 = 14;
 const DENOM_SMALL: u64 = 100_000_000;  // 100 TOKEN
