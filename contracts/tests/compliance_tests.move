@@ -2,6 +2,7 @@
 module veil::compliance_tests;
 
 use sui::test_scenario;
+use sui::clock;
 use veil::compliance::{Self, ComplianceConfig};
 use veil::pool::{Self, Pool, AdminCap};
 
@@ -46,6 +47,9 @@ const POOL_THRESHOLD: u64 = 1_000_000_000;
 const REQUIRED_KYC_LEVEL: u64 = 1;
 const UPDATED_KYC_LEVEL: u64 = 2;
 
+/// EPOCH_DURATION_MS from pool.move — needed to advance clock past timelock.
+const EPOCH_DURATION_MS: u64 = 2_592_000_000;
+
 // ===========================================================================
 // HAPPY PATH TESTS
 // ===========================================================================
@@ -84,7 +88,7 @@ fun test_create_compliance_config() {
     scenario.end();
 }
 
-// 2. update_credential_root — admin updates root successfully
+// 2. update_credential_root — admin proposes root update with timelock
 #[test]
 fun test_update_credential_root() {
     let mut scenario = test_scenario::begin(ADMIN);
@@ -112,8 +116,100 @@ fun test_update_credential_root() {
         let mut config = scenario.take_shared<ComplianceConfig>();
         let pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT);
-        assert!(compliance::credential_root(&config) == UPDATED_ROOT, 0);
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        // Propose update — root should NOT change immediately (timelock)
+        compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT, &test_clock);
+        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 0);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 2b. update_credential_root — double proposal blocked by pending check
+#[test]
+#[expected_failure(abort_code = 28, location = veil::compliance)]
+fun test_update_credential_root_double_proposal_blocked() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT, &test_clock);
+        // Second proposal while first is pending — should abort with E_CREDENTIAL_ROOT_UPDATE_PENDING
+        let another_root = vector[
+            3u8, 4u8, 5u8, 6u8, 7u8, 8u8, 9u8, 10u8,
+            11u8, 12u8, 13u8, 14u8, 15u8, 16u8, 17u8, 18u8,
+            19u8, 20u8, 21u8, 22u8, 23u8, 24u8, 25u8, 26u8,
+            27u8, 28u8, 29u8, 30u8, 31u8, 32u8, 33u8, 34u8,
+        ];
+        compliance::update_credential_root(&mut config, &cap, &pool, another_root, &test_clock);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 2c. cancel_credential_root_update — admin can cancel pending root update
+#[test]
+fun test_cancel_credential_root_update() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT, &test_clock);
+        // Cancel the pending update
+        compliance::cancel_credential_root_update(&mut config, &cap, &pool);
+        // Root should still be the original
+        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 0);
+        clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -294,7 +390,7 @@ fun test_create_config_empty_root_fails() {
     scenario.end();
 }
 
-// 8. update_root_invalid_length — 16-byte replacement root fails
+// 8. update_root_invalid_length — 3-byte replacement root fails
 #[test]
 #[expected_failure(abort_code = 23, location = veil::compliance)]
 fun test_update_root_invalid_length() {
@@ -323,8 +419,10 @@ fun test_update_root_invalid_length() {
         let mut config = scenario.take_shared<ComplianceConfig>();
         let pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
         let bad_root = vector[1u8, 2u8, 3u8]; // 3 bytes — must be 32
-        compliance::update_credential_root(&mut config, &cap, &pool, bad_root);
+        compliance::update_credential_root(&mut config, &cap, &pool, bad_root, &test_clock);
+        clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -398,7 +496,9 @@ fun test_attacker_cannot_update_root() {
         let pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let mut config = scenario.take_shared<ComplianceConfig>();
         let cap = scenario.take_from_sender<AdminCap>(); // attacker's cap from pool 2
-        compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT);
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT, &test_clock);
+        clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(pool);
         test_scenario::return_shared(config);
         scenario.return_to_sender(cap);
@@ -518,8 +618,10 @@ fun test_update_root_pool_mismatch() {
         let pool2 = scenario.take_shared<Pool>(); // pool 2 — different ID
         let mut config = scenario.take_shared<ComplianceConfig>(); // config linked to pool 1
         let cap = scenario.take_from_sender<AdminCap>(); // cap for pool 2 (valid for pool 2)
+        let test_clock = clock::create_for_testing(scenario.ctx());
         // AdminCap matches pool 2, but config.pool_id == pool 1 → E_CONFIG_POOL_MISMATCH
-        compliance::update_credential_root(&mut config, &cap, &pool2, UPDATED_ROOT);
+        compliance::update_credential_root(&mut config, &cap, &pool2, UPDATED_ROOT, &test_clock);
+        clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(pool2);
         test_scenario::return_shared(config);
         scenario.return_to_sender(cap);

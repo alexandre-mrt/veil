@@ -2,6 +2,10 @@ module veil::verifier;
 
 use sui::groth16;
 
+// OPTIMIZATION NOTE: For production, store PreparedVerifyingKey in Pool/ComplianceConfig
+// at creation time instead of raw VK bytes. Saves ~82K gas per verification.
+// Current approach: prepare VK on every call (simpler, correct, but ~82K gas overhead).
+
 public(package) fun verify_transfer_proof(
     vk_bytes: &vector<u8>,
     proof_bytes: vector<u8>,
