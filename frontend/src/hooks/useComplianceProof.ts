@@ -156,8 +156,8 @@ async function generateRealProof(
     kycLevel: input.kycLevel.toString(),
     expiryEpoch: input.expiryEpoch.toString(),
     issuerId: input.issuerId.toString(),
-    pathElements: input.pathElements.map((e) => e.toString()).join(","),
-    pathIndices: input.pathIndices.map((i) => i.toString()).join(","),
+    pathElements: input.pathElements.map((e) => e.toString()),
+    pathIndices: input.pathIndices.map((i) => i.toString()),
     transferNullifier: input.transferNullifier.toString(),
   };
 
