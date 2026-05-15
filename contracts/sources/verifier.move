@@ -2,7 +2,7 @@ module veil::verifier;
 
 use sui::groth16;
 
-public fun verify_transfer_proof(
+public(package) fun verify_transfer_proof(
     vk_bytes: &vector<u8>,
     proof_bytes: vector<u8>,
     public_inputs_bytes: vector<u8>,
