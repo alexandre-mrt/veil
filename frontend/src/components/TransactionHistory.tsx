@@ -1,15 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { VEIL_DECIMALS, EXPLORER_TX_URL } from "@/lib/constants";
 import { loadTxHistory, type TxRecord, type TxType } from "@/lib/txHistory";
 import styles from "./components.module.css";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const VEIL_DECIMALS = 6;
-const SUISCAN_TX_URL = "https://suiscan.xyz/testnet/tx";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -104,7 +98,7 @@ export function TransactionHistory({ refreshKey = 0 }: TransactionHistoryProps) 
                   </td>
                   <td className={styles.historyTd}>
                     <a
-                      href={`${SUISCAN_TX_URL}/${r.digest}`}
+                      href={`${EXPLORER_TX_URL}/${r.digest}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.historyDigestLink}

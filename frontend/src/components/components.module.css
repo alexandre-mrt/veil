@@ -942,3 +942,94 @@
   color: var(--danger);
   font-weight: 600;
 }
+
+/* === CompliantTransferForm extras === */
+.compliantSubtitle {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  margin-top: calc(-1 * var(--spacing-2));
+}
+
+.compliantCredBadge {
+  font-size: 0.7rem;
+  color: #4488ff;
+  border: 1px solid #4488ff;
+  background-color: rgba(68, 136, 255, 0.05);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius);
+  letter-spacing: 0.02em;
+  margin-bottom: var(--spacing-2);
+}
+
+/* === WithdrawForm extras === */
+.withdrawTier2Banner {
+  font-size: 0.75rem;
+  color: #4488ff;
+  border: 1px solid #4488ff;
+  background-color: rgba(68, 136, 255, 0.05);
+  padding: var(--spacing-4);
+  border-radius: var(--radius);
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+}
+
+.withdrawSpendingInfo {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  padding: var(--spacing-2) 0;
+}
+
+.withdrawAdminToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.withdrawAdminToggle input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+/* === BalanceDisplay shielded card accent === */
+.balanceCardAccentGreen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent);
+}
+
+/* === CredentialManager demo button === */
+.demoBtn {
+  align-self: flex-start;
+  padding: var(--spacing-2) var(--spacing-5);
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.demoBtn:hover {
+  border-color: var(--text-secondary);
+  color: var(--text);
+}
+
+.demoNote {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+}

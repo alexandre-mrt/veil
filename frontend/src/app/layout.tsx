@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import "./globals.css";
-import { Providers } from "./providers";
+
+const Providers = dynamic(
+  () => import("./providers").then((m) => m.Providers),
+  { ssr: false },
+);
 
 export const metadata: Metadata = {
   title: "Veil — Private Payments on Sui",

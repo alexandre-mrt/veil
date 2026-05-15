@@ -1,17 +1,12 @@
 "use client";
 
-import { useSuiClientQuery } from "@mysten/dapp-kit";
+import { useEffect, useState } from "react";
+import { useCurrentClient } from "@mysten/dapp-kit-react";
 
 interface PoolFields {
   readonly balance: bigint;
   readonly threshold: bigint;
   readonly frozen: boolean;
-}
-
-interface ParsedMoveFields {
-  readonly balance?: string | number;
-  readonly threshold?: string | number;
-  readonly frozen?: boolean;
 }
 
 interface UseVeilPoolReturn {
@@ -22,39 +17,65 @@ interface UseVeilPoolReturn {
   readonly error: Error | null;
 }
 
-function parsePoolFields(data: unknown): PoolFields | null {
-  if (!data || typeof data !== "object") return null;
-  const obj = data as { data?: { content?: { fields?: ParsedMoveFields } } };
-  const fields = obj.data?.content?.fields;
-  if (!fields) return null;
-
+function parsePoolJson(json: Record<string, unknown> | null | undefined): PoolFields | null {
+  if (!json) return null;
   return {
-    balance: BigInt(fields.balance ?? 0),
-    threshold: BigInt(fields.threshold ?? 0),
-    frozen: fields.frozen ?? false,
+    balance: BigInt((json.balance as string | number) ?? 0),
+    threshold: BigInt((json.threshold as string | number) ?? 0),
+    frozen: (json.frozen as boolean) ?? false,
   };
 }
 
-export function useVeilPool(poolId: string): UseVeilPoolReturn {
-  const { data, isLoading, error } = useSuiClientQuery(
-    "getObject",
-    {
-      id: poolId,
-      options: { showContent: true },
-    },
-    {
-      enabled: poolId !== "0x0" && poolId.length > 3,
-      refetchInterval: 10_000,
-    },
-  );
+const REFETCH_INTERVAL = 10_000;
 
-  const parsed = parsePoolFields(data);
+export function useVeilPool(poolId: string): UseVeilPoolReturn {
+  const client = useCurrentClient();
+
+  const [poolFields, setPoolFields] = useState<PoolFields | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const enabled = poolId !== "0x0" && poolId.length > 3;
+
+  useEffect(() => {
+    if (!enabled || !client) return;
+
+    let cancelled = false;
+
+    async function fetchPool() {
+      setIsLoading(true);
+      try {
+        const result = await client.core.getObject({
+          objectId: poolId,
+          include: { json: true },
+        });
+        if (cancelled) return;
+        const parsed = parsePoolJson(result.object.json as Record<string, unknown> | null);
+        setPoolFields(parsed);
+        setError(null);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e : new Error("Failed to fetch pool"));
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    fetchPool();
+    const interval = setInterval(fetchPool, REFETCH_INTERVAL);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [enabled, poolId, client]);
 
   return {
-    balance: parsed?.balance ?? 0n,
-    threshold: parsed?.threshold ?? 0n,
-    frozen: parsed?.frozen ?? false,
+    balance: poolFields?.balance ?? 0n,
+    threshold: poolFields?.threshold ?? 0n,
+    frozen: poolFields?.frozen ?? false,
     isLoading,
-    error: error ?? null,
+    error,
   };
 }

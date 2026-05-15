@@ -1,10 +1,9 @@
 "use client";
 
-import {
-  useCurrentAccount,
-} from "@mysten/dapp-kit";
+import { useCurrentAccount } from "@mysten/dapp-kit-react";
 import { type FormEvent, useCallback, useState } from "react";
-import { THRESHOLD } from "@/lib/constants";
+import { THRESHOLD, VEIL_DECIMALS, EXPLORER_TX_URL } from "@/lib/constants";
+import { parseAmountToBigInt } from "@/lib/utils";
 import type { VeilPrivateState } from "@/lib/types";
 import { useShieldedTransfer } from "@/hooks/useShieldedTransfer";
 import type { TransferResult } from "@/hooks/useShieldedTransfer";
@@ -16,8 +15,6 @@ import styles from "./components.module.css";
 // Constants
 // ---------------------------------------------------------------------------
 
-const VEIL_DECIMALS = 6;
-const SUISCAN_TX_URL = "https://suiscan.xyz/testnet/tx";
 const THRESHOLD_WARNING_PCT = 70n;
 
 // ---------------------------------------------------------------------------
@@ -51,7 +48,7 @@ export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended
 
   // Check if this transfer would push cumulative over threshold
   const parsedAmount = Number.parseFloat(amount || "0");
-  const txAmountRaw = BigInt(Math.floor(Math.max(0, parsedAmount) * 10 ** VEIL_DECIMALS));
+  const txAmountRaw = parsedAmount > 0 ? parseAmountToBigInt(amount || "0", VEIL_DECIMALS) : 0n;
   const projectedSpending = spending + txAmountRaw;
   const projectedPct = computeThresholdPct(projectedSpending, THRESHOLD);
   const isApproachingThreshold = projectedPct >= THRESHOLD_WARNING_PCT && projectedPct < 100n;
@@ -180,7 +177,7 @@ export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended
             <>
               Shielded transfer confirmed.{" "}
               <a
-                href={`${SUISCAN_TX_URL}/${result.digest}`}
+                href={`${EXPLORER_TX_URL}/${result.digest}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.transferResultLink}

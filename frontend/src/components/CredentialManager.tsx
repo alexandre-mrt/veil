@@ -170,6 +170,27 @@ export function CredentialManager({
         >
           Import Credential
         </button>
+
+        <button
+          type="button"
+          className={styles.demoBtn}
+          onClick={() => {
+            const randomLeaf = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+              .map((b) => b.toString(16).padStart(2, "0"))
+              .join("");
+            const mockCred: Credential = {
+              leaf: BigInt(`0x${randomLeaf}`),
+              kycLevel: 1,
+              expiry: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+              merkleProof: [BigInt(`0x${"0".repeat(64)}`)],
+              merkleIndex: 0,
+            };
+            onImport(mockCred);
+          }}
+        >
+          [Demo] Generate Test Credential
+        </button>
+        <span className={styles.demoNote}>For testnet demo only</span>
       </div>
     </div>
   );

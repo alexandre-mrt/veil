@@ -29,3 +29,16 @@
   color: #00ff88;
   background: rgba(0, 255, 136, 0.1);
 }
+
+.error {
+  border-color: #ff4444;
+  color: #ff4444;
+}
+
+.errorMsg {
+  color: #ff4444;
+  font-size: 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 4px;
+  letter-spacing: 0.04em;
+}

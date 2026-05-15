@@ -41,14 +41,26 @@ const UPDATED_ROOT: vector<u8> = vector[
     26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8, 33u8,
 ];
 
-const DUMMY_AUDITOR_KEY: vector<u8> = vector[0xABu8, 0xCDu8, 0xEFu8];
-const UPDATED_AUDITOR_KEY: vector<u8> = vector[0x01u8, 0x02u8, 0x03u8, 0x04u8];
+const DUMMY_AUDITOR_KEY: vector<u8> = vector[
+    0xABu8, 0xCDu8, 0xEFu8, 0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8,
+    0x06u8, 0x07u8, 0x08u8, 0x09u8, 0x0Au8, 0x0Bu8, 0x0Cu8, 0x0Du8,
+    0x0Eu8, 0x0Fu8, 0x10u8, 0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8,
+    0x16u8, 0x17u8, 0x18u8, 0x19u8, 0x1Au8, 0x1Bu8, 0x1Cu8, 0x1Du8,
+    0x1Eu8,
+];
+const UPDATED_AUDITOR_KEY: vector<u8> = vector[
+    0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8, 0x06u8, 0x07u8, 0x08u8,
+    0x09u8, 0x0Au8, 0x0Bu8, 0x0Cu8, 0x0Du8, 0x0Eu8, 0x0Fu8, 0x10u8,
+    0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8, 0x16u8, 0x17u8, 0x18u8,
+    0x19u8, 0x1Au8, 0x1Bu8, 0x1Cu8, 0x1Du8, 0x1Eu8, 0x1Fu8, 0x20u8,
+    0x21u8,
+];
 const POOL_THRESHOLD: u64 = 1_000_000_000;
 const REQUIRED_KYC_LEVEL: u64 = 1;
 const UPDATED_KYC_LEVEL: u64 = 2;
 
 /// EPOCH_DURATION_MS from pool.move — needed to advance clock past timelock.
-const EPOCH_DURATION_MS: u64 = 2_592_000_000;
+const EPOCH_DURATION_MS: u64 = 3_600_000;
 
 // ===========================================================================
 // HAPPY PATH TESTS
@@ -217,9 +229,9 @@ fun test_cancel_credential_root_update() {
     scenario.end();
 }
 
-// 3. update_auditor_key — admin updates key successfully
+// 3. propose_auditor_key_update — admin proposes key update with timelock
 #[test]
-fun test_update_auditor_key() {
+fun test_propose_auditor_key_update() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
@@ -245,8 +257,11 @@ fun test_update_auditor_key() {
         let mut config = scenario.take_shared<ComplianceConfig>();
         let pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        compliance::update_auditor_key(&mut config, &cap, &pool, UPDATED_AUDITOR_KEY);
-        assert!(compliance::auditor_key(&config) == UPDATED_AUDITOR_KEY, 0);
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::propose_auditor_key_update(&mut config, &cap, &pool, UPDATED_AUDITOR_KEY, &test_clock);
+        // Key should NOT change immediately (timelock)
+        assert!(compliance::auditor_key(&config) == DUMMY_AUDITOR_KEY, 0);
+        clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -506,7 +521,7 @@ fun test_attacker_cannot_update_root() {
     scenario.end();
 }
 
-// 11. attacker_cannot_update_key — wrong AdminCap fails on update_auditor_key
+// 11. attacker_cannot_update_key — wrong AdminCap fails on propose_auditor_key_update
 #[test]
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_attacker_cannot_update_key() {
@@ -536,7 +551,9 @@ fun test_attacker_cannot_update_key() {
         let pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let mut config = scenario.take_shared<ComplianceConfig>();
         let cap = scenario.take_from_sender<AdminCap>(); // attacker's cap from pool 2
-        compliance::update_auditor_key(&mut config, &cap, &pool, UPDATED_AUDITOR_KEY);
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::propose_auditor_key_update(&mut config, &cap, &pool, UPDATED_AUDITOR_KEY, &test_clock);
+        clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(pool);
         test_scenario::return_shared(config);
         scenario.return_to_sender(cap);

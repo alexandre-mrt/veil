@@ -28,3 +28,34 @@ public(package) fun verify_compliance_proof(
     let inputs = groth16::public_proof_inputs_from_bytes(public_inputs_bytes);
     groth16::verify_groth16_proof(&curve, &pvk, &inputs, &proof)
 }
+
+// ---------------------------------------------------------------------------
+// Shared byte-manipulation utilities (used by pool.move and compliance.move)
+// ---------------------------------------------------------------------------
+
+public(package) fun extract_bytes(data: &vector<u8>, start: u64, end: u64): vector<u8> {
+    let mut result = vector[];
+    let mut i = start;
+    while (i < end) { result.push_back(data[i]); i = i + 1; };
+    result
+}
+
+public(package) fun le_bytes_to_u64(data: &vector<u8>, offset: u64): u64 {
+    let mut result: u64 = 0;
+    let mut i: u64 = 0;
+    while (i < 8) {
+        let byte_val = data[offset + i] as u64;
+        // Safe: max shift = 7 * 8 = 56, fits u8 and is valid for u64 shift
+        result = result | (byte_val << ((i * 8) as u8));
+        i = i + 1;
+    };
+    result
+}
+
+public(package) fun assert_upper_bytes_zero(data: &vector<u8>, start: u64, end: u64, error_code: u64) {
+    let mut i = start;
+    while (i < end) {
+        assert!(data[i] == 0, error_code);
+        i = i + 1;
+    };
+}

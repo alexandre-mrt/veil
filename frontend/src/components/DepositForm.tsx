@@ -1,17 +1,11 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { VEIL_DECIMALS, EXPLORER_TX_URL } from "@/lib/constants";
 import { useDepositAndRegister } from "@/hooks/useDepositAndRegister";
 import type { VeilPrivateState } from "@/lib/types";
 import { appendTx } from "@/lib/txHistory";
 import styles from "./components.module.css";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const SUISCAN_TX_URL = "https://suiscan.xyz/testnet/tx";
-const VEIL_DECIMALS = 6;
 
 interface Denomination {
   readonly label: string;
@@ -150,7 +144,7 @@ export function DepositForm({ privateState, onTxAppended }: DepositFormProps) {
             <>
               Deposit confirmed — genesis commitment registered.{" "}
               <a
-                href={`${SUISCAN_TX_URL}/${result.digest}`}
+                href={`${EXPLORER_TX_URL}/${result.digest}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.depositResultLink}

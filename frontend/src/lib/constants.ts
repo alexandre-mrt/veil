@@ -7,6 +7,10 @@ export const TOKEN_TYPE = `${PACKAGE_ID}::token::TOKEN`;
 export const THRESHOLD = BigInt(process.env.NEXT_PUBLIC_THRESHOLD ?? "1000000000"); // 1000 VEIL (6 decimals)
 export const EPOCH_DURATION_MS = Number(process.env.NEXT_PUBLIC_EPOCH_DURATION_MS ?? "3600000"); // 1h testnet
 
+// Display
+export const VEIL_DECIMALS = 6;
+export const EXPLORER_TX_URL = `https://suiscan.xyz/${NETWORK}/tx`;
+
 // Compliance (Tier 3)
 export const COMPLIANCE_CONFIG_ID = process.env.NEXT_PUBLIC_COMPLIANCE_CONFIG_ID ?? "";
 export const REQUIRED_KYC_LEVEL = 1;

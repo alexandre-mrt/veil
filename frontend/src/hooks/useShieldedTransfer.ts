@@ -3,8 +3,9 @@
 import { useCallback, useState } from "react";
 import {
   useCurrentAccount,
-  useSignAndExecuteTransaction,
-} from "@mysten/dapp-kit";
+  useCurrentClient,
+  useDAppKit,
+} from "@mysten/dapp-kit-react";
 import { Transaction } from "@mysten/sui/transactions";
 import { PACKAGE_ID, POOL_ID, THRESHOLD, EPOCH_DURATION_MS } from "@/lib/constants";
 import type { VeilPrivateState } from "@/lib/types";
@@ -53,7 +54,8 @@ function getCurrentEpochId(): bigint {
 
 export function useShieldedTransfer(): UseShieldedTransferReturn {
   const account = useCurrentAccount();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const client = useCurrentClient();
+  const dAppKitInstance = useDAppKit();
   const proofGen = useProofGeneration();
 
   const [txStep, setTxStep] = useState<TransferStep>("idle");
@@ -116,7 +118,18 @@ export function useShieldedTransfer(): UseShieldedTransferReturn {
           ],
         });
 
-        const txResult = await signAndExecute({ transaction: tx });
+        const txResult = await dAppKitInstance.signAndExecuteTransaction({ transaction: tx });
+
+        if (txResult.FailedTransaction) {
+          throw new Error(
+            txResult.FailedTransaction.status.error?.message ?? "Transaction failed",
+          );
+        }
+
+        const digest = txResult.Transaction.digest;
+
+        // Wait for transaction finality before updating state
+        await client.core.waitForTransaction({ digest });
 
         // Step 3: Update private state on success
         onStateUpdate(proofResult.cumulativeNew, proofResult.newRandomness);
@@ -124,7 +137,7 @@ export function useShieldedTransfer(): UseShieldedTransferReturn {
         setTxStep("idle");
         setIsPending(false);
 
-        return { success: true, digest: txResult.digest };
+        return { success: true, digest };
       } catch (e) {
         const message = e instanceof Error ? e.message : "Transfer failed";
         setTxStep("idle");
@@ -132,7 +145,7 @@ export function useShieldedTransfer(): UseShieldedTransferReturn {
         return { success: false, error: message };
       }
     },
-    [account, signAndExecute, proofGen],
+    [account, client, dAppKitInstance, proofGen],
   );
 
   return {

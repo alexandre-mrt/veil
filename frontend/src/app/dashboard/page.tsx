@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { POOL_ID, THRESHOLD } from "@/lib/constants";
 import type { Credential } from "@/lib/types";
 import { usePrivateState } from "@/hooks/usePrivateState";
@@ -16,6 +16,7 @@ import { EpochDisplay } from "@/components/EpochDisplay";
 import { AuditorInfo } from "@/components/AuditorInfo";
 import { FaucetButton } from "@/components/FaucetButton";
 import { CredentialManager } from "@/components/CredentialManager";
+import { CompliantTransferForm } from "@/components/CompliantTransferForm";
 import componentStyles from "@/components/components.module.css";
 import styles from "./page.module.css";
 
@@ -23,11 +24,12 @@ import styles from "./page.module.css";
 // Types
 // ---------------------------------------------------------------------------
 
-type Tab = "deposit" | "transfer" | "withdraw" | "history";
+type Tab = "deposit" | "transfer" | "compliant" | "withdraw" | "history";
 
 const TABS: readonly { id: Tab; label: string }[] = [
   { id: "deposit", label: "Deposit" },
   { id: "transfer", label: "Transfer" },
+  { id: "compliant", label: "Compliant Transfer" },
   { id: "withdraw", label: "Withdraw" },
   { id: "history", label: "History" },
 ];
@@ -42,9 +44,47 @@ export default function DashboardPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("deposit");
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
-  const [credentials, setCredentials] = useState<Credential[]>([]);
+  const [credentials, setCredentials] = useState<Credential[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem("veil_credentials");
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as Array<{
+        leaf: string;
+        kycLevel: number;
+        expiry: number;
+        merkleProof: string[];
+        merkleIndex: number;
+      }>;
+      return parsed.map((c) => ({
+        leaf: BigInt(c.leaf),
+        kycLevel: c.kycLevel,
+        expiry: c.expiry,
+        merkleProof: c.merkleProof.map((p) => BigInt(p)),
+        merkleIndex: c.merkleIndex,
+      }));
+    } catch {
+      return [];
+    }
+  });
 
   const spending = state?.cumulativeSpending ?? 0n;
+
+  // Persist credentials to localStorage
+  useEffect(() => {
+    try {
+      const serialized = credentials.map((c) => ({
+        leaf: c.leaf.toString(),
+        kycLevel: c.kycLevel,
+        expiry: c.expiry,
+        merkleProof: c.merkleProof.map((p) => p.toString()),
+        merkleIndex: c.merkleIndex,
+      }));
+      localStorage.setItem("veil_credentials", JSON.stringify(serialized));
+    } catch {
+      // Storage quota exceeded — ignore
+    }
+  }, [credentials]);
 
   const handleStateUpdate = useCallback(
     (cumulativeNew: bigint, newRandomness: bigint) => {
@@ -72,7 +112,7 @@ export default function DashboardPage() {
       <Header />
 
       <main className={styles.content}>
-        <BalanceDisplay />
+        <BalanceDisplay privateState={state} />
 
         <div className={styles.layout}>
           {/* Sidebar */}
@@ -87,10 +127,7 @@ export default function DashboardPage() {
 
             <EpochDisplay />
 
-            <AuditorInfo
-              auditorPublicKey={null}
-              lastEncryptedDigest={null}
-            />
+            <AuditorInfo />
 
             <FaucetButton />
 
@@ -137,9 +174,21 @@ export default function DashboardPage() {
                 </div>
               )}
 
+              {activeTab === "compliant" && (
+                <div className={styles.singlePanel}>
+                  <CompliantTransferForm
+                    privateState={state}
+                    credentials={credentials}
+                    frozen={frozen}
+                    onStateUpdate={handleStateUpdate}
+                    onTxAppended={handleTxAppended}
+                  />
+                </div>
+              )}
+
               {activeTab === "withdraw" && (
                 <div className={styles.singlePanel}>
-                  <WithdrawForm onTxAppended={handleTxAppended} />
+                  <WithdrawForm privateState={state} onTxAppended={handleTxAppended} />
                 </div>
               )}
 

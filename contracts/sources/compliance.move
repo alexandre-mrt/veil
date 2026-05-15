@@ -14,7 +14,12 @@ const E_CONFIG_POOL_MISMATCH: u64 = 26;
 const E_EPOCH_MISMATCH: u64 = 8;
 const E_CREDENTIAL_ROOT_UPDATE_PENDING: u64 = 28;
 const E_INVALID_ENCRYPTED_AMOUNT: u64 = 29;
+const E_INVALID_AUDITOR_KEY: u64 = 30;
+const E_AUDITOR_KEY_UPDATE_PENDING: u64 = 31;
+const E_INVALID_VK_LENGTH: u64 = 32;
 const MIN_ENCRYPTED_AMOUNT_LEN: u64 = 93; // 65 (ephemeral key) + 12 (IV) + 16 (GCM tag) minimum
+const MIN_VK_LENGTH: u64 = 232;
+const MIN_AUDITOR_KEY_LENGTH: u64 = 33;
 
 public struct ComplianceConfig has key {
     id: UID,
@@ -25,6 +30,8 @@ public struct ComplianceConfig has key {
     auditor_key: vector<u8>,
     pending_credential_root: vector<u8>,
     credential_root_update_epoch: u64,
+    pending_auditor_key: Option<vector<u8>>,
+    pending_auditor_key_epoch: u64,
 }
 
 public struct CredentialNullifierKey has copy, drop, store { bytes: vector<u8> }
@@ -45,7 +52,16 @@ public struct CredentialRootUpdatedEvent has copy, drop {
     new_root: vector<u8>,
 }
 
-public struct AuditorKeyUpdatedEvent has copy, drop {
+public struct AuditorKeyUpdateProposedEvent has copy, drop {
+    config_id: ID,
+    effective_epoch: u64,
+}
+
+public struct AuditorKeyUpdateCancelledEvent has copy, drop {
+    config_id: ID,
+}
+
+public struct AuditorKeyAppliedEvent has copy, drop {
     config_id: ID,
 }
 
@@ -64,7 +80,9 @@ public fun create_compliance_config(
     ctx: &mut TxContext,
 ) {
     pool::assert_pool_admin(cap, pool);
+    assert!(compliance_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
     assert!(credential_root.length() == 32, E_INVALID_COMPLIANCE_INPUTS);
+    assert!(auditor_key.length() >= MIN_AUDITOR_KEY_LENGTH, E_INVALID_AUDITOR_KEY);
 
     let config_uid = object::new(ctx);
     let config_id = config_uid.to_inner();
@@ -79,6 +97,8 @@ public fun create_compliance_config(
         auditor_key,
         pending_credential_root: vector[],
         credential_root_update_epoch: 0,
+        pending_auditor_key: option::none(),
+        pending_auditor_key_epoch: 0,
     };
 
     transfer::share_object(config);
@@ -91,6 +111,15 @@ fun apply_pending_credential_root(config: &mut ComplianceConfig, clock: &sui::cl
         config.credential_root = config.pending_credential_root;
         config.pending_credential_root = vector[];
         config.credential_root_update_epoch = 0;
+    };
+}
+
+/// Apply pending auditor key if the timelock epoch has passed (mirrors credential root timelock).
+fun apply_pending_auditor_key(config: &mut ComplianceConfig, clock: &sui::clock::Clock) {
+    if (config.pending_auditor_key.is_some() && pool::current_epoch(clock) >= config.pending_auditor_key_epoch) {
+        config.auditor_key = config.pending_auditor_key.extract();
+        config.pending_auditor_key_epoch = 0;
+        event::emit(AuditorKeyAppliedEvent { config_id: config.id.to_inner() });
     };
 }
 
@@ -110,33 +139,37 @@ public fun compliant_transfer(
     // [M9] Validate encrypted_amount minimum length (ephemeral key + IV + GCM tag)
     assert!(encrypted_amount.length() >= MIN_ENCRYPTED_AMOUNT_LEN, E_INVALID_ENCRYPTED_AMOUNT);
 
-    // [H2] Apply pending credential root timelock before checking root
+    // Apply pending timelocked updates before checking state
     apply_pending_credential_root(config, clock);
+    apply_pending_auditor_key(config, clock);
 
     // [M3] All compliance validations BEFORE any pool state mutation
     assert!(compliance_inputs_bytes.length() == 192, E_INVALID_COMPLIANCE_INPUTS);
 
-    let proof_root = extract_bytes(&compliance_inputs_bytes, 0, 32);
+    let proof_root = verifier::extract_bytes(&compliance_inputs_bytes, 0, 32);
     assert!(proof_root == config.credential_root, E_CREDENTIAL_ROOT_MISMATCH);
 
-    let proof_epoch = le_bytes_to_u64(&compliance_inputs_bytes, 32);
-    assert_upper_bytes_zero(&compliance_inputs_bytes, 40, 64);
+    let proof_epoch = verifier::le_bytes_to_u64(&compliance_inputs_bytes, 32);
+    verifier::assert_upper_bytes_zero(&compliance_inputs_bytes, 40, 64, E_INVALID_COMPLIANCE_INPUTS);
     let on_chain_epoch = pool::current_epoch(clock);
-    assert!(proof_epoch == on_chain_epoch, E_EPOCH_MISMATCH);
+    assert!(
+        proof_epoch == on_chain_epoch || (on_chain_epoch > 0 && proof_epoch == on_chain_epoch - 1),
+        E_EPOCH_MISMATCH,
+    );
 
-    let proof_kyc_level = le_bytes_to_u64(&compliance_inputs_bytes, 96);
-    assert_upper_bytes_zero(&compliance_inputs_bytes, 104, 128);
-    assert!(proof_kyc_level == config.required_kyc_level, E_INVALID_COMPLIANCE_INPUTS);
+    let proof_kyc_level = verifier::le_bytes_to_u64(&compliance_inputs_bytes, 96);
+    verifier::assert_upper_bytes_zero(&compliance_inputs_bytes, 104, 128, E_INVALID_COMPLIANCE_INPUTS);
+    assert!(proof_kyc_level >= config.required_kyc_level, E_INVALID_COMPLIANCE_INPUTS);
 
-    let credential_nullifier = extract_bytes(&compliance_inputs_bytes, 128, 160);
+    let credential_nullifier = verifier::extract_bytes(&compliance_inputs_bytes, 128, 160);
     let cred_nf_key = CredentialNullifierKey { bytes: credential_nullifier };
     assert!(
-        !dynamic_field::exists_(pool::pool_uid(pool), cred_nf_key),
+        !dynamic_field::exists(pool::pool_uid(pool), cred_nf_key),
         E_CREDENTIAL_NULLIFIER_SPENT,
     );
 
-    let valid_flag = le_bytes_to_u64(&compliance_inputs_bytes, 160);
-    assert_upper_bytes_zero(&compliance_inputs_bytes, 168, 192);
+    let valid_flag = verifier::le_bytes_to_u64(&compliance_inputs_bytes, 160);
+    verifier::assert_upper_bytes_zero(&compliance_inputs_bytes, 168, 192, E_INVALID_COMPLIANCE_INPUTS);
     assert!(valid_flag == 1, E_CREDENTIAL_INVALID);
 
     let valid = verifier::verify_compliance_proof(
@@ -186,16 +219,36 @@ public fun cancel_credential_root_update(
     config.credential_root_update_epoch = 0;
 }
 
-public fun update_auditor_key(
+public fun propose_auditor_key_update(
     config: &mut ComplianceConfig,
     cap: &AdminCap,
     pool: &Pool,
     new_key: vector<u8>,
+    clock: &sui::clock::Clock,
 ) {
     pool::assert_pool_admin(cap, pool);
     assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
-    config.auditor_key = new_key;
-    event::emit(AuditorKeyUpdatedEvent { config_id: config.id.to_inner() });
+    assert!(new_key.length() >= MIN_AUDITOR_KEY_LENGTH, E_INVALID_AUDITOR_KEY);
+    assert!(config.pending_auditor_key.is_none(), E_AUDITOR_KEY_UPDATE_PENDING);
+    let effective = pool::current_epoch(clock) + 1;
+    config.pending_auditor_key = option::some(new_key);
+    config.pending_auditor_key_epoch = effective;
+    event::emit(AuditorKeyUpdateProposedEvent {
+        config_id: config.id.to_inner(),
+        effective_epoch: effective,
+    });
+}
+
+public fun cancel_auditor_key_update(
+    config: &mut ComplianceConfig,
+    cap: &AdminCap,
+    pool: &Pool,
+) {
+    pool::assert_pool_admin(cap, pool);
+    assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
+    config.pending_auditor_key = option::none();
+    config.pending_auditor_key_epoch = 0;
+    event::emit(AuditorKeyUpdateCancelledEvent { config_id: config.id.to_inner() });
 }
 
 public fun update_required_kyc_level(
@@ -218,28 +271,3 @@ public fun required_kyc_level(config: &ComplianceConfig): u64 { config.required_
 public fun auditor_key(config: &ComplianceConfig): vector<u8> { config.auditor_key }
 public fun config_pool_id(config: &ComplianceConfig): ID { config.pool_id }
 
-fun extract_bytes(data: &vector<u8>, start: u64, end: u64): vector<u8> {
-    let mut result = vector[];
-    let mut i = start;
-    while (i < end) { result.push_back(data[i]); i = i + 1; };
-    result
-}
-
-fun le_bytes_to_u64(data: &vector<u8>, offset: u64): u64 {
-    let mut result: u64 = 0;
-    let mut i: u64 = 0;
-    while (i < 8) {
-        let byte_val = data[offset + i] as u64;
-        result = result | (byte_val << ((i * 8) as u8));
-        i = i + 1;
-    };
-    result
-}
-
-fun assert_upper_bytes_zero(data: &vector<u8>, start: u64, end: u64) {
-    let mut i = start;
-    while (i < end) {
-        assert!(data[i] == 0, E_INVALID_COMPLIANCE_INPUTS);
-        i = i + 1;
-    };
-}
