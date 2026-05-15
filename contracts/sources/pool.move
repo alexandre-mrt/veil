@@ -115,9 +115,8 @@ public fun shielded_transfer(
         E_COMMITMENT_CHAIN_BROKEN,
     );
 
-    // Nullifier: bytes 128..160 — validate canonical (upper bytes zero)
+    // Nullifier: bytes 128..160 (full 32-byte Poseidon hash — no truncation check)
     let nullifier = extract_bytes(&public_inputs_bytes, 128, 160);
-    assert_upper_bytes_zero(&public_inputs_bytes, 152, 160);
     let nullifier_key = NullifierKey { bytes: nullifier };
     assert!(
         !dynamic_field::exists_(&pool.id, nullifier_key),
