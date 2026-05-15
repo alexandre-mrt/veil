@@ -1,7 +1,7 @@
 "use client";
 
 import { useCurrentAccount, useSuiClientQuery } from "@mysten/dapp-kit";
-import { POOL_ID } from "@/lib/constants";
+import { POOL_ID, TOKEN_TYPE } from "@/lib/constants";
 import { useVeilPool } from "@/hooks/useVeilPool";
 import styles from "./components.module.css";
 
@@ -53,9 +53,20 @@ export function BalanceDisplay() {
   const { balance: poolBalance, isLoading: poolLoading } =
     useVeilPool(POOL_ID);
 
+  const { data: veilCoins, isLoading: veilLoading } = useSuiClientQuery(
+    "getCoins",
+    { owner: address, coinType: TOKEN_TYPE },
+    { enabled: !!address },
+  );
+
+  const veilRaw =
+    veilCoins?.data?.reduce((sum, c) => sum + BigInt(c.balance), 0n) ?? 0n;
+
   const suiFormatted = suiBalance
     ? formatBalance(suiBalance.totalBalance, SUI_DECIMALS)
     : "0";
+
+  const veilFormatted = address ? formatBalance(veilRaw, VEIL_DECIMALS) : "--";
 
   const poolFormatted = formatBalance(poolBalance, VEIL_DECIMALS);
 
@@ -69,8 +80,9 @@ export function BalanceDisplay() {
       />
       <BalanceCard
         label="VEIL Tokens"
-        value={address ? "0" : "--"}
+        value={veilFormatted}
         unit="VEIL"
+        isLoading={veilLoading && !!address}
       />
       <BalanceCard
         label="Pool Total"
