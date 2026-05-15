@@ -3,8 +3,9 @@
 ## Overview
 ZK privacy payments with cumulative spending proofs and UTXO-style commitments on Sui.
 Circuit v2: Poseidon(4) identity-bound commitments, note-based nullifiers, domain-separated txAmountHash.
-4-loop security audit complete (clean on loop 4). 232 tests, 0 failures.
+4-loop security audit + sui-critic review (88/100). 79 Move tests, 0 failures.
 Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), epoch-scoped credential nullifiers, ECDH P-256 + AES-GCM auditor encryption.
+Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-end.
 
 ## Structure
 - `contracts/` -- Sui Move (pool, verifier, token)
@@ -22,7 +23,7 @@ Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), epoch-sco
 - Install all: `bash scripts/init.sh`
 
 ### Test
-- Move tests (37): `cd contracts && sui move test`
+- Move tests (79): `cd contracts && sui move test`
 - Circuit tests (40): `cd circuits && npm test`
 - Converter tests (109): `cd scripts && bun run src/test-converter.ts`
 - E2E pipeline: `cd scripts && bun run src/e2e-test.ts`
@@ -58,9 +59,13 @@ E_COMMITMENT_NOT_MATURE=16, E_VK_UPDATE_PENDING=17
 ```
 
 ## Testnet Deployment
-- Package: `0xd0598d2256bfa33b8324bc6316cee1118f9131cdde346f8f1f757adb594a66bb`
-- Chain: testnet (4c78adac)
-- Toolchain: sui 1.72.1, Move edition 2024
+- Package: `0x2cacdf4d2502f3870497bef4952bbb6f9646b4db03e446cfaa2e03d333b1c581`
+- Pool: `0x867d3cc126ca82366c6f05e4dffa61bbb18d780b82f1ce35adba95695f2e856f`
+- ComplianceConfig: `0xa01f5a2b89f38d8b4011c7abb6299a51dedd1bda977e0c5c14c52922b16d0859`
+- AdminCap: `0xd154d5f8ff253a807398fb6daf84455cf2f0c5c8212adcd4ff2dfac4d892c106`
+- TreasuryCap: `0x1a4570f7b66e93d87d696795686d915de35d9b069b0b4cf95bac7b3c5fef8b83`
+- Frontend: https://frontend-sepia-nine-30.vercel.app
+- Chain: testnet, Toolchain: sui 1.72.1, Move edition 2024
 
 ## Skills
 - `/sui-move` -- Sui Move patterns
