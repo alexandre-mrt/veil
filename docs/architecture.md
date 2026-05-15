@@ -321,3 +321,154 @@ cd scripts && bun run src/e2e-test.ts
 # Frontend
 cd frontend && bun run dev
 ```
+
+## Tier 3: Compliance Architecture (v3)
+
+### Overview
+
+Tier 3 extends Veil with a second ZK circuit (`compliance.circom`) that proves credential validity without revealing identity. A Tier 3 pool requires both a transfer proof (amounts hidden) and a compliance proof (KYC satisfied) in the same transaction.
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                         USER BROWSER                                  │
+│                                                                        │
+│  VeilPrivateState (encrypted localStorage)                             │
+│    + credentialSecret: bigint   // kept off-chain, never exposed       │
+│    + kycLevel: number           // from issuer                         │
+│    + credentialExpiry: number   // epoch at which credential expires   │
+│                                                                        │
+│  ┌────────────────────────┐   ┌──────────────────────────────────┐    │
+│  │   TRANSFER PROOF        │   │   COMPLIANCE PROOF               │    │
+│  │   (transfer.circom)     │   │   (compliance.circom)            │    │
+│  │                         │   │                                  │    │
+│  │   6 public inputs       │   │   6 public inputs:               │    │
+│  │   (v2 -- unchanged)     │   │   • merkleRoot                   │    │
+│  │                         │   │   • currentEpoch                 │    │
+│  │   BN254 Groth16         │   │   • contextId (pool_id)          │    │
+│  │   ~11 constraints       │   │   • requiredKycLevel             │    │
+│  │                         │   │   • nullifier (tag 5)            │    │
+│  │                         │   │   • validCredential (must = 1)   │    │
+│  │                         │   │                                  │    │
+│  │                         │   │   BN254 Groth16                  │    │
+│  │                         │   │   ~7,200 constraints             │    │
+│  └────────────┬────────────┘   └──────────────┬───────────────────┘    │
+│               │                               │                        │
+│               │    + auditor ciphertext        │                        │
+│               │      (ECDH P-256 + AES-GCM)   │                        │
+└───────────────┼───────────────────────────────┼────────────────────────┘
+                │                               │
+                └──────────────┬────────────────┘
+                               │  compliant_transfer(pool, transfer_proof,
+                               │    transfer_inputs, compliance_proof,
+                               │    compliance_inputs, auditor_ciphertext, clock)
+                               ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│              SUI MOVE CONTRACT (veil::pool -- Tier 3)                 │
+│                                                                        │
+│  ComplianceConfig { pool_id, compliance_vk, credential_root,          │
+│                     required_kyc_level, auditor_key }                  │
+│                                                                        │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────┐ │
+│  │  Transfer Proof   │  │ Compliance Proof  │  │  Auditor Ciphertext  │ │
+│  │  Verification     │  │ Verification      │  │                      │ │
+│  │  (veil::verifier) │  │ (veil::verifier)  │  │  ECDH P-256 +        │ │
+│  │  sui::groth16     │  │  sui::groth16     │  │  AES-128-GCM         │ │
+│  │  BN254 native     │  │  BN254 native     │  │  Bound to            │ │
+│  └────────┬──────────┘  └────────┬──────────┘  │  txAmountHash        │ │
+│           │                      │             └──────────────────────┘ │
+│           │ both valid           │                                       │
+│           └──────────┬───────────┘                                       │
+│                      ▼                                                    │
+│  ┌──────────────────────────────────────────┐                            │
+│  │  State Transitions (atomic)               │                            │
+│  │                                           │                            │
+│  │  Transfer UTXO:                           │                            │
+│  │    consume old commitment                 │                            │
+│  │    store transfer nullifier               │                            │
+│  │    create new commitment                  │                            │
+│  │                                           │                            │
+│  │  Compliance:                              │                            │
+│  │    store credential nullifier             │                            │
+│  │    (CredentialNullifierKey → bool)        │                            │
+│  └──────────────────────────────────────────┘                            │
+│                                                                           │
+│  Error codes 20-26 (compliance-specific, see SPEC.md)                    │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### Credential Lifecycle
+
+```
+ISSUANCE
+  KYC Issuer
+    ├── Verifies user identity off-chain
+    ├── Assigns kycLevel (1=basic, 2=enhanced, 3=full)
+    ├── Sets expiry epoch
+    ├── Computes leaf = Poseidon(4, kycLevel, expiry, credentialSecret, contextId)
+    └── Inserts leaf into Merkle tree; publishes new root on-chain
+
+USER HOLDS
+  credentialSecret: bigint   // from issuer, kept in encrypted localStorage
+  kycLevel: number
+  credentialExpiry: number   // epoch number
+
+PROVING (per compliant transfer)
+  User computes:
+    leaf         = Poseidon(4, kycLevel, expiry, credentialSecret, contextId)
+    nullifier    = Poseidon(5, credentialSecret, currentEpoch, contextId)
+    Merkle proof = sibling path from leaf to merkleRoot
+  Generates compliance Groth16 proof (private: leaf data + Merkle path)
+
+ON-CHAIN VERIFICATION
+  Contract checks:
+    merkleRoot     == pool.credential_root
+    contextId      == pool.id
+    requiredKycLevel <= proven kycLevel
+    validCredential == 1
+    currentEpoch   == Clock epoch
+    CredentialNullifierKey not already spent this epoch
+
+EXPIRY
+  Issuer publishes new Merkle root excluding expired credentials
+  Admin calls update_credential_root(pool, cap, new_root)
+  User must obtain a renewed credential from issuer
+```
+
+### Dual-Proof Flow (Compliant Transfer)
+
+```
+1. BROWSER
+   ├── Load VeilPrivateState (transfer fields) + credential fields
+   ├── Generate transfer proof  (Web Worker A, ~2s)
+   │     transfer.circom — 6 public + 7 private inputs
+   ├── Generate compliance proof (Web Worker B, ~3s)
+   │     compliance.circom — 6 public + private Merkle path
+   ├── Encrypt auditor payload (main thread, ~1ms)
+   │     plaintext = { txAmount, salt, txAmountHash }
+   │     ECDH ephemeral P-256 key + AES-128-GCM
+   │     auditorCiphertext = ephemeralPubKey || iv || tag || ciphertext
+   └── Convert both proofs to Sui bytes (proof-converter.ts)
+
+2. SUI TRANSACTION
+   └── pool::compliant_transfer(
+         pool, transfer_proof, transfer_inputs,
+         compliance_proof, compliance_inputs,
+         auditor_ciphertext, clock
+       )
+         ├── Verify transfer proof  → E_INVALID_PROOF (3)
+         ├── Verify compliance proof → E_INVALID_CREDENTIAL (21)
+         ├── Check merkleRoot match  → E_INVALID_MERKLE_ROOT (25)
+         ├── Check contextId == pool.id
+         ├── Check validCredential == 1 → E_INVALID_CREDENTIAL (21)
+         ├── Check epoch match       → E_EPOCH_MISMATCH (8)
+         ├── Check requiredKycLevel  → E_KYC_LEVEL_TOO_LOW (23)
+         ├── Check credential nullifier not spent → E_CREDENTIAL_NULLIFIER_SPENT (24)
+         ├── Store credential nullifier
+         ├── Execute UTXO transfer (consume old, store nullifier, create new)
+         └── event::emit(CompliantTransferEvent { nullifier, new_commitment })
+           // auditor_ciphertext logged off-chain; not stored in contract state
+
+3. BROWSER (after tx confirmed)
+   ├── Update VeilPrivateState (cumulativeSpending, randomness)
+   └── Persist to encrypted localStorage
+```

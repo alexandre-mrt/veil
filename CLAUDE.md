@@ -3,7 +3,8 @@
 ## Overview
 ZK privacy payments with cumulative spending proofs and UTXO-style commitments on Sui.
 Circuit v2: Poseidon(4) identity-bound commitments, note-based nullifiers, domain-separated txAmountHash.
-4-loop security audit complete (clean on loop 4). 186 tests, 0 failures.
+4-loop security audit complete (clean on loop 4). 232 tests, 0 failures.
+Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), epoch-scoped credential nullifiers, ECDH P-256 + AES-GCM auditor encryption.
 
 ## Structure
 - `contracts/` -- Sui Move (pool, verifier, token)

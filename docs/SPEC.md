@@ -203,3 +203,68 @@ Package: 0xd0598d2256bfa33b8324bc6316cee1118f9131cdde346f8f1f757adb594a66bb
 Chain: testnet (4c78adac)
 Toolchain: sui 1.72.1, Move edition 2024
 ```
+
+## Compliance Circuit (v3)
+
+### compliance.circom -- Public Inputs (6, order matters)
+```
+signal input merkleRoot;         // Root of the KYC credential Merkle tree
+signal input currentEpoch;       // Current epoch from Clock
+signal input contextId;          // Pool ID binding (prevents cross-pool replay)
+signal input requiredKycLevel;   // Minimum KYC tier required by pool config
+signal input nullifier;          // Poseidon(5, credentialSecret, currentEpoch, contextId)
+signal input validCredential;    // 1 if credential is valid and unexpired, 0 otherwise
+```
+
+### Domain Separation Tags
+```
+Tag 4 → Credential leaf:      Poseidon(4, kycLevel, expiry, credentialSecret, contextId)
+Tag 5 → Credential nullifier: Poseidon(5, credentialSecret, currentEpoch, contextId)
+```
+
+### Constraint Count
+~7,200 constraints total:
+- Poseidon(5) leaf hash
+- 20-level Merkle membership proof
+- Nullifier preimage check
+- Expiry validation (currentEpoch <= credential.expiry)
+- KYC level check (credential.kycLevel >= requiredKycLevel)
+
+### ComplianceConfig Struct (Move)
+```move
+public struct ComplianceConfig has store {
+    pool_id: ID,                 // Bound to specific pool
+    compliance_vk: vector<u8>,   // Groth16 VK for compliance circuit
+    credential_root: vector<u8>, // Current Merkle root of KYC tree (32 bytes)
+    required_kyc_level: u8,      // Minimum KYC tier (1 = basic, 2 = enhanced, 3 = full)
+    auditor_key: vector<u8>,     // P-256 public key for encrypted disclosure
+}
+```
+
+### Error Codes (20-26)
+```
+E_COMPLIANCE_DISABLED = 20      Pool does not require compliance proofs
+E_INVALID_CREDENTIAL = 21       Compliance proof verification failed
+E_CREDENTIAL_EXPIRED = 22       Credential epoch > currentEpoch
+E_KYC_LEVEL_TOO_LOW = 23        credential.kycLevel < requiredKycLevel
+E_CREDENTIAL_NULLIFIER_SPENT = 24  Credential nullifier already used this epoch
+E_INVALID_MERKLE_ROOT = 25      merkleRoot does not match pool credential_root
+E_AUDITOR_CIPHERTEXT_INVALID = 26  Auditor ciphertext length or format mismatch
+```
+
+### Compliance Public Input Byte Layout (192 bytes)
+```
+Offset     Field              Extraction
+0..32      merkleRoot         extract_bytes(0, 32) — matched against pool credential_root
+32..64     currentEpoch       le_bytes_to_u64(32), assert_upper_bytes_zero(40, 64)
+64..96     contextId          extract_bytes(64, 96) — matched against pool.id
+96..128    requiredKycLevel   le_bytes_to_u64(96), assert_upper_bytes_zero(97, 128)
+128..160   nullifier          extract_bytes(128, 160) — stored as CredentialNullifierKey
+160..192   validCredential    le_bytes_to_u64(160), must equal 1
+```
+
+### Auditor Encryption
+- Algorithm: ECDH P-256 key agreement + AES-128-GCM symmetric encryption
+- Binding: plaintext includes `txAmountHash` from the transfer proof (prevents substitution)
+- Ciphertext is attached to the compliant_transfer transaction as a non-Move input
+- Auditor can decrypt with their P-256 private key to recover the transaction amount

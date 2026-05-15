@@ -56,6 +56,30 @@ User: send 100 VEIL anonymously
 | C10 | `nullifier == Poseidon(2, userSecret, epochId, randOld)` | Poseidon(4) |
 | C11 | `txAmountHash == Poseidon(3, txAmount, salt)` | Poseidon(3) |
 
+### Compliant Transfer (Tier 3)
+
+Tier 3 pools require a second ZK proof alongside the transfer proof. The compliance circuit (`compliance.circom`) proves that the user holds a valid, unexpired KYC credential in a Merkle tree without revealing which credential or any identity information.
+
+```
+User: send 100 VEIL to a Tier 3 pool
+  |
+  v
+[Browser — parallel Web Workers]
+  Transfer proof (~2s):  proves cumNew <= threshold, nullifier unique
+  Compliance proof (~3s): proves KYC credential in Merkle tree, not expired
+  Auditor ciphertext:    ECDH P-256 + AES-128-GCM, bound to txAmountHash
+  |
+  v
+[Sui Move — veil::pool::compliant_transfer]
+  Verify transfer proof (veil::verifier, BN254)
+  Verify compliance proof (veil::verifier, BN254)
+  Check merkleRoot matches pool credential_root
+  Check credential nullifier not already spent
+  Execute UTXO state transition (identical to standard transfer)
+```
+
+The credential nullifier (`Poseidon(5, credentialSecret, epoch, contextId)`) prevents double-use within an epoch without linking uses across epochs. The auditor ciphertext is logged off-chain; no identity data is stored in contract state.
+
 ### On-Chain Verification
 
 - Groth16 BN254 via `sui::groth16` native verifier
@@ -64,6 +88,7 @@ User: send 100 VEIL anonymously
 - Upper 24 bytes zero-checked for u64 public inputs (overflow protection)
 - Dynamic field nullifier tracking (no Table contention)
 - Standard deposit denominations: 100, 500, 1000 TOKEN (amount correlation resistance)
+- **Tier 3**: dual Groth16 verification (transfer + compliance) in a single transaction
 
 ## Architecture
 
@@ -120,10 +145,12 @@ User: send 100 VEIL anonymously
 
 | Layer | Tests | Coverage |
 |-------|-------|---------|
-| Move contract | 37 | Every function, every error code, edge cases |
-| Circom circuit | 40 | Every constraint (C1-C11), boundaries, domain separation |
+| Move contract | 37 | Every function, every error code (1-14), edge cases |
+| Circom circuit (transfer) | 40 | Every constraint (C1-C11), boundaries, domain separation |
+| Circom circuit (compliance) | 28 | Merkle membership, expiry, KYC level, nullifier uniqueness |
+| Move contract (Tier 3) | 18 | Dual proof, error codes 20-26, credential nullifier replay |
 | Proof converter | 109 | bigintToLE32, G1/G2 compression, sign bits, VK layout |
-| **Total** | **186** | **0 failures** |
+| **Total** | **232** | **0 failures** |
 
 ## Tech Stack
 
@@ -204,6 +231,8 @@ veil/
 4. **Note-based nullifiers** -- multiple transfers per epoch (not one)
 5. **Standard deposit denominations** -- resists amount correlation analysis
 6. **4-loop iterative security audit** with 8 specialized agents per loop
+7. **Dual-proof compliant transfers** -- transfer proof + compliance proof verified atomically on-chain
+8. **Epoch-scoped credential nullifiers** -- prove KYC once per epoch without linking epochs
 
 ## Known Limitations (Documented)
 
@@ -211,6 +240,8 @@ veil/
 - UTXO chain traceable via transaction effects (needs Merkle accumulator)
 - Trusted setup uses single contributor (needs MPC ceremony for mainnet)
 - Admin can drain pool via withdraw (needs ZK-proof-gated redemption)
+- Tier 3 credential Merkle root update is admin-gated; revocation latency = time between root updates
+- Auditor ciphertext is logged off-chain only; on-chain auditability requires an indexer
 
 ## Track
 
