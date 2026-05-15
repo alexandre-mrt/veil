@@ -62,7 +62,7 @@ export function deployContract(
   let output: string;
   try {
     output = execSync(
-      `sui client publish --gas-budget ${gasBudget} --json --skip-dependency-verification`,
+      `sui client publish --gas-budget ${gasBudget} --json --skip-fetch-latest-git-deps`,
       {
         cwd: contractsDir,
         encoding: "utf-8",
