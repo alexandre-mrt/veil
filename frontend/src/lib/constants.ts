@@ -12,5 +12,5 @@ export const VEIL_DECIMALS = 6;
 export const EXPLORER_TX_URL = `https://suiscan.xyz/${NETWORK}/tx`;
 
 // Compliance (Tier 3)
-export const COMPLIANCE_CONFIG_ID = process.env.NEXT_PUBLIC_COMPLIANCE_CONFIG_ID ?? "";
+export const COMPLIANCE_CONFIG_ID = process.env.NEXT_PUBLIC_COMPLIANCE_CONFIG_ID ?? "0xa01f5a2b89f38d8b4011c7abb6299a51dedd1bda977e0c5c14c52922b16d0859";
 export const REQUIRED_KYC_LEVEL = 1;
