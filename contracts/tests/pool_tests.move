@@ -1,6 +1,7 @@
 #[test_only]
 module veil::pool_tests;
 
+use sui::clock;
 use sui::coin;
 use sui::test_scenario;
 use veil::pool::{Self, Pool, AdminCap};
@@ -77,8 +78,10 @@ fun test_deposit_and_register() {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
         let commitment = valid_commitment(1);
-        pool::deposit_and_register(&mut pool, deposit_coin, commitment, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, commitment, &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT, 0);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -235,9 +238,8 @@ fun test_shielded_transfer_when_frozen() {
     scenario.end();
 }
 
-// 10. withdraw when frozen
+// 10. withdraw when frozen — allowed (emergency rescue path)
 #[test]
-#[expected_failure(abort_code = 1, location = veil::pool)]
 fun test_withdraw_when_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -263,6 +265,7 @@ fun test_withdraw_when_frozen() {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         pool::withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, scenario.ctx());
+        assert!(pool.pool_balance() == DEPOSIT_AMOUNT - WITHDRAW_AMOUNT, 0);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -290,7 +293,9 @@ fun test_deposit_and_register_when_frozen() {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
         let commitment = valid_commitment(1);
-        pool::deposit_and_register(&mut pool, deposit_coin, commitment, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, commitment, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -435,7 +440,9 @@ fun test_deposit_and_register_below_min_deposit() {
         let mut pool = scenario.take_shared<Pool>();
         let dust_coin = coin::mint_for_testing<TOKEN>(MIN_DEPOSIT - 1, scenario.ctx());
         let commitment = valid_commitment(1);
-        pool::deposit_and_register(&mut pool, dust_coin, commitment, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, dust_coin, commitment, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -459,7 +466,9 @@ fun test_deposit_and_register_wrong_commitment_length_31() {
             17u8, 18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8,
             25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8,
         ];
-        pool::deposit_and_register(&mut pool, deposit_coin, short_commitment, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, short_commitment, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -478,7 +487,9 @@ fun test_deposit_and_register_duplicate_commitment() {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
         let commitment = valid_commitment(1);
-        pool::deposit_and_register(&mut pool, deposit_coin, commitment, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, commitment, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.next_tx(USER);
@@ -486,7 +497,9 @@ fun test_deposit_and_register_duplicate_commitment() {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
         let commitment = valid_commitment(1);
-        pool::deposit_and_register(&mut pool, deposit_coin, commitment, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, commitment, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -812,7 +825,9 @@ fun test_deposit_and_register_wrong_commitment_length_33() {
             25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8,
             33u8,
         ];
-        pool::deposit_and_register(&mut pool, deposit_coin, long_commitment, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, long_commitment, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -829,24 +844,30 @@ fun test_multiple_deposit_and_register_unique_commitments() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin1 = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        pool::deposit_and_register(&mut pool, coin1, valid_commitment(1), scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin1, valid_commitment(1), &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT, 0);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.next_tx(ATTACKER);
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin2 = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        pool::deposit_and_register(&mut pool, coin2, valid_commitment(2), scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin2, valid_commitment(2), &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT * 2, 1);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.next_tx(RECIPIENT);
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin3 = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        pool::deposit_and_register(&mut pool, coin3, valid_commitment(3), scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin3, valid_commitment(3), &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT * 3, 2);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -882,8 +903,10 @@ fun test_deposit_and_register_exact_min_deposit() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let min_coin = coin::mint_for_testing<TOKEN>(100_000_000, scenario.ctx());
-        pool::deposit_and_register(&mut pool, min_coin, valid_commitment(1), scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, min_coin, valid_commitment(1), &clock, scenario.ctx());
         assert!(pool.pool_balance() == 100_000_000, 0);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -923,7 +946,9 @@ fun test_deposit_and_register_empty_commitment() {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
         let empty_commitment = vector[];
-        pool::deposit_and_register(&mut pool, deposit_coin, empty_commitment, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, empty_commitment, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.end();
