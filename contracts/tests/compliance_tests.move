@@ -1,0 +1,519 @@
+#[test_only]
+module veil::compliance_tests;
+
+use sui::test_scenario;
+use veil::compliance::{Self, ComplianceConfig};
+use veil::pool::{Self, Pool, AdminCap};
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+const ADMIN: address = @0xA;
+const USER: address = @0xB;
+const ATTACKER: address = @0xC;
+
+/// A minimal dummy VK — real Groth16 VKs are not needed for config tests.
+const DUMMY_VK: vector<u8> = vector[0u8, 0u8];
+
+/// A valid 32-byte credential Merkle root.
+const DUMMY_ROOT: vector<u8> = vector[
+    1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
+    9u8, 10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8,
+    17u8, 18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8,
+    25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8,
+];
+
+/// An updated 32-byte root (all bytes incremented by 1 for uniqueness).
+const UPDATED_ROOT: vector<u8> = vector[
+    2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8, 9u8,
+    10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8, 17u8,
+    18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8, 25u8,
+    26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8, 33u8,
+];
+
+const DUMMY_AUDITOR_KEY: vector<u8> = vector[0xABu8, 0xCDu8, 0xEFu8];
+const UPDATED_AUDITOR_KEY: vector<u8> = vector[0x01u8, 0x02u8, 0x03u8, 0x04u8];
+const POOL_THRESHOLD: u64 = 1_000_000_000;
+const REQUIRED_KYC_LEVEL: u64 = 1;
+const UPDATED_KYC_LEVEL: u64 = 2;
+
+// ===========================================================================
+// HAPPY PATH TESTS
+// ===========================================================================
+
+// 1. create_compliance_config — config created with correct fields
+#[test]
+fun test_create_compliance_config() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let config = scenario.take_shared<ComplianceConfig>();
+        assert!(compliance::required_kyc_level(&config) == REQUIRED_KYC_LEVEL, 0);
+        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 1);
+        assert!(compliance::auditor_key(&config) == DUMMY_AUDITOR_KEY, 2);
+        test_scenario::return_shared(config);
+    };
+    scenario.end();
+}
+
+// 2. update_credential_root — admin updates root successfully
+#[test]
+fun test_update_credential_root() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT);
+        assert!(compliance::credential_root(&config) == UPDATED_ROOT, 0);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 3. update_auditor_key — admin updates key successfully
+#[test]
+fun test_update_auditor_key() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::update_auditor_key(&mut config, &cap, &pool, UPDATED_AUDITOR_KEY);
+        assert!(compliance::auditor_key(&config) == UPDATED_AUDITOR_KEY, 0);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 4. update_required_kyc_level — admin changes level successfully
+#[test]
+fun test_update_required_kyc_level() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::update_required_kyc_level(&mut config, &cap, &pool, UPDATED_KYC_LEVEL);
+        assert!(compliance::required_kyc_level(&config) == UPDATED_KYC_LEVEL, 0);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 5. accessors — verify all getter functions return expected values
+#[test]
+fun test_accessors() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let config = scenario.take_shared<ComplianceConfig>();
+        assert!(compliance::required_kyc_level(&config) == REQUIRED_KYC_LEVEL, 0);
+        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 1);
+        assert!(compliance::auditor_key(&config) == DUMMY_AUDITOR_KEY, 2);
+        assert!(compliance::config_pool_id(&config) == object::id(&pool), 3);
+        test_scenario::return_shared(pool);
+        test_scenario::return_shared(config);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// ERROR PATH TESTS — INPUT VALIDATION
+// ===========================================================================
+
+// 6. create_config_invalid_root_length — 16-byte root fails
+#[test]
+#[expected_failure(abort_code = 23, location = veil::compliance)]
+fun test_create_config_invalid_root_length() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let short_root = vector[
+            1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
+            9u8, 10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8,
+        ]; // 16 bytes — must be 32
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            short_root,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 7. create_config_empty_root_fails — 0-byte root fails
+#[test]
+#[expected_failure(abort_code = 23, location = veil::compliance)]
+fun test_create_config_empty_root_fails() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            vector[],
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 8. update_root_invalid_length — 16-byte replacement root fails
+#[test]
+#[expected_failure(abort_code = 23, location = veil::compliance)]
+fun test_update_root_invalid_length() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let bad_root = vector[1u8, 2u8, 3u8]; // 3 bytes — must be 32
+        compliance::update_credential_root(&mut config, &cap, &pool, bad_root);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// ERROR PATH TESTS — ACCESS CONTROL
+// Uses a second pool to give ATTACKER their own AdminCap, then tries to use
+// it on the original pool/config — pattern matches pool_tests.move.
+// ===========================================================================
+
+// 9. attacker_cannot_create_config — wrong AdminCap (from a different pool) fails
+#[test]
+#[expected_failure(abort_code = 4, location = veil::pool)]
+fun test_attacker_cannot_create_config() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ADMIN);
+    let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
+    scenario.next_tx(ATTACKER);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ATTACKER);
+    {
+        // Attacker's cap (from pool 2) used against pool 1
+        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 10. attacker_cannot_update_root — wrong AdminCap fails on update_credential_root
+#[test]
+#[expected_failure(abort_code = 4, location = veil::pool)]
+fun test_attacker_cannot_update_root() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ADMIN);
+    let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
+    {
+        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ATTACKER);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ATTACKER);
+    {
+        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let cap = scenario.take_from_sender<AdminCap>(); // attacker's cap from pool 2
+        compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT);
+        test_scenario::return_shared(pool);
+        test_scenario::return_shared(config);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 11. attacker_cannot_update_key — wrong AdminCap fails on update_auditor_key
+#[test]
+#[expected_failure(abort_code = 4, location = veil::pool)]
+fun test_attacker_cannot_update_key() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ADMIN);
+    let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
+    {
+        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ATTACKER);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ATTACKER);
+    {
+        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let cap = scenario.take_from_sender<AdminCap>(); // attacker's cap from pool 2
+        compliance::update_auditor_key(&mut config, &cap, &pool, UPDATED_AUDITOR_KEY);
+        test_scenario::return_shared(pool);
+        test_scenario::return_shared(config);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 12. attacker_cannot_update_kyc_level — wrong AdminCap fails on update_required_kyc_level
+#[test]
+#[expected_failure(abort_code = 4, location = veil::pool)]
+fun test_attacker_cannot_update_kyc_level() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ADMIN);
+    let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
+    {
+        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ATTACKER);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ATTACKER);
+    {
+        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let cap = scenario.take_from_sender<AdminCap>(); // attacker's cap from pool 2
+        compliance::update_required_kyc_level(&mut config, &cap, &pool, UPDATED_KYC_LEVEL);
+        test_scenario::return_shared(pool);
+        test_scenario::return_shared(config);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// ERROR PATH TESTS — POOL MISMATCH
+// ===========================================================================
+
+// 13. update_root_pool_mismatch — correct cap but wrong pool fails
+#[test]
+#[expected_failure(abort_code = 26, location = veil::compliance)]
+fun test_update_root_pool_mismatch() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    // Create pool 1 (ADMIN) + compliance config tied to it
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ADMIN);
+    let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
+    {
+        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Create pool 2 (still ADMIN) — same admin, different pool object
+    scenario.next_tx(ADMIN);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    scenario.next_tx(ADMIN);
+    {
+        let pool2 = scenario.take_shared<Pool>(); // pool 2 — different ID
+        let mut config = scenario.take_shared<ComplianceConfig>(); // config linked to pool 1
+        let cap = scenario.take_from_sender<AdminCap>(); // cap for pool 2 (valid for pool 2)
+        // AdminCap matches pool 2, but config.pool_id == pool 1 → E_CONFIG_POOL_MISMATCH
+        compliance::update_credential_root(&mut config, &cap, &pool2, UPDATED_ROOT);
+        test_scenario::return_shared(pool2);
+        test_scenario::return_shared(config);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
