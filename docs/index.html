@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veil — Private Payments on Sui</title>
+<meta name="description" content="Confidential compliance proofs on Sui. Amounts hidden. Threshold enforced. Zero-knowledge.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-hover: #1a1a1a;
+  --border: #1f1f1f;
+  --border-accent: #2a2a2a;
+  --text: #e0e0e0;
+  --text-secondary: #808080;
+  --text-dim: #555;
+  --accent: #00ff88;
+  --accent-dim: #00cc66;
+  --accent-bg: rgba(0, 255, 136, 0.06);
+  --warning: #ffaa00;
+  --danger: #ff4444;
+  --blue: #4488ff;
+  --purple: #bb66ff;
+  --cyan: #44ccff;
+  --orange: #ff9900;
+  --radius: 2px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* ═══ LAYOUT ═══ */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-logo {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-decoration: none;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sidebar-tagline {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 0;
+  overflow-y: auto;
+}
+
+.nav-section {
+  padding: 0 12px;
+  margin-bottom: 4px;
+}
+
+.nav-section-title {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 12px 8px 4px;
+}
+
+.nav-link {
+  display: block;
+  padding: 5px 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.72rem;
+  border-radius: var(--radius);
+  transition: all 0.15s;
+  border-left: 2px solid transparent;
+}
+
+.nav-link:hover {
+  color: var(--text);
+  background: var(--accent-bg);
+}
+
+.nav-link.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.nav-link.sub {
+  padding-left: 20px;
+  font-size: 0.68rem;
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+}
+
+.sidebar-footer a {
+  color: var(--accent-dim);
+  text-decoration: none;
+}
+
+.sidebar-footer a:hover { color: var(--accent); }
+
+/* ═══ MAIN CONTENT ═══ */
+.main {
+  grid-column: 2;
+  padding: 0;
+}
+
+.content {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 48px 120px;
+}
+
+/* ═══ HERO ═══ */
+.hero {
+  padding: 80px 48px 60px;
+  max-width: 860px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.hero-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+.hero-subtitle {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.hero-stat {
+  text-align: left;
+}
+
+.hero-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.hero-stat-label {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ═══ SECTIONS ═══ */
+section {
+  padding: 48px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+section:last-child { border-bottom: none; }
+
+h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  margin-bottom: 24px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  margin: 32px 0 12px;
+}
+
+h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 24px 0 8px;
+}
+
+p {
+  margin-bottom: 16px;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+p.dim { color: var(--text-secondary); }
+
+/* ═══ CODE ═══ */
+code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1px 6px;
+  font-size: 0.85em;
+  color: var(--accent-dim);
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0 20px;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+}
+
+.code-label {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+
+/* ═══ TABLES ═══ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 24px;
+  font-size: 0.78rem;
+}
+
+th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+tr:hover td { background: var(--accent-bg); }
+
+/* ═══ CARDS ═══ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin: 12px 0;
+  border-top: 2px solid var(--accent);
+}
+
+.card.warning { border-top-color: var(--warning); }
+.card.danger { border-top-color: var(--danger); }
+.card.blue { border-top-color: var(--blue); }
+.card.purple { border-top-color: var(--purple); }
+
+.card-title {
+  font-weight: 600;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.card-body {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+/* ═══ GRID ═══ */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+/* ═══ BADGES ═══ */
+.badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.badge.critical { background: rgba(255, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(255, 68, 68, 0.3); }
+.badge.high { background: rgba(255, 153, 0, 0.15); color: var(--orange); border: 1px solid rgba(255, 153, 0, 0.3); }
+.badge.medium { background: rgba(255, 170, 0, 0.15); color: var(--warning); border: 1px solid rgba(255, 170, 0, 0.3); }
+.badge.low { background: rgba(68, 136, 255, 0.15); color: var(--blue); border: 1px solid rgba(68, 136, 255, 0.3); }
+.badge.info { background: rgba(128, 128, 128, 0.15); color: var(--text-secondary); border: 1px solid rgba(128, 128, 128, 0.3); }
+.badge.fixed { background: rgba(0, 255, 136, 0.15); color: var(--accent); border: 1px solid rgba(0, 255, 136, 0.3); }
+.badge.accent { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(0, 255, 136, 0.2); }
+
+/* ═══ FLOW DIAGRAM ═══ */
+.flow {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 16px 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--text-secondary);
+}
+
+.flow .hl { color: var(--accent); }
+.flow .warn { color: var(--warning); }
+.flow .err { color: var(--danger); }
+.flow .blue { color: var(--blue); }
+.flow .purple { color: var(--purple); }
+
+/* ═══ TIMELINE ═══ */
+.timeline {
+  position: relative;
+  padding-left: 24px;
+  margin: 16px 0;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-accent);
+}
+
+.timeline-item {
+  position: relative;
+  padding: 0 0 24px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -22px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1px solid var(--bg);
+}
+
+.timeline-item.done::before { background: var(--accent); }
+.timeline-item.pending::before { background: var(--text-dim); }
+
+.timeline-title {
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.timeline-desc {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ═══ SEPARATOR ═══ */
+.sep {
+  height: 1px;
+  background: var(--border);
+  margin: 32px 0;
+}
+
+/* ═══ ARCHITECTURE DIAGRAM (ASCII) ═══ */
+.arch-diagram {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  margin: 16px 0;
+  overflow-x: auto;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  white-space: pre;
+  color: var(--text-secondary);
+}
+
+/* ═══ FEATURE LIST ═══ */
+.feature-list {
+  list-style: none;
+  margin: 12px 0;
+}
+
+.feature-list li {
+  padding: 8px 0 8px 20px;
+  position: relative;
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.feature-list li::before {
+  content: '>';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ═══ CONSTRAINT TABLE (special) ═══ */
+.constraint-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 120px;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  align-items: center;
+}
+
+.constraint-row:first-child {
+  background: var(--surface);
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.constraint-row:hover:not(:first-child) { background: var(--accent-bg); }
+.constraint-id { color: var(--accent); font-weight: 600; }
+.constraint-type { color: var(--text-dim); font-size: 0.68rem; }
+
+/* ═══ TABS ═══ */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 8px 16px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: inherit;
+}
+
+.tab:hover { color: var(--text-secondary); }
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ═══ FINDING CARD ═══ */
+.finding {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin: 12px 0;
+}
+
+.finding-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.finding-id {
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.finding-title {
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--text);
+  flex: 1;
+}
+
+.finding-body {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+
+/* ═══ ROADMAP TABLE ═══ */
+.roadmap-tier {
+  margin: 24px 0;
+}
+
+.tier-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tier-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tier-1 .tier-label { background: rgba(0, 255, 136, 0.15); color: var(--accent); }
+.tier-2 .tier-label { background: rgba(68, 136, 255, 0.15); color: var(--blue); }
+.tier-3 .tier-label { background: rgba(187, 102, 255, 0.15); color: var(--purple); }
+
+.tier-title {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.tier-time {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+/* ═══ PRIVACY MATRIX ═══ */
+.privacy-matrix td:nth-child(n+2) {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* ═══ MOBILE ═══ */
+.mobile-nav-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.7rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { transform: translateX(-100%); transition: transform 0.2s; }
+  .sidebar.open { transform: translateX(0); }
+  .mobile-nav-toggle { display: block; }
+  .main { grid-column: 1; }
+  .hero { padding: 60px 24px 40px; }
+  .hero h1 { font-size: 2rem; }
+  .content { padding: 24px; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  html { scroll-padding-top: 20px; }
+}
+
+/* ═══ LINKS ═══ */
+a { color: var(--accent-dim); text-decoration: none; }
+a:hover { color: var(--accent); }
+
+/* ═══ IFRAME CONTAINER ═══ */
+.diagram-frame {
+  width: 100%;
+  height: 600px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 12px 0;
+  background: var(--bg);
+}
+
+/* ═══ COPY BUTTON ═══ */
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--border-accent);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 0.6rem;
+  padding: 3px 8px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: all 0.15s;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.pre-wrapper { position: relative; }
+
+/* ═══ BACK TO TOP ═══ */
+.back-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.7rem;
+  padding: 8px 14px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 50;
+  letter-spacing: 0.06em;
+}
+
+.back-to-top.visible { opacity: 1; }
+.back-to-top:hover { background: var(--surface-hover); }
+</style>
+</head>
+<body>
+
+<button class="mobile-nav-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+  [=] MENU
+</button>
+
+<div class="layout">
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SIDEBAR                                                    -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <a href="#top" class="sidebar-logo">VEIL</a>
+    <div class="sidebar-tagline">Private Payments on Sui</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-section-title">Overview</div>
+      <a href="#problem" class="nav-link">The Problem</a>
+      <a href="#solution" class="nav-link">The Solution</a>
+      <a href="#use-cases" class="nav-link">Use Cases</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Technical</div>
+      <a href="#circuit" class="nav-link">ZK Circuit</a>
+      <a href="#circuit-constraints" class="nav-link sub">Constraints</a>
+      <a href="#circuit-inputs" class="nav-link sub">Inputs</a>
+      <a href="#contract" class="nav-link">Smart Contract</a>
+      <a href="#contract-functions" class="nav-link sub">Functions</a>
+      <a href="#contract-errors" class="nav-link sub">Error Codes</a>
+      <a href="#byte-layout" class="nav-link sub">Byte Layout</a>
+      <a href="#proof-converter" class="nav-link">Proof Converter</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Architecture</div>
+      <a href="#architecture" class="nav-link">System Design</a>
+      <a href="#tx-flow" class="nav-link sub">Transaction Flow</a>
+      <a href="#epoch-design" class="nav-link sub">Epoch Design</a>
+      <a href="#utxo-model" class="nav-link sub">UTXO Model</a>
+      <a href="#diagrams" class="nav-link">C4 Diagrams</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Security</div>
+      <a href="#audit" class="nav-link">4-Loop Audit</a>
+      <a href="#red-team" class="nav-link">Red Team Report</a>
+      <a href="#red-team-findings" class="nav-link sub">15 Findings</a>
+      <a href="#attack-chain" class="nav-link sub">Attack Chain</a>
+      <a href="#tests" class="nav-link">Test Coverage</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Roadmap</div>
+      <a href="#roadmap" class="nav-link">Future Improvements</a>
+      <a href="#privacy-matrix" class="nav-link sub">Privacy Matrix</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Developer</div>
+      <a href="#quickstart" class="nav-link">Quick Start</a>
+      <a href="#stack" class="nav-link">Tech Stack</a>
+      <a href="#structure" class="nav-link">Project Structure</a>
+      <a href="#testnet" class="nav-link">Testnet Deployment</a>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="https://github.com/alexandre-mrt/veil" target="_blank">GitHub</a> &middot;
+    Sui Overflow 2026
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MAIN CONTENT                                               -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<main class="main" id="top">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Sui Overflow 2026 &mdash; DeFi &amp; Payments</div>
+  <h1>VEIL</h1>
+  <p class="hero-subtitle">
+    Confidential compliance proofs on Sui. Amounts hidden. Threshold enforced. Zero-knowledge.
+  </p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-value">186</div>
+      <div class="hero-stat-label">Tests Passing</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value">11</div>
+      <div class="hero-stat-label">ZK Constraints</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value">4</div>
+      <div class="hero-stat-label">Audit Loops</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-value">0</div>
+      <div class="hero-stat-label">Critical Findings</div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- THE PROBLEM                                                -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="problem">
+  <h2>The Problem</h2>
+  <p>
+    Every blockchain transaction is transparent by default. Amounts, senders, and receivers are permanently visible to anyone reading the chain. This creates a paradox: the technology that promises financial sovereignty also delivers total financial surveillance.
+  </p>
+  <p>
+    Existing privacy solutions force a binary choice:
+  </p>
+  <div class="grid-2">
+    <div class="card danger">
+      <div class="card-title">Fully Anonymous</div>
+      <div class="card-body">
+        Tornado Cash, Zcash shielded pools &mdash; hide everything, creating regulatory risk and enabling illicit use.
+      </div>
+    </div>
+    <div class="card warning">
+      <div class="card-title">Fully Transparent</div>
+      <div class="card-body">
+        Standard ERC-20 transfers, Sui token moves &mdash; provide no privacy at all. Every transaction is public.
+      </div>
+    </div>
+  </div>
+  <p class="dim">
+    There is nothing in between &mdash; no protocol that hides transaction amounts while still enforcing spending limits, allowing regulators to set thresholds without requiring identity disclosure below them.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- THE SOLUTION                                               -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="solution">
+  <h2>The Solution</h2>
+  <p>
+    Veil introduces <strong>cumulative spending proofs</strong> &mdash; a novel ZK primitive:
+  </p>
+  <ul class="feature-list">
+    <li>Hides transaction amounts using Poseidon commitments bound to user identity</li>
+    <li>Enforces KYC-free spending limits (FINMA CHF 1,000/30 days) in zero-knowledge</li>
+    <li>Uses UTXO-style commitment consumption to prevent parallel chain attacks</li>
+    <li>Standardizes deposit denominations (100/500/1000 TOKEN) to resist amount correlation</li>
+  </ul>
+
+  <h3>How It Works</h3>
+  <div class="arch-diagram"><span class="hl">User</span>: send 100 TOKEN privately
+  |
+  v
+[<span class="blue">Browser</span> &mdash; snarkjs WASM, ~2s]
+  Compute Poseidon hashes (circomlibjs)
+  Generate Groth16 proof (11 constraints)
+  Prove: cumNew = cumOld + 100
+         cumNew &lt;= threshold
+         nullifier is unique
+         commitments bound to userSecret
+  |
+  v
+[<span class="purple">Sui Move</span> &mdash; veil::pool]
+  Verify proof: sui::groth16 BN254 native
+  Consume old commitment (<span class="warn">UTXO-style</span>)
+  Check nullifier not already spent
+  Store nullifier + create new commitment
+  Emit TransferEvent (<span class="hl">no amounts, no identity</span>)</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- USE CASES                                                  -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="use-cases">
+  <h2>Use Cases</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Regulatory-Compliant Confidential Transfers</div>
+      <div class="card-body">Prove spending &lt; threshold without revealing amounts. FINMA-aligned for Swiss franc regulations.</div>
+    </div>
+    <div class="card blue">
+      <div class="card-title">Confidential Payroll</div>
+      <div class="card-body">Hide individual payment amounts while proving total compliance with spending limits.</div>
+    </div>
+    <div class="card purple">
+      <div class="card-title">Treasury Management</div>
+      <div class="card-body">Hide OTC and grant amounts from public chain observers. Useful for DAOs and foundations.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Proof of Solvability</div>
+      <div class="card-body">Prove "I spent &lt; X this month" without revealing exact amount. Compliance without surveillance.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ZK CIRCUIT                                                 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="circuit">
+  <h2>ZK Circuit</h2>
+  <p>
+    The transfer circuit (<code>transfer.circom</code>) has 11 constraints and compiles to 3,211 R1CS constraints. It uses BN254 Groth16, verified natively on Sui via <code>sui::groth16</code>.
+  </p>
+
+  <h3 id="circuit-constraints">Constraints</h3>
+  <div style="border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 12px 0;">
+    <div class="constraint-row">
+      <span>#</span>
+      <span>Constraint</span>
+      <span>Component</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C1</span>
+      <span><code>oldCommitment == Poseidon(1, cumOld, randOld, userSecret)</code></span>
+      <span class="constraint-type">Poseidon(4)</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C2</span>
+      <span><code>newCommitment == Poseidon(1, cumNew, randNew, userSecret)</code></span>
+      <span class="constraint-type">Poseidon(4)</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C3</span>
+      <span><code>cumulativeNew == cumulativeOld + txAmount</code></span>
+      <span class="constraint-type">Addition</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C4</span>
+      <span><code>txAmount > 0</code></span>
+      <span class="constraint-type">GreaterThan(64)</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C5</span>
+      <span><code>cumulativeOld in [0, 2^64)</code></span>
+      <span class="constraint-type">Num2Bits(64)</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C6</span>
+      <span><code>txAmount in [0, 2^64)</code></span>
+      <span class="constraint-type">Num2Bits(64)</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C7</span>
+      <span><code>cumulativeNew in [0, 2^64)</code></span>
+      <span class="constraint-type">Num2Bits(64)</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C8</span>
+      <span><code>threshold in [0, 2^64)</code></span>
+      <span class="constraint-type">Num2Bits(64)</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C9</span>
+      <span><code>cumulativeNew &lt;= threshold</code></span>
+      <span class="constraint-type">LessEqThan(64)</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C10</span>
+      <span><code>nullifier == Poseidon(2, userSecret, epochId, randOld)</code></span>
+      <span class="constraint-type">Poseidon(4)</span>
+    </div>
+    <div class="constraint-row">
+      <span class="constraint-id">C11</span>
+      <span><code>txAmountHash == Poseidon(3, txAmount, salt)</code></span>
+      <span class="constraint-type">Poseidon(3)</span>
+    </div>
+  </div>
+
+  <h4>Domain Separation Tags</h4>
+  <table>
+    <tr><th>Tag</th><th>Purpose</th><th>Hash</th></tr>
+    <tr><td><code>1</code></td><td>Commitment</td><td><code>Poseidon(1, cumulative, randomness, userSecret)</code></td></tr>
+    <tr><td><code>2</code></td><td>Nullifier</td><td><code>Poseidon(2, userSecret, epochId, randomnessOld)</code></td></tr>
+    <tr><td><code>3</code></td><td>Amount Hash</td><td><code>Poseidon(3, txAmount, salt)</code></td></tr>
+  </table>
+
+  <h3 id="circuit-inputs">Inputs</h3>
+  <div class="grid-2">
+    <div>
+      <h4>Public Inputs (6)</h4>
+      <table>
+        <tr><th>Signal</th><th>Description</th></tr>
+        <tr><td><code>oldCommitment</code></td><td>Previous commitment hash</td></tr>
+        <tr><td><code>newCommitment</code></td><td>Updated commitment hash</td></tr>
+        <tr><td><code>threshold</code></td><td>KYC-free epoch limit</td></tr>
+        <tr><td><code>epochId</code></td><td>Current epoch from Clock</td></tr>
+        <tr><td><code>nullifier</code></td><td>Unique per-transfer nullifier</td></tr>
+        <tr><td><code>txAmountHash</code></td><td>Domain-separated amount hash</td></tr>
+      </table>
+    </div>
+    <div>
+      <h4>Private Inputs (7)</h4>
+      <table>
+        <tr><th>Signal</th><th>Description</th></tr>
+        <tr><td><code>cumulativeOld</code></td><td>Previous cumulative spending</td></tr>
+        <tr><td><code>cumulativeNew</code></td><td>cumOld + txAmount</td></tr>
+        <tr><td><code>txAmount</code></td><td>This transaction's amount</td></tr>
+        <tr><td><code>randomnessOld</code></td><td>Old blinding factor</td></tr>
+        <tr><td><code>randomnessNew</code></td><td>New blinding factor</td></tr>
+        <tr><td><code>userSecret</code></td><td>Master secret (never revealed)</td></tr>
+        <tr><td><code>salt</code></td><td>Salt for txAmountHash</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h4>Audit Fixes (v1 &rarr; v2)</h4>
+  <table>
+    <tr><th>ID</th><th>Change</th><th>Reason</th></tr>
+    <tr><td>CRYPTO-004</td><td>Commitments bound to <code>userSecret</code> via Poseidon(4)</td><td>Prevents commitment theft</td></tr>
+    <tr><td>CRYPTO-006</td><td>Note-based nullifiers include <code>randomnessOld</code></td><td>Multiple transfers per epoch</td></tr>
+    <tr><td>CRYPTO-011</td><td><code>txAmountHash</code> uses domain tag 3</td><td>Cross-domain hash collision prevention</td></tr>
+    <tr><td>&mdash;</td><td>Threshold range proof (C8) via Num2Bits(64)</td><td>Was unconstrained in v1</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SMART CONTRACT                                             -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="contract">
+  <h2>Smart Contract</h2>
+  <p>
+    The core contract is <code>veil::pool</code> (Sui Move 2024 edition). It implements a UTXO-style commitment model with native Groth16 verification via <code>sui::groth16</code>.
+  </p>
+
+  <h3>Pool Object</h3>
+  <pre><code>public struct Pool has key {
+    id: UID,
+    balance: Balance&lt;TOKEN&gt;,
+    transfer_vk: vector&lt;u8&gt;,
+    threshold: u64,
+    frozen: bool,
+    pending_vk: vector&lt;u8&gt;,
+    vk_update_epoch: u64,
+}
+
+public struct AdminCap has key {
+    id: UID,
+    pool_id: ID,  // Bound to specific pool
+}</code></pre>
+
+  <h3 id="contract-functions">Functions</h3>
+  <table>
+    <tr><th>Function</th><th>Access</th><th>Description</th></tr>
+    <tr><td><code>create_pool</code></td><td>Public</td><td>Creates shared Pool + AdminCap</td></tr>
+    <tr><td><code>deposit_and_register</code></td><td>Public</td><td>Deposit + register genesis commitment (anti-griefing)</td></tr>
+    <tr><td><code>deposit</code></td><td>Public</td><td>Deposit additional tokens (standard amounts only)</td></tr>
+    <tr><td><code>shielded_transfer</code></td><td>Public</td><td>Verify proof + consume old + store nullifier + create new</td></tr>
+    <tr><td><code>withdraw</code></td><td>AdminCap</td><td>Emergency withdraw</td></tr>
+    <tr><td><code>propose_vk_update</code></td><td>AdminCap</td><td>Stage VK update with 1-epoch timelock</td></tr>
+    <tr><td><code>freeze_pool</code></td><td>AdminCap</td><td>Emergency stop</td></tr>
+    <tr><td><code>unfreeze_pool</code></td><td>AdminCap</td><td>Resume operations</td></tr>
+  </table>
+
+  <h4>Standard Deposit Denominations</h4>
+  <table>
+    <tr><th>Name</th><th>Value (raw)</th><th>Value (TOKEN)</th></tr>
+    <tr><td><code>DENOM_SMALL</code></td><td>100,000,000</td><td>100 TOKEN</td></tr>
+    <tr><td><code>DENOM_MEDIUM</code></td><td>500,000,000</td><td>500 TOKEN</td></tr>
+    <tr><td><code>DENOM_LARGE</code></td><td>1,000,000,000</td><td>1,000 TOKEN</td></tr>
+  </table>
+
+  <h3 id="contract-errors">Error Codes</h3>
+  <table>
+    <tr><th>Code</th><th>Name</th><th>Meaning</th></tr>
+    <tr><td>1</td><td><code>E_FROZEN</code></td><td>Pool is frozen</td></tr>
+    <tr><td>2</td><td><code>E_NULLIFIER_SPENT</code></td><td>Nullifier already used (replay)</td></tr>
+    <tr><td>3</td><td><code>E_INVALID_PROOF</code></td><td>Groth16 verification failed</td></tr>
+    <tr><td>4</td><td><code>E_NOT_POOL_ADMIN</code></td><td>AdminCap.pool_id != pool.id</td></tr>
+    <tr><td>5</td><td><code>E_THRESHOLD_MISMATCH</code></td><td>Proof threshold != pool threshold</td></tr>
+    <tr><td>6</td><td><code>E_INSUFFICIENT_BALANCE</code></td><td>Withdraw exceeds balance</td></tr>
+    <tr><td>7</td><td><code>E_INVALID_INPUTS_LENGTH</code></td><td>inputs != 192 bytes or commitment != 32</td></tr>
+    <tr><td>8</td><td><code>E_EPOCH_MISMATCH</code></td><td>Proof epoch != Clock epoch</td></tr>
+    <tr><td>9</td><td><code>E_COMMITMENT_CHAIN_BROKEN</code></td><td>Old commitment not found (UTXO consumed)</td></tr>
+    <tr><td>10</td><td><code>E_COMMITMENT_EXISTS</code></td><td>New commitment already exists</td></tr>
+    <tr><td>11</td><td><code>E_DUST_DEPOSIT</code></td><td>Deposit below MIN_DEPOSIT</td></tr>
+    <tr><td>14</td><td><code>E_NON_STANDARD_AMOUNT</code></td><td>Deposit not 100/500/1000 TOKEN</td></tr>
+  </table>
+
+  <h3>Events (Privacy-Preserving)</h3>
+  <table>
+    <tr><th>Event</th><th>Fields</th><th>Leaked Info</th></tr>
+    <tr><td><code>DepositEvent</code></td><td>pool_id</td><td>Pool only (no amount, no address)</td></tr>
+    <tr><td><code>TransferEvent</code></td><td>nullifier, new_commitment</td><td>Commitment hashes only</td></tr>
+    <tr><td><code>WithdrawEvent</code></td><td>pool_id</td><td>Pool only</td></tr>
+    <tr><td><code>VKUpdateProposedEvent</code></td><td>pool_id, effective_epoch</td><td>Admin action</td></tr>
+    <tr><td><code>FreezeEvent</code></td><td>pool_id, frozen</td><td>Admin action</td></tr>
+  </table>
+
+  <h3 id="byte-layout">Public Input Byte Layout</h3>
+  <p>The Sui verifier reads public inputs as a flat 192-byte array. Each input is 32 bytes (little-endian BN254 scalar).</p>
+  <table>
+    <tr><th>Offset</th><th>Field</th><th>On-chain Extraction</th></tr>
+    <tr><td><code>0..32</code></td><td>oldCommitment</td><td>Consumed from CommitmentKey dynamic field</td></tr>
+    <tr><td><code>32..64</code></td><td>newCommitment</td><td>Created as new CommitmentKey dynamic field</td></tr>
+    <tr><td><code>64..96</code></td><td>threshold</td><td>LE u64 at [64..72], upper [72..96] asserted zero</td></tr>
+    <tr><td><code>96..128</code></td><td>epochId</td><td>LE u64 at [96..104], upper [104..128] asserted zero</td></tr>
+    <tr><td><code>128..160</code></td><td>nullifier</td><td>Full 32 bytes stored as NullifierKey</td></tr>
+    <tr><td><code>160..192</code></td><td>txAmountHash</td><td>Not extracted on-chain</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PROOF CONVERTER                                            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="proof-converter">
+  <h2>Proof Converter</h2>
+  <p>
+    Converts snarkjs JSON output to Sui arkworks compressed format. Key insight: <strong>G2 coordinates are NOT swapped</strong> &mdash; snarkjs already stores [c0, c1].
+  </p>
+
+  <h4>Exports</h4>
+  <pre><code>bigintToLE32(n: bigint): Uint8Array              // 32-byte little-endian
+compressG1(x: bigint, y: bigint): Uint8Array      // 32 bytes, sign bit MSB
+compressG2(x0, x1, y0, y1: bigint): Uint8Array    // 64 bytes, lex sign
+proofToSuiBytes(proof: SnarkjsProof): Uint8Array   // 128 bytes total
+publicInputsToSuiBytes(signals: string[]): Uint8Array
+vkToSuiBytes(vk: SnarkjsVK): Uint8Array</code></pre>
+
+  <h4>Proof Layout (128 bytes)</h4>
+  <table>
+    <tr><th>Bytes</th><th>Field</th><th>Type</th></tr>
+    <tr><td><code>[0..31]</code></td><td>A</td><td>G1 compressed</td></tr>
+    <tr><td><code>[32..95]</code></td><td>B</td><td>G2 compressed</td></tr>
+    <tr><td><code>[96..127]</code></td><td>C</td><td>G1 compressed</td></tr>
+  </table>
+
+  <h4>VK Layout</h4>
+  <table>
+    <tr><th>Bytes</th><th>Field</th><th>Type</th></tr>
+    <tr><td><code>[0..31]</code></td><td>alpha_g1</td><td>G1</td></tr>
+    <tr><td><code>[32..95]</code></td><td>beta_g2</td><td>G2</td></tr>
+    <tr><td><code>[96..159]</code></td><td>gamma_g2</td><td>G2</td></tr>
+    <tr><td><code>[160..223]</code></td><td>delta_g2</td><td>G2</td></tr>
+    <tr><td><code>[224..231]</code></td><td>ic_len</td><td>u64 LE</td></tr>
+    <tr><td><code>[232..]</code></td><td>IC[0..n]</td><td>G1 each (32 bytes)</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ARCHITECTURE                                               -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="architecture">
+  <h2>System Architecture</h2>
+
+  <div class="arch-diagram"><span class="hl">USER BROWSER</span>
+(encrypted localStorage: userSecret, cumulative, randomness, epoch)
+
+VeilPrivateState {
+  <span class="blue">userSecret</span>: bigint      // master secret, never leaves browser
+  <span class="blue">currentEpoch</span>: number    // from on-chain Clock
+  <span class="blue">cumulativeSpending</span>: bigint
+  <span class="blue">randomness</span>: bigint      // blinding factor for current commitment
+}
+          |
+          |  Generate Groth16 proof (<span class="purple">snarkjs WASM, ~2s</span>)
+          |  11 constraints, 6 public + 7 private inputs
+          v
+    ┌─────────────────────────────────────────────────────────────┐
+    |              <span class="purple">SUI MOVE CONTRACT</span> (veil::pool)                  |
+    |                                                             |
+    |  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  |
+    |  | <span class="hl">Groth16</span>      |  | <span class="warn">Nullifier</span>    |  | <span class="blue">UTXO</span>            |  |
+    |  | Verifier     |  | Set          |  | Commitments      |  |
+    |  | BN254 native |  | dynamic_field|  | Old: consumed    |  |
+    |  |              |  | (permanent)  |  | New: created     |  |
+    |  └──────────────┘  └──────────────┘  └──────────────────┘  |
+    |                                                             |
+    |  Pool { balance, transfer_vk, threshold, frozen }           |
+    |  AdminCap { pool_id } -- bound to specific pool             |
+    |  <span class="warn">Standard deposits</span>: 100 | 500 | 1000 TOKEN                 |
+    └─────────────────────────────────────────────────────────────┘</div>
+
+  <h3 id="tx-flow">Shielded Transfer Flow</h3>
+  <div class="arch-diagram"><span class="hl">1. BROWSER</span>
+   |-- Load VeilPrivateState from encrypted localStorage
+   |-- Compute Poseidon hashes (circomlibjs)
+   |     oldCommitment = <span class="blue">Poseidon(1, cumOld, randOld, userSecret)</span>
+   |     newCommitment = <span class="blue">Poseidon(1, cumOld + amount, randNew, userSecret)</span>
+   |     nullifier     = <span class="purple">Poseidon(2, userSecret, epochId, randOld)</span>
+   |     txAmountHash  = <span class="warn">Poseidon(3, amount, salt)</span>
+   |-- Generate Groth16 proof (snarkjs WASM in Web Worker)
+   '-- Convert proof to Sui bytes (proof-converter.ts)
+
+<span class="hl">2. SUI TRANSACTION</span>
+   '-- pool::shielded_transfer(pool, proof_bytes, public_inputs_bytes, clock)
+         |-- assert!(!pool.frozen)                        <span class="err">--> E_FROZEN(1)</span>
+         |-- assert!(inputs.length() == 192)              <span class="err">--> E_INVALID_INPUTS_LENGTH(7)</span>
+         |-- apply_pending_vk(pool, clock)
+         |-- Extract threshold, assert match              <span class="err">--> E_THRESHOLD_MISMATCH(5)</span>
+         |-- Extract epoch, assert match                  <span class="err">--> E_EPOCH_MISMATCH(8)</span>
+         |-- <span class="hl">verifier::verify_transfer_proof()</span>           <span class="err">--> E_INVALID_PROOF(3)</span>
+         |-- Consume old commitment (dynamic_field::remove) <span class="err">--> E_COMMITMENT_CHAIN_BROKEN(9)</span>
+         |-- Store nullifier (dynamic_field::add)          <span class="err">--> E_NULLIFIER_SPENT(2)</span>
+         |-- Create new commitment (dynamic_field::add)    <span class="err">--> E_COMMITMENT_EXISTS(10)</span>
+         '-- event::emit(TransferEvent { nullifier, new_commitment })
+
+<span class="hl">3. BROWSER</span> (after tx confirmed)
+   |-- Update cumulativeSpending += amount
+   |-- Update randomness = randomnessNew
+   '-- Persist VeilPrivateState to encrypted localStorage</div>
+
+  <h3 id="epoch-design">Epoch Design</h3>
+  <div class="arch-diagram">Timeline:
+|--------------------------------------------
+|  <span class="hl">Epoch 0</span>          |  <span class="hl">Epoch 1</span>          |  <span class="hl">Epoch 2</span>
+|  [0, 30 days)     |  [30, 60 days)    |  [60, 90 days)
+|
+|  Genesis: <span class="blue">Poseidon(1, 0, 0, userSecret)</span>
+|
+|                   | Epoch boundary:
+|                   |  - New genesis commitment
+|                   |  - cumulativeOld reset to 0
+|                   |  - randomness reset to 0
+|                   |  - New nullifier (different randOld)
+|
+|  <span class="warn">epoch_id = Clock::timestamp_ms() / 2,592,000,000</span></div>
+
+  <h3 id="utxo-model">UTXO Commitment Model</h3>
+  <p>
+    Each shielded transfer is an atomic state transition. The old commitment is <strong>consumed</strong> (removed from dynamic fields), the nullifier is <strong>stored permanently</strong>, and a new commitment is <strong>created</strong>. This prevents parallel chain attacks where a user could fork from any historical commitment.
+  </p>
+  <div class="grid-3">
+    <div class="card danger">
+      <div class="card-title">1. Consume</div>
+      <div class="card-body">Old commitment removed via <code>dynamic_field::remove</code>. Must exist or abort.</div>
+    </div>
+    <div class="card warning">
+      <div class="card-title">2. Nullify</div>
+      <div class="card-body">Nullifier stored permanently via <code>dynamic_field::add</code>. Must not exist or abort.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">3. Create</div>
+      <div class="card-body">New commitment added via <code>dynamic_field::add</code>. Must not exist or abort.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- C4 DIAGRAMS                                                -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="diagrams">
+  <h2>C4 Diagrams</h2>
+  <p class="dim">Interactive architecture diagrams at four levels of detail.</p>
+
+  <div class="tabs" id="diagram-tabs">
+    <button class="tab active" data-tab="ctx">Context</button>
+    <button class="tab" data-tab="cont">Container</button>
+    <button class="tab" data-tab="comp">Component</button>
+    <button class="tab" data-tab="circ">Circuit</button>
+  </div>
+
+  <div class="tab-content active" id="tab-ctx">
+    <iframe src="c4-context.html" class="diagram-frame" title="C4 Level 1: System Context"></iframe>
+  </div>
+  <div class="tab-content" id="tab-cont">
+    <iframe src="c4-container.html" class="diagram-frame" title="C4 Level 2: Container"></iframe>
+  </div>
+  <div class="tab-content" id="tab-comp">
+    <iframe src="c4-component.html" class="diagram-frame" title="C4 Level 3: Component"></iframe>
+  </div>
+  <div class="tab-content" id="tab-circ">
+    <iframe src="c4-circuit.html" class="diagram-frame" title="C4 Level 4: Circuit"></iframe>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SECURITY AUDIT                                             -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="audit">
+  <h2>4-Loop Security Audit</h2>
+  <p>
+    The protocol was audited through 4 iterative loops, each using 8+ specialized agents. Findings were fixed between loops until no critical, high, or medium findings remained.
+  </p>
+
+  <div class="timeline">
+    <div class="timeline-item done">
+      <div class="timeline-title">Loop 1 &mdash; <span class="badge critical">92 findings</span></div>
+      <div class="timeline-desc">
+        16 critical fixes applied: commitment chain integrity, VK timelock, AdminCap pool binding, standard deposits, privacy-preserving events.
+      </div>
+    </div>
+    <div class="timeline-item done">
+      <div class="timeline-title">Loop 2 &mdash; <span class="badge high">24 findings</span></div>
+      <div class="timeline-desc">
+        UTXO model introduced (dynamic_field::remove prevents parallel chain attacks). Frontend updated to v2 Poseidon(4) hashes. Anti-griefing deposit_and_register.
+      </div>
+    </div>
+    <div class="timeline-item done">
+      <div class="timeline-title">Loop 3 &mdash; <span class="badge medium">5 findings</span></div>
+      <div class="timeline-desc">
+        UTXO verified correct. E2E test pipeline updated. Minor edge cases in error handling.
+      </div>
+    </div>
+    <div class="timeline-item done">
+      <div class="timeline-title">Loop 4 &mdash; <span class="badge fixed">CLEAN</span></div>
+      <div class="timeline-desc">
+        0 critical, 0 high, 0 medium findings. Protocol cleared for testnet deployment.
+      </div>
+    </div>
+  </div>
+
+  <h3>Security Properties</h3>
+  <table>
+    <tr><th>Property</th><th>Mechanism</th><th>Error Code</th></tr>
+    <tr><td>Amount privacy</td><td>Amounts never in public inputs; only Poseidon hashes on-chain</td><td>&mdash;</td></tr>
+    <tr><td>Replay prevention</td><td>Nullifier stored permanently in dynamic field</td><td>E_NULLIFIER_SPENT (2)</td></tr>
+    <tr><td>UTXO integrity</td><td>Old commitment consumed, new created atomically</td><td>E_COMMITMENT_CHAIN_BROKEN (9)</td></tr>
+    <tr><td>Overflow prevention</td><td>Num2Bits(64) on all numeric values independently</td><td>&mdash;</td></tr>
+    <tr><td>Threshold enforcement</td><td>LessEqThan(64) in-circuit: cumNew &lt;= threshold</td><td>&mdash;</td></tr>
+    <tr><td>Epoch binding</td><td>Nullifier includes epochId; contract verifies match</td><td>E_EPOCH_MISMATCH (8)</td></tr>
+    <tr><td>Domain separation</td><td>Three Poseidon tags prevent cross-type collision</td><td>&mdash;</td></tr>
+    <tr><td>Identity binding</td><td>Commitments include userSecret via Poseidon(4)</td><td>&mdash;</td></tr>
+    <tr><td>VK update safety</td><td>1-epoch timelock via propose_vk_update()</td><td>&mdash;</td></tr>
+    <tr><td>Emergency stop</td><td>freeze/unfreeze via AdminCap</td><td>E_FROZEN (1)</td></tr>
+    <tr><td>AdminCap isolation</td><td>pool_id checked on all admin operations</td><td>E_NOT_POOL_ADMIN (4)</td></tr>
+    <tr><td>Amount correlation</td><td>Standard deposit denominations only</td><td>E_NON_STANDARD_AMOUNT (14)</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- RED TEAM REPORT                                            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="red-team">
+  <h2>Privacy Red Team Report</h2>
+  <p>
+    An adversarial privacy analysis identified 15 findings. <strong>Verdict:</strong> The ZK circuit is cryptographically sound, but the protocol provides <strong>confidential transactions</strong> (amounts hidden) rather than <strong>private transactions</strong> (sender hidden). Achieving full sender privacy requires architectural changes (relayer, Merkle tree).
+  </p>
+
+  <div class="grid-4">
+    <div style="text-align: center;">
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">3</div>
+      <div style="font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase;">Critical</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--orange);">4</div>
+      <div style="font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase;">High</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">4</div>
+      <div style="font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase;">Medium</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="font-size: 1.5rem; font-weight: 700; color: var(--blue);">4</div>
+      <div style="font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase;">Low / Info</div>
+    </div>
+  </div>
+
+  <h3 id="red-team-findings">Findings</h3>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-001</span>
+      <span class="badge critical">Critical</span>
+      <span class="finding-title">Cross-Epoch Identity Linking via Same Address</span>
+    </div>
+    <div class="finding-body">
+      The same address calls <code>deposit_and_register</code> across epochs, trivially linking user identity. Fix: relayer pattern (Tier 2).
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-002</span>
+      <span class="badge critical">Critical</span>
+      <span class="finding-title">Sender Visible in Sui Transaction Metadata</span>
+    </div>
+    <div class="finding-body">
+      <code>shielded_transfer</code> is signed by user's keypair. Sender address recorded in immutable tx metadata. Fix: relayer submits PTBs on behalf of users.
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-003</span>
+      <span class="badge critical">Critical</span>
+      <span class="finding-title">userSecret Plaintext in localStorage</span>
+    </div>
+    <div class="finding-body">
+      XSS extracts <code>userSecret</code> from <code>localStorage["veil-state"]</code>, enabling <strong>retroactive deanonymization</strong> of all past transactions. Fix: PBKDF2 + AES-GCM encryption (Tier 1).
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-004</span>
+      <span class="badge fixed">Fixed</span>
+      <span class="finding-title">Deposit Amount Visible On-Chain</span>
+    </div>
+    <div class="finding-body">
+      Fixed with standard deposit denominations (100/500/1000 TOKEN). Unique deposit amounts can no longer be used for correlation.
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-005</span>
+      <span class="badge high">High</span>
+      <span class="finding-title">UTXO Chain Traceable via Dynamic Field Changes</span>
+    </div>
+    <div class="finding-body">
+      Sui transaction effects reveal which CommitmentKey was removed/added, exposing the full commitment chain. Fix: Merkle tree accumulator (Tier 2).
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-006</span>
+      <span class="badge high">High</span>
+      <span class="finding-title">Gas Coin Fingerprinting</span>
+    </div>
+    <div class="finding-body">
+      Gas coin provenance creates unique fingerprints. Fix: sponsored transactions via relayer (Tier 2).
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-007</span>
+      <span class="badge high">High</span>
+      <span class="finding-title">PTB Atomic Deposit + Transfer Link</span>
+    </div>
+    <div class="finding-body">
+      A single PTB can call <code>deposit_and_register</code> then <code>shielded_transfer</code> atomically, proving the depositor is the transferor. Fix: commitment maturity period (Tier 1).
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-008</span>
+      <span class="badge medium">Medium</span>
+      <span class="finding-title">Anonymity Set Likely = 1</span>
+    </div>
+    <div class="finding-body">
+      In low-usage periods, all transfers belong to the same user. Fix: display anonymity set size in UI, add deposit incentives.
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-009</span>
+      <span class="badge medium">Medium</span>
+      <span class="finding-title">txHistory Plaintext in localStorage</span>
+    </div>
+    <div class="finding-body">
+      Transaction history stored as cleartext maps tx digests to amounts. Fix: encrypt or use commitment hashes (Tier 1).
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-010</span>
+      <span class="badge medium">Medium</span>
+      <span class="finding-title">Timing Correlation Deposit to Transfer</span>
+    </div>
+    <div class="finding-body">
+      Immediate deposit-to-transfer pattern is a deanonymization signal. Fix: commitment maturity + UI guidance (Tier 1).
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-011</span>
+      <span class="badge medium">Medium</span>
+      <span class="finding-title">Admin-Gated Withdrawal (Censorship Risk)</span>
+    </div>
+    <div class="finding-body">
+      Users cannot self-withdraw; admin learns identity + amount. Fix: ZK-proven withdrawal circuit (Tier 2).
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-012</span>
+      <span class="badge low">Low</span>
+      <span class="finding-title">Proof Generation Time Side Channel</span>
+    </div>
+    <div class="finding-body">Practical impact low (fixed-size circuit). Accepted.</div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-013</span>
+      <span class="badge low">Low</span>
+      <span class="finding-title">Mock Proof Mode Zero Privacy</span>
+    </div>
+    <div class="finding-body">Dev-only fallback. Accepted.</div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-014</span>
+      <span class="badge info">Info</span>
+      <span class="finding-title">IP Leakage via RPC</span>
+    </div>
+    <div class="finding-body">Standard metadata leakage. Mitigate with Tor/VPN.</div>
+  </div>
+
+  <div class="finding">
+    <div class="finding-header">
+      <span class="finding-id">PRIV-015</span>
+      <span class="badge info">Info</span>
+      <span class="finding-title">txAmountHash Future Correlation</span>
+    </div>
+    <div class="finding-body">If salt leaks, amounts brute-forceable. Salt required per transaction.</div>
+  </div>
+
+  <h3 id="attack-chain">Complete Deanonymization Attack Chain</h3>
+  <div class="card danger">
+    <div class="card-title">PRIV-002 + PRIV-005 + PRIV-004 = Full Deanonymization</div>
+    <div class="card-body">
+      <ol style="margin-left: 16px; line-height: 2;">
+        <li>Query all <code>deposit_and_register</code> txs &rarr; (address, deposit_amount, genesis_commitment)</li>
+        <li>Query all <code>shielded_transfer</code> txs &rarr; (address, nullifier, old_commitment, new_commitment)</li>
+        <li>Address in step 2 links directly to step 1 (same wallet)</li>
+        <li>Commitment chain traces genesis &rarr; current via dynamic field changes</li>
+        <li><strong>Result:</strong> Complete tx graph with sender identity, amounts, ordering, epoch activity</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- TEST COVERAGE                                              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="tests">
+  <h2>Test Coverage</h2>
+  <table>
+    <tr><th>Layer</th><th>File</th><th>Tests</th><th>Coverage</th></tr>
+    <tr>
+      <td>Move contract</td>
+      <td><code>contracts/tests/pool_tests.move</code></td>
+      <td>37</td>
+      <td>Every function, every error code, AdminCap isolation, freeze paths</td>
+    </tr>
+    <tr>
+      <td>Circom circuit</td>
+      <td><code>circuits/test/transfer.test.mjs</code></td>
+      <td>40</td>
+      <td>Every constraint (C1-C11), boundary values, domain separation</td>
+    </tr>
+    <tr>
+      <td>Proof converter</td>
+      <td><code>scripts/src/test-converter.ts</code></td>
+      <td>109</td>
+      <td>bigintToLE32, G1/G2 compression, sign bits, VK layout</td>
+    </tr>
+    <tr style="font-weight: 600;">
+      <td>Total</td>
+      <td>&mdash;</td>
+      <td>186</td>
+      <td>0 failures</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ROADMAP                                                    -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="roadmap">
+  <h2>Future Improvements</h2>
+
+  <div class="roadmap-tier tier-1">
+    <div class="tier-header">
+      <span class="tier-label">Tier 1</span>
+      <span class="tier-title">Quick Wins</span>
+      <span class="tier-time">1-2 days each</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">1.1 Encrypted Client-Side Storage</div>
+      <div class="card-body">
+        <strong>Fixes:</strong> PRIV-003, PRIV-009<br>
+        PBKDF2 key derivation (600K iterations) + AES-GCM-256 encryption of <code>userSecret</code> and transaction history. Password prompt on load. Store commitment hashes instead of plaintext amounts.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">1.2 Commitment Maturity Period</div>
+      <div class="card-body">
+        <strong>Fixes:</strong> PRIV-007, PRIV-010<br>
+        Change CommitmentKey value from <code>bool</code> to <code>u64</code> (creation epoch). Assert <code>current_epoch > created_epoch</code> before consuming. Prevents atomic deposit+transfer in one PTB.
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-tier tier-2">
+    <div class="tier-header">
+      <span class="tier-label">Tier 2</span>
+      <span class="tier-title">Architecture Changes</span>
+      <span class="tier-time">1-2 weeks each</span>
+    </div>
+
+    <div class="card blue">
+      <div class="card-title">2.1 Relayer Pattern</div>
+      <div class="card-body">
+        <strong>Fixes:</strong> PRIV-001, PRIV-002, PRIV-006<br>
+        Relayer submits PTBs on behalf of users. Users send proof data off-chain. The ZK proof authenticates the user (commitment bound to userSecret) &mdash; relayer cannot forge proofs or steal funds.
+      </div>
+    </div>
+
+    <div class="card blue">
+      <div class="card-title">2.2 ZK-Proven Withdrawal</div>
+      <div class="card-body">
+        <strong>Fixes:</strong> PRIV-011<br>
+        New <code>withdraw.circom</code> circuit. Users prove commitment ownership and withdraw without admin involvement. Nullifier with domain tag 4 prevents double-withdraw.
+      </div>
+    </div>
+
+    <div class="card blue">
+      <div class="card-title">2.3 Merkle Tree Accumulator</div>
+      <div class="card-body">
+        <strong>Fixes:</strong> PRIV-005, PRIV-008<br>
+        Replace individual dynamic fields with Poseidon Merkle tree (20 levels, ~7,200 additional constraints). On-chain only root changes; specific consumed commitments hidden. Anonymity set = all commitments ever.
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-tier tier-3">
+    <div class="tier-header">
+      <span class="tier-label">Tier 3</span>
+      <span class="tier-title">Full Privacy Protocol</span>
+      <span class="tier-time">1-2 months</span>
+    </div>
+
+    <div class="card purple">
+      <div class="card-title">3.1 KYC Compliance Circuit</div>
+      <div class="card-body">
+        When cumulative spending exceeds threshold, user provides a second proof proving membership in a KYC credential Merkle tree. Identity still hidden &mdash; only "I have a valid KYC credential" is proved.
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-title">3.2 ElGamal Auditor Pattern</div>
+      <div class="card-body">
+        Each transfer includes an ElGamal encryption of (amount, randomness) under an auditor public key. Auditor can decrypt if legally required. Observers see only ciphertext. Selective disclosure without mass surveillance.
+      </div>
+    </div>
+  </div>
+
+  <h3 id="privacy-matrix">Privacy Level After Each Tier</h3>
+  <table class="privacy-matrix">
+    <tr>
+      <th>Property</th>
+      <th>Current</th>
+      <th>+Tier 1</th>
+      <th>+Tier 2</th>
+      <th>+Tier 3</th>
+    </tr>
+    <tr><td>Amount hidden</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td></tr>
+    <tr><td>Threshold enforced</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td></tr>
+    <tr><td>Client secrets encrypted</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td></tr>
+    <tr><td>Deposit-transfer unlinkable</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td></tr>
+    <tr><td>Sender anonymous</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td></tr>
+    <tr><td>UTXO chain hidden</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td></tr>
+    <tr><td>Self-serve withdrawal</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--accent);">&#10003;</td><td style="color: var(--accent);">&#10003;</td></tr>
+    <tr><td>KYC without identity reveal</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--accent);">&#10003;</td></tr>
+    <tr><td>Regulatory selective disclosure</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--danger);">&#10007;</td><td style="color: var(--accent);">&#10003;</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- QUICK START                                                -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="quickstart">
+  <h2>Quick Start</h2>
+  <pre><code>git clone https://github.com/alexandre-mrt/veil
+cd veil && bash scripts/init.sh
+
+# Build and test the Move contract
+cd contracts && sui move build && sui move test       # 37/37 pass
+
+# Compile the ZK circuit and run tests
+cd ../circuits && bash scripts/compile.sh && npm test  # 40/40 pass
+
+# Run proof converter tests
+cd ../scripts && bun run src/test-converter.ts         # 109/109 pass
+
+# Start the frontend
+cd ../frontend && bun run dev                          # localhost:3000</code></pre>
+
+  <h4>Prerequisites</h4>
+  <ul class="feature-list">
+    <li><code>circom</code> 2.1.x</li>
+    <li><code>snarkjs</code> 0.7.x</li>
+    <li><code>sui</code> CLI (testnet)</li>
+    <li><code>bun</code> runtime</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- TECH STACK                                                 -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="stack">
+  <h2>Tech Stack</h2>
+  <table>
+    <tr><th>Layer</th><th>Technology</th></tr>
+    <tr><td>ZK Circuits</td><td>Circom 2.1 + snarkjs 0.7 (BN254 Groth16)</td></tr>
+    <tr><td>Smart Contract</td><td>Sui Move 2024 edition</td></tr>
+    <tr><td>On-chain Verifier</td><td><code>sui::groth16</code> native (BN254, curve id 1)</td></tr>
+    <tr><td>Frontend</td><td>Next.js 14 + @mysten/dapp-kit</td></tr>
+    <tr><td>Client Proving</td><td>snarkjs WASM (Web Worker)</td></tr>
+    <tr><td>Token</td><td>VEIL (6 decimals, TreasuryCap + faucet)</td></tr>
+    <tr><td>Package Manager</td><td>Bun</td></tr>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PROJECT STRUCTURE                                          -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="structure">
+  <h2>Project Structure</h2>
+  <pre><code>veil/
++-- circuits/
+|   +-- transfer.circom              # 11-constraint transfer circuit (v2)
+|   +-- scripts/compile.sh           # Circom compilation + Groth16 setup
+|   '-- test/transfer.test.mjs       # 40 circuit tests
++-- contracts/
+|   +-- sources/
+|   |   +-- pool.move                # Core: UTXO, transfer, deposit, admin
+|   |   +-- verifier.move            # sui::groth16 BN254 wrapper
+|   |   '-- token.move               # VEIL token (6 decimals)
+|   '-- tests/pool_tests.move        # 37 Move tests
++-- frontend/
+|   +-- src/app/                     # Next.js 14 App Router
+|   +-- src/components/              # 12 UI components
+|   +-- src/hooks/                   # 6 hooks: proof, transfer, pool, epoch, state, withdraw
+|   '-- src/lib/                     # proof-converter, constants, types
++-- scripts/
+|   +-- src/e2e-test.ts              # Full E2E pipeline (10 steps)
+|   +-- src/deploy.ts                # Contract deployment
+|   +-- src/proof-converter.ts       # snarkjs to Sui bytes
+|   '-- src/test-converter.ts        # 109 converter tests
+'-- docs/
+    +-- index.html                   # This documentation site
+    +-- architecture.md              # Full architecture description
+    +-- SPEC.md                      # v2 post-audit specification
+    +-- FUTURE_IMPROVEMENTS.md       # 7-tier upgrade roadmap
+    +-- privacy-red-team-report.md   # 15 findings with attack chains
+    '-- c4-*.html                    # Interactive C4 diagrams</code></pre>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- TESTNET DEPLOYMENT                                         -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="testnet">
+  <h2>Testnet Deployment</h2>
+  <table>
+    <tr><th>Field</th><th>Value</th></tr>
+    <tr><td>Package</td><td><code>0xd0598d2256bfa33b8324bc6316cee1118f9131cdde346f8f1f757adb594a66bb</code></td></tr>
+    <tr><td>Network</td><td>testnet (chain-id 4c78adac)</td></tr>
+    <tr><td>Toolchain</td><td>sui 1.72.1, Move edition 2024</td></tr>
+    <tr><td>Nullifier replay</td><td>Correctly rejected (abort code 2 or 9)</td></tr>
+  </table>
+
+  <h3>Novel Contributions</h3>
+  <ul class="feature-list">
+    <li><strong>Cumulative spending proofs</strong> &mdash; first implementation on any chain</li>
+    <li><strong>UTXO commitment consumption</strong> &mdash; prevents parallel chain attacks</li>
+    <li><strong>Poseidon(4) identity-bound commitments</strong> &mdash; tied to userSecret</li>
+    <li><strong>Note-based nullifiers</strong> &mdash; multiple transfers per epoch</li>
+    <li><strong>Standard deposit denominations</strong> &mdash; resists amount correlation</li>
+    <li><strong>4-loop iterative audit</strong> with 8+ specialized agents per loop</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                     -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div style="padding: 48px 0 24px; text-align: center; border-top: 1px solid var(--border); margin-top: 48px;">
+  <div style="font-size: 1.2rem; font-weight: 700; color: var(--accent); letter-spacing: 0.15em; margin-bottom: 8px;">VEIL</div>
+  <div style="font-size: 0.68rem; color: var(--text-dim);">
+    Sui Overflow 2026 &mdash; DeFi &amp; Payments Track
+  </div>
+  <div style="font-size: 0.62rem; color: var(--text-dim); margin-top: 8px;">
+    <a href="https://github.com/alexandre-mrt/veil">GitHub</a> &middot; MIT License
+  </div>
+</div>
+
+</div><!-- /content -->
+</main>
+
+</div><!-- /layout -->
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+  ^ TOP
+</button>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const tabGroup = tab.parentElement;
+    const contentParent = tabGroup.parentElement;
+    tabGroup.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    contentParent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    const target = contentParent.querySelector('#tab-' + tab.dataset.tab);
+    if (target) target.classList.add('active');
+  });
+});
+
+// Active nav tracking
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(link => {
+        link.classList.toggle('active',
+          link.getAttribute('href') === '#' + entry.target.id
+        );
+      });
+    }
+  });
+}, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+
+sections.forEach(section => observer.observe(section));
+
+// Back to top
+const backToTop = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+  backToTop.classList.toggle('visible', window.scrollY > 400);
+});
+
+// Mobile sidebar close on link click
+navLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.remove('open');
+  });
+});
+</script>
+
+</body>
+</html>
