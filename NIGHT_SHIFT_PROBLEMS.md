@@ -1,50 +1,44 @@
 # Night Shift Problems — Veil
 
-> Check this file first in the morning. It contains uncertainties, assumptions, and blocked items.
+> All critical and major issues resolved. E2E verified on Sui testnet.
 
 ---
 
-## FIXED — Blockers (from stability gate)
+## ALL FIXED
 
-1. **CommitmentKey used nullifier bytes** → Fixed: uses new_commitment (1a84b9f)
-2. **withdraw() no access control** → Fixed: requires AdminCap (1a84b9f)
-3. **Epoch ID hardcoded to 1n** → Fixed: dynamic from Date.now() (1a84b9f)
-4. **No public_inputs length check** → Fixed: assert >= 192 bytes (1a84b9f)
-5. **AdminCap had `store` ability** → Fixed: key-only (1a84b9f)
+1. CommitmentKey used nullifier bytes → uses new_commitment
+2. withdraw() no access control → requires AdminCap
+3. Epoch ID hardcoded → dynamic from Date.now()
+4. No public_inputs length check → assert >= 192 bytes
+5. AdminCap had `store` ability → key-only
+6. Circuit missing threshold constraint → added LessEqThan(64)
+7. Randomness 32 bytes (BN254 overflow) → 31 bytes
+8. EPOCH_DURATION_MS duplicated → import from constants.ts
+9. Contract no epoch/threshold validation → le_bytes_to_u64 + asserts
+10. DepositForm used tx.gas (SUI) → queries TOKEN coins
+11. G2 coordinate swap was WRONG → snarkjs stores [c0,c1] correctly, removed swap
+12. Poseidon F.toObject conversion → circuit tests 8/8 pass
+13. Deploy error handling → catches stderr, handles Published.toml
+14. Keypair mismatch → loads key matching sui client active-address
+15. Object version stale → waitForTransaction after create_pool
 
-## FIXED — Majors
+## VERIFIED ON TESTNET
 
-6. **Circuit missing threshold constraint** → Fixed: added LessEqThan(64) (f433b5e)
-7. **Randomness 32 bytes → BN254 overflow** → Fixed: 31 bytes (f433b5e)
-8. **EPOCH_DURATION_MS in 3 places** → Fixed: import from constants.ts (f433b5e)
-9. **Contract no epoch/threshold validation** → Fixed: le_bytes_to_u64 + asserts (96788c1)
-10. **DepositForm used tx.gas (SUI)** → Fixed: queries TOKEN coins (96788c1)
+- Package: 0xdb8b862787a152f5581298b991e2c86dc1b0f0eb5b868e9a313b45bc06f8d111
+- Pool: 0xbd5d353cd5c0bed612692e6a76429d63b84c71201b5a28ffd542af70641e0303
+- Transfer tx: 257rYRLT6wzH6uqxa4r5f8iFNcuc47GkUFXTRctVRZBC
+- Nullifier replay: correctly rejected (abort code 2)
 
-## REMAINING — Known Limitations
+## KNOWN LIMITATIONS (not bugs)
 
-### proof-converter.ts duplicated between scripts/ and frontend/
-- **Files:** scripts/src/proof-converter.ts, frontend/src/lib/proof-converter.ts
-- **Impact:** Will drift. Share via workspace package in production.
-- **Priority:** LOW for hackathon
+### proof-converter.ts duplicated
+- scripts/ and frontend/ have copies. Share via workspace for production.
 
 ### userSecret in plaintext localStorage
-- **File:** frontend/src/hooks/usePrivateState.ts
-- **Impact:** XSS can extract master secret. Add PBKDF2+AES-GCM for production.
-- **Priority:** Documented limitation for hackathon
+- Add PBKDF2+AES-GCM for production. Documented.
 
 ### Trusted setup is dev-only
-- **File:** circuits/scripts/compile.sh
-- **Impact:** Single contributor with timestamp entropy. Production needs MPC ceremony.
-- **Priority:** Documented
-
-### circom not installed on dev machine
-- **Impact:** Circuit compilation and full E2E test require circom CLI
-- **Action:** `cargo install circom` or download binary
-
-## ASSUMPTIONS
+- Single contributor. Production needs MPC ceremony.
 
 ### Token OTW named TOKEN not VEIL
-- Move 2024 requires OTW = uppercase module name. Display name "VEIL" preserved.
-
-### Used @mysten/dapp-kit 1.x (not 2.x)
-- 2.x has breaking Lit-based API. 1.x is correct for React patterns.
+- Move 2024 constraint. Display name "VEIL" preserved via create_currency.
