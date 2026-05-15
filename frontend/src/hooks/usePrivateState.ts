@@ -66,7 +66,7 @@ function createInitialState(): VeilPrivateState {
     userSecret: generateRandomBigInt(),
     currentEpoch: computeCurrentEpoch(),
     cumulativeSpending: 0n,
-    randomness: generateRandomBigInt(),
+    randomness: 0n, // Genesis commitment uses randomness=0; updated after first transfer
     credentials: [],
   };
 }
@@ -90,12 +90,13 @@ export function usePrivateState(): UsePrivateStateReturn {
         const loaded = decodeState(stored);
         const onchainEpoch = computeCurrentEpoch();
         if (loaded.currentEpoch !== onchainEpoch) {
-          // New epoch: reset cumulative spending and randomness
+          // New epoch: reset cumulative spending but KEEP randomness
+          // The randomness must match the last on-chain commitment
           const reset: VeilPrivateState = {
             ...loaded,
             currentEpoch: onchainEpoch,
             cumulativeSpending: 0n,
-            randomness: generateRandomBigInt(),
+            // DO NOT reset randomness — it must match the on-chain commitment
           };
           localStorage.setItem(STORAGE_KEY, encodeState(reset));
           setState(reset);

@@ -82,6 +82,11 @@ export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended
         return;
       }
 
+      if (isOverThreshold) {
+        setResult({ success: false, error: "Threshold exceeded. Import a KYC credential and use Compliant Transfer mode." });
+        return;
+      }
+
       const txResult = await transfer.executeTransfer(
         privateState,
         txAmountRaw,
