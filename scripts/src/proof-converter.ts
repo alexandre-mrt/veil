@@ -109,12 +109,15 @@ export function proofToSuiBytes(proof: SnarkjsProof): Uint8Array {
   const a = compressG1(BigInt(proof.pi_a[0]), BigInt(proof.pi_a[1]));
   result.set(a, 0);
 
-  // G2 point B (bytes 32..95) — apply snarkjs coordinate swap
+  // G2 point B (bytes 32..95)
+  // snarkjs G2 format: [[c0, c1], [c0, c1], [1, 0]]
+  // arkworks compressed G2: c0 in bytes 0..31, c1 in bytes 32..63
+  // Testing: NO swap (snarkjs may already be in c0,c1 order)
   const b = compressG2(
-    BigInt(proof.pi_b[0][1]), // x0 (snarkjs stores as [1])
-    BigInt(proof.pi_b[0][0]), // x1 (snarkjs stores as [0])
-    BigInt(proof.pi_b[1][1]), // y0 (snarkjs stores as [1])
-    BigInt(proof.pi_b[1][0]), // y1 (snarkjs stores as [0])
+    BigInt(proof.pi_b[0][0]), // x_c0
+    BigInt(proof.pi_b[0][1]), // x_c1
+    BigInt(proof.pi_b[1][0]), // y_c0
+    BigInt(proof.pi_b[1][1]), // y_c1
   );
   result.set(b, 32);
 
@@ -159,33 +162,33 @@ export function vkToSuiBytes(vk: SnarkjsVK): Uint8Array {
   // alpha_g1 (32 bytes)
   parts.push(compressG1(BigInt(vk.vk_alpha_1[0]), BigInt(vk.vk_alpha_1[1])));
 
-  // beta_g2 (64 bytes) — snarkjs swap applied
+  // beta_g2 (64 bytes)
   parts.push(
     compressG2(
-      BigInt(vk.vk_beta_2[0][1]),
       BigInt(vk.vk_beta_2[0][0]),
-      BigInt(vk.vk_beta_2[1][1]),
+      BigInt(vk.vk_beta_2[0][1]),
       BigInt(vk.vk_beta_2[1][0]),
+      BigInt(vk.vk_beta_2[1][1]),
     ),
   );
 
-  // gamma_g2 (64 bytes) — snarkjs swap applied
+  // gamma_g2 (64 bytes)
   parts.push(
     compressG2(
-      BigInt(vk.vk_gamma_2[0][1]),
       BigInt(vk.vk_gamma_2[0][0]),
-      BigInt(vk.vk_gamma_2[1][1]),
+      BigInt(vk.vk_gamma_2[0][1]),
       BigInt(vk.vk_gamma_2[1][0]),
+      BigInt(vk.vk_gamma_2[1][1]),
     ),
   );
 
-  // delta_g2 (64 bytes) — snarkjs swap applied
+  // delta_g2 (64 bytes)
   parts.push(
     compressG2(
-      BigInt(vk.vk_delta_2[0][1]),
       BigInt(vk.vk_delta_2[0][0]),
-      BigInt(vk.vk_delta_2[1][1]),
+      BigInt(vk.vk_delta_2[0][1]),
       BigInt(vk.vk_delta_2[1][0]),
+      BigInt(vk.vk_delta_2[1][1]),
     ),
   );
 
