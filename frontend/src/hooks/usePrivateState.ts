@@ -76,7 +76,6 @@ export interface UsePrivateStateReturn {
   readonly isInitialized: boolean;
   readonly updateCumulative: (amount: bigint) => void;
   readonly updateAfterTransfer: (cumulativeNew: bigint, newRandomness: bigint) => void;
-  readonly resetEpoch: (newEpoch: number) => void;
 }
 
 export function usePrivateState(): UsePrivateStateReturn {
@@ -146,19 +145,5 @@ export function usePrivateState(): UsePrivateStateReturn {
     [state, persist],
   );
 
-  const resetEpoch = useCallback(
-    (newEpoch: number) => {
-      if (!state) return;
-      const updated: VeilPrivateState = {
-        ...state,
-        currentEpoch: newEpoch,
-        cumulativeSpending: 0n,
-        randomness: generateRandomBigInt(),
-      };
-      persist(updated);
-    },
-    [state, persist],
-  );
-
-  return { state, isInitialized, updateCumulative, updateAfterTransfer, resetEpoch };
+  return { state, isInitialized, updateCumulative, updateAfterTransfer };
 }

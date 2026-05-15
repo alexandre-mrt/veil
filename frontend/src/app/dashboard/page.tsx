@@ -17,6 +17,8 @@ import { AuditorInfo } from "@/components/AuditorInfo";
 import { FaucetButton } from "@/components/FaucetButton";
 import { CredentialManager } from "@/components/CredentialManager";
 import { CompliantTransferForm } from "@/components/CompliantTransferForm";
+import { AdminPanel } from "@/components/AdminPanel";
+import { AuditorEventBrowser } from "@/components/AuditorEventBrowser";
 import componentStyles from "@/components/components.module.css";
 import styles from "./page.module.css";
 
@@ -24,7 +26,7 @@ import styles from "./page.module.css";
 // Types
 // ---------------------------------------------------------------------------
 
-type Tab = "deposit" | "transfer" | "compliant" | "withdraw" | "history";
+type Tab = "deposit" | "transfer" | "compliant" | "withdraw" | "history" | "admin";
 
 const TABS: readonly { id: Tab; label: string }[] = [
   { id: "deposit", label: "Deposit" },
@@ -32,6 +34,7 @@ const TABS: readonly { id: Tab; label: string }[] = [
   { id: "compliant", label: "Compliant Transfer" },
   { id: "withdraw", label: "Withdraw" },
   { id: "history", label: "History" },
+  { id: "admin", label: "Admin" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -194,6 +197,13 @@ export default function DashboardPage() {
 
               {activeTab === "history" && (
                 <TransactionHistory refreshKey={historyRefreshKey} />
+              )}
+
+              {activeTab === "admin" && (
+                <div className={styles.adminTabLayout}>
+                  <AdminPanel />
+                  <AuditorEventBrowser />
+                </div>
               )}
             </div>
           </div>

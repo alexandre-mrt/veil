@@ -34,8 +34,9 @@ public fun mint(
     transfer::public_transfer(minted, recipient);
 }
 
-/// Testnet faucet -- mints FAUCET_AMOUNT to caller.
-/// REMOVE or gate behind AdminCap before mainnet deployment.
+/// @dev Testnet only. Remove before mainnet.
+/// Mints FAUCET_AMOUNT to caller. Access is implicitly gated by TreasuryCap ownership
+/// (only the TreasuryCap holder can call this). MAX_SUPPLY is enforced.
 public fun faucet(treasury: &mut TreasuryCap<TOKEN>, ctx: &mut TxContext) {
     assert!(coin::total_supply(treasury) + FAUCET_AMOUNT <= MAX_SUPPLY, E_MAX_SUPPLY_REACHED);
     let minted = coin::mint(treasury, FAUCET_AMOUNT, ctx);

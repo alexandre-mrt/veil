@@ -1033,3 +1033,302 @@
   letter-spacing: 0.02em;
   opacity: 0.7;
 }
+
+/* === AdminPanel === */
+.adminPanel {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.adminPanelAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--warning);
+}
+
+.adminTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.adminWarning {
+  font-size: 0.7rem;
+  color: var(--warning);
+  border: 1px solid var(--warning);
+  background-color: rgba(255, 170, 0, 0.05);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius);
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+
+.adminSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.adminSectionTitle {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.adminRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.adminRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.adminRow:last-child {
+  border-bottom: none;
+}
+
+.adminRowLabel {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.adminRowValue {
+  font-size: 0.75rem;
+  font-family: "JetBrains Mono", monospace;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+
+.adminValueAccent {
+  color: var(--accent);
+}
+
+.adminValueDanger {
+  color: var(--danger);
+}
+
+.adminValueWarning {
+  color: var(--warning);
+}
+
+.adminBtnAccent {
+  padding: var(--spacing-3) var(--spacing-6);
+  background-color: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.adminBtnAccent:hover:not(:disabled) {
+  background-color: var(--accent);
+  color: var(--bg);
+}
+
+.adminBtnAccent:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.adminBtnDanger {
+  padding: var(--spacing-3) var(--spacing-6);
+  background-color: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.adminBtnDanger:hover:not(:disabled) {
+  background-color: var(--danger);
+  color: var(--bg);
+}
+
+.adminBtnDanger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.adminPendingVk {
+  font-size: 0.7rem;
+  color: var(--warning);
+  border: 1px solid var(--warning);
+  background-color: rgba(255, 170, 0, 0.05);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius);
+  letter-spacing: 0.02em;
+}
+
+.adminVkForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.adminInput {
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.adminInput:focus {
+  border-color: var(--accent);
+}
+
+.adminInput::placeholder {
+  color: var(--text-secondary);
+}
+
+.adminVkButtons {
+  display: flex;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.adminResult {
+  font-size: 0.75rem;
+  padding: var(--spacing-3);
+  border-radius: var(--radius);
+}
+
+.adminResultSuccess {
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  background-color: rgba(0, 255, 136, 0.05);
+}
+
+.adminResultError {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background-color: rgba(255, 68, 68, 0.05);
+}
+
+.adminResultLink {
+  color: var(--accent);
+  text-decoration: underline;
+  font-size: 0.7rem;
+}
+
+/* === AuditorEventBrowser === */
+.eventBrowserPanel {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.eventBrowserAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #aa44ff;
+}
+
+.eventBrowserHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.eventBrowserTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eventBrowserRefreshBtn {
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.eventBrowserRefreshBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.eventBrowserRefreshBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.eventBrowserEmpty {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  padding: var(--spacing-4) 0;
+}
+
+.eventBrowserError {
+  font-size: 0.75rem;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  background-color: rgba(255, 68, 68, 0.05);
+  padding: var(--spacing-3);
+  border-radius: var(--radius);
+}

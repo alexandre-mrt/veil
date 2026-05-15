@@ -269,9 +269,9 @@ fun test_propose_auditor_key_update() {
     scenario.end();
 }
 
-// 4. update_required_kyc_level — admin changes level successfully
+// 4. propose_kyc_level_update — admin proposes level update with timelock (does NOT apply immediately)
 #[test]
-fun test_update_required_kyc_level() {
+fun test_propose_kyc_level_update() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
@@ -297,8 +297,94 @@ fun test_update_required_kyc_level() {
         let mut config = scenario.take_shared<ComplianceConfig>();
         let pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        compliance::update_required_kyc_level(&mut config, &cap, &pool, UPDATED_KYC_LEVEL);
-        assert!(compliance::required_kyc_level(&config) == UPDATED_KYC_LEVEL, 0);
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::propose_kyc_level_update(&mut config, &cap, &pool, UPDATED_KYC_LEVEL, &test_clock);
+        // Level should NOT change immediately (timelock)
+        assert!(compliance::required_kyc_level(&config) == REQUIRED_KYC_LEVEL, 0);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 4b. propose_kyc_level_update — double proposal blocked
+#[test]
+#[expected_failure(abort_code = 33, location = veil::compliance)]
+fun test_propose_kyc_level_update_double_proposal_blocked() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::propose_kyc_level_update(&mut config, &cap, &pool, UPDATED_KYC_LEVEL, &test_clock);
+        // Second proposal while first pending — should abort with E_KYC_LEVEL_UPDATE_PENDING
+        compliance::propose_kyc_level_update(&mut config, &cap, &pool, 3, &test_clock);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 4c. cancel_kyc_level_update — admin can cancel pending KYC level update
+#[test]
+fun test_cancel_kyc_level_update() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::propose_kyc_level_update(&mut config, &cap, &pool, UPDATED_KYC_LEVEL, &test_clock);
+        // Cancel the pending update
+        compliance::cancel_kyc_level_update(&mut config, &cap, &pool);
+        // Level should still be the original
+        assert!(compliance::required_kyc_level(&config) == REQUIRED_KYC_LEVEL, 0);
+        clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -561,7 +647,7 @@ fun test_attacker_cannot_update_key() {
     scenario.end();
 }
 
-// 12. attacker_cannot_update_kyc_level — wrong AdminCap fails on update_required_kyc_level
+// 12. attacker_cannot_update_kyc_level — wrong AdminCap fails on propose_kyc_level_update
 #[test]
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_attacker_cannot_update_kyc_level() {
@@ -591,7 +677,9 @@ fun test_attacker_cannot_update_kyc_level() {
         let pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let mut config = scenario.take_shared<ComplianceConfig>();
         let cap = scenario.take_from_sender<AdminCap>(); // attacker's cap from pool 2
-        compliance::update_required_kyc_level(&mut config, &cap, &pool, UPDATED_KYC_LEVEL);
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::propose_kyc_level_update(&mut config, &cap, &pool, UPDATED_KYC_LEVEL, &test_clock);
+        clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(pool);
         test_scenario::return_shared(config);
         scenario.return_to_sender(cap);
