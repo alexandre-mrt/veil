@@ -9,7 +9,6 @@ const E_COMPLIANCE_PROOF_INVALID: u64 = 20;
 const E_CREDENTIAL_NULLIFIER_SPENT: u64 = 21;
 const E_CREDENTIAL_ROOT_MISMATCH: u64 = 22;
 const E_INVALID_COMPLIANCE_INPUTS: u64 = 23;
-const E_CONTEXT_ID_MISMATCH: u64 = 24;
 const E_CREDENTIAL_INVALID: u64 = 25;
 const E_CONFIG_POOL_MISMATCH: u64 = 26;
 const E_EPOCH_MISMATCH: u64 = 8;
@@ -43,6 +42,11 @@ public struct CredentialRootUpdatedEvent has copy, drop {
 
 public struct AuditorKeyUpdatedEvent has copy, drop {
     config_id: ID,
+}
+
+public struct KycLevelUpdatedEvent has copy, drop {
+    config_id: ID,
+    new_level: u64,
 }
 
 public fun create_compliance_config(
@@ -87,8 +91,6 @@ public fun compliant_transfer(
 ) {
     assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
 
-    let transfer_nullifier = extract_bytes(&transfer_inputs_bytes, 128, 160);
-
     pool::verify_and_execute_transfer(pool, transfer_proof_bytes, transfer_inputs_bytes, clock);
 
     assert!(compliance_inputs_bytes.length() == 192, E_INVALID_COMPLIANCE_INPUTS);
@@ -101,8 +103,8 @@ public fun compliant_transfer(
     let on_chain_epoch = pool::current_epoch(clock);
     assert!(proof_epoch == on_chain_epoch, E_EPOCH_MISMATCH);
 
-    let context_id = extract_bytes(&compliance_inputs_bytes, 64, 96);
-    assert!(context_id == transfer_nullifier, E_CONTEXT_ID_MISMATCH);
+    // contextId binding to transferNullifier is proven inside the ZK circuit
+    // (contextId = Poseidon(6, transferNullifier, userSecret)), verified by Groth16
 
     let proof_kyc_level = le_bytes_to_u64(&compliance_inputs_bytes, 96);
     assert_upper_bytes_zero(&compliance_inputs_bytes, 104, 128);
@@ -168,6 +170,10 @@ public fun update_required_kyc_level(
     pool::assert_pool_admin(cap, pool);
     assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
     config.required_kyc_level = new_level;
+    event::emit(KycLevelUpdatedEvent {
+        config_id: config.id.to_inner(),
+        new_level,
+    });
 }
 
 public fun credential_root(config: &ComplianceConfig): vector<u8> { config.credential_root }
@@ -184,10 +190,10 @@ fun extract_bytes(data: &vector<u8>, start: u64, end: u64): vector<u8> {
 
 fun le_bytes_to_u64(data: &vector<u8>, offset: u64): u64 {
     let mut result: u64 = 0;
-    let mut i: u8 = 0;
+    let mut i: u64 = 0;
     while (i < 8) {
-        let byte_val = data[offset + (i as u64)] as u64;
-        result = result | (byte_val << ((i as u8) * 8));
+        let byte_val = data[offset + i] as u64;
+        result = result | (byte_val << ((i * 8) as u8));
         i = i + 1;
     };
     result

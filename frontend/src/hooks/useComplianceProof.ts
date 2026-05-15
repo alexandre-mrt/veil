@@ -25,7 +25,7 @@ export interface ComplianceProofInput {
   readonly pathElements: readonly bigint[];
   readonly pathIndices: readonly number[];
   readonly currentEpoch: bigint;
-  readonly contextId: bigint;
+  readonly transferNullifier: bigint;
   readonly requiredKycLevel: bigint;
 }
 
@@ -49,8 +49,8 @@ interface UseComplianceProofReturn {
 // Constants
 // ---------------------------------------------------------------------------
 
-const DOMAIN_CREDENTIAL_LEAF = 4n;
 const DOMAIN_NULLIFIER = 5n;
+const DOMAIN_CONTEXT_BINDING = 6n;
 const CIRCUIT_WASM_PATH = "/circuits/compliance.wasm";
 const CIRCUIT_ZKEY_PATH = "/circuits/compliance_final.zkey";
 const MOCK_PROOF_BYTES = 128;
@@ -133,35 +133,32 @@ async function generateRealProof(
   const poseidon: PoseidonInstance = await circomlibjs.buildPoseidon();
   const F = poseidon.F;
 
-  // Domain tag 4: credential leaf = Poseidon(4, userSecret, kycLevel, expiryEpoch, issuerId)
-  const credentialLeaf = F.toObject(
-    poseidon([
-      DOMAIN_CREDENTIAL_LEAF,
-      input.userSecret,
-      input.kycLevel,
-      input.expiryEpoch,
-      input.issuerId,
-    ]),
+  // Compute contextId: Poseidon(6, transferNullifier, userSecret)
+  const contextId = F.toObject(
+    poseidon([DOMAIN_CONTEXT_BINDING, input.transferNullifier, input.userSecret]),
   );
 
   // Domain tag 5: nullifier = Poseidon(5, userSecret, contextId)
   const nullifier = F.toObject(
-    poseidon([DOMAIN_NULLIFIER, input.userSecret, input.contextId]),
+    poseidon([DOMAIN_NULLIFIER, input.userSecret, contextId]),
   );
 
   const circuitInput: Record<string, string> = {
+    // Public
+    merkleRoot: input.merkleRoot.toString(),
+    currentEpoch: input.currentEpoch.toString(),
+    contextId: contextId.toString(),
+    requiredKycLevel: input.requiredKycLevel.toString(),
+    nullifier: nullifier.toString(),
+    validCredential: "1",
+    // Private
     userSecret: input.userSecret.toString(),
     kycLevel: input.kycLevel.toString(),
     expiryEpoch: input.expiryEpoch.toString(),
     issuerId: input.issuerId.toString(),
-    credentialLeaf: credentialLeaf.toString(),
-    merkleRoot: input.merkleRoot.toString(),
     pathElements: input.pathElements.map((e) => e.toString()).join(","),
     pathIndices: input.pathIndices.map((i) => i.toString()).join(","),
-    currentEpoch: input.currentEpoch.toString(),
-    contextId: input.contextId.toString(),
-    requiredKycLevel: input.requiredKycLevel.toString(),
-    nullifier: nullifier.toString(),
+    transferNullifier: input.transferNullifier.toString(),
   };
 
   const { proof, publicSignals } = await snarkjs.groth16.fullProve(
