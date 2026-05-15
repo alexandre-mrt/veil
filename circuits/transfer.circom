@@ -78,15 +78,18 @@ template Transfer() {
     component newBits = Num2Bits(64);
     newBits.in <== cumulativeNew;
 
-    // ─── CONSTRAINT 8: Cumulative spending under threshold ─────────────────────
-    // cumulativeNew <= threshold (anonymous tier allowed)
-    // If cumulativeNew > threshold, the prover needs a separate compliance proof
+    // ─── CONSTRAINT 8: Threshold range proof ───────────────────────────────────
+    // threshold must fit in 64 bits (required for LessEqThan(64) correctness)
+    component threshBits = Num2Bits(64);
+    threshBits.in <== threshold;
+
+    // ─── CONSTRAINT 9: Cumulative spending under threshold ───────────────────
     component ltThreshold = LessEqThan(64);
     ltThreshold.in[0] <== cumulativeNew;
     ltThreshold.in[1] <== threshold;
     ltThreshold.out === 1;
 
-    // ─── CONSTRAINT 9: Nullifier is correctly derived ─────────────────────────
+    // ─── CONSTRAINT 10: Nullifier is correctly derived ────────────────────────
     // nullifier = Poseidon(2, userSecret, epochId)
     // Domain tag 2 separates nullifiers from commitments (tag 1)
     component nfHash = Poseidon(3);
@@ -95,7 +98,7 @@ template Transfer() {
     nfHash.inputs[2] <== epochId;
     nullifier === nfHash.out;
 
-    // ─── CONSTRAINT 9: tx amount hash is correctly derived ───────────────────
+    // ─── CONSTRAINT 11: tx amount hash is correctly derived ──────────────────
     // txAmountHash = Poseidon(txAmount, salt)
     // Allows receiver to verify the committed amount without revealing it on-chain
     component txHash = Poseidon(2);
