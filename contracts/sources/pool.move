@@ -25,6 +25,8 @@ const E_EPOCH_MISMATCH: u64 = 8;
 const E_COMMITMENT_CHAIN_BROKEN: u64 = 9;
 const E_COMMITMENT_EXISTS: u64 = 10;
 const E_DUST_DEPOSIT: u64 = 11;
+const E_COMPLIANCE_REQUIRED: u64 = 15;
+const E_COMMITMENT_NOT_MATURE: u64 = 16;
 
 public struct Pool has key {
     id: UID,
@@ -34,6 +36,7 @@ public struct Pool has key {
     frozen: bool,
     pending_vk: vector<u8>,
     vk_update_epoch: u64,
+    compliance_required: bool,
 }
 
 public struct AdminCap has key {
@@ -62,6 +65,7 @@ public fun create_pool(transfer_vk: vector<u8>, threshold: u64, ctx: &mut TxCont
         frozen: false,
         pending_vk: vector[],
         vk_update_epoch: 0,
+        compliance_required: false,
     };
     let cap = AdminCap { id: object::new(ctx), pool_id };
     transfer::share_object(pool);
@@ -89,6 +93,7 @@ public fun shielded_transfer(
     _ctx: &TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
+    assert!(!pool.compliance_required, E_COMPLIANCE_REQUIRED);
     assert!(public_inputs_bytes.length() == 192, E_INVALID_INPUTS_LENGTH);
 
     // Apply pending VK update if epoch has passed
@@ -117,7 +122,8 @@ public fun shielded_transfer(
         dynamic_field::exists_(&pool.id, old_comm_key),
         E_COMMITMENT_CHAIN_BROKEN,
     );
-    dynamic_field::remove<CommitmentKey, bool>(&mut pool.id, old_comm_key);
+    let created_epoch = dynamic_field::remove<CommitmentKey, u64>(&mut pool.id, old_comm_key);
+    assert!(current_epoch(clock) > created_epoch, E_COMMITMENT_NOT_MATURE);
 
     // Nullifier: bytes 128..160 (full 32-byte Poseidon hash — no truncation check)
     let nullifier = extract_bytes(&public_inputs_bytes, 128, 160);
@@ -135,7 +141,7 @@ public fun shielded_transfer(
         !dynamic_field::exists_(&pool.id, new_comm_key),
         E_COMMITMENT_EXISTS,
     );
-    dynamic_field::add(&mut pool.id, new_comm_key, true);
+    dynamic_field::add(&mut pool.id, new_comm_key, current_epoch(clock));
 
     event::emit(TransferEvent { nullifier, new_commitment });
 }
@@ -173,7 +179,8 @@ public(package) fun verify_and_execute_transfer(
         dynamic_field::exists_(&pool.id, old_comm_key),
         E_COMMITMENT_CHAIN_BROKEN,
     );
-    dynamic_field::remove<CommitmentKey, bool>(&mut pool.id, old_comm_key);
+    let created_epoch = dynamic_field::remove<CommitmentKey, u64>(&mut pool.id, old_comm_key);
+    assert!(current_epoch(clock) > created_epoch, E_COMMITMENT_NOT_MATURE);
 
     let nullifier = extract_bytes(&public_inputs_bytes, 128, 160);
     let nullifier_key = NullifierKey { bytes: nullifier };
@@ -189,7 +196,7 @@ public(package) fun verify_and_execute_transfer(
         !dynamic_field::exists_(&pool.id, new_comm_key),
         E_COMMITMENT_EXISTS,
     );
-    dynamic_field::add(&mut pool.id, new_comm_key, true);
+    dynamic_field::add(&mut pool.id, new_comm_key, current_epoch(clock));
 
     event::emit(TransferEvent { nullifier, new_commitment });
 }
@@ -199,6 +206,7 @@ public fun deposit_and_register(
     pool: &mut Pool,
     coin: Coin<TOKEN>,
     commitment: vector<u8>,
+    clock: &sui::clock::Clock,
     _ctx: &TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
@@ -212,7 +220,7 @@ public fun deposit_and_register(
         E_COMMITMENT_EXISTS,
     );
     balance::join(&mut pool.balance, coin.into_balance());
-    dynamic_field::add(&mut pool.id, comm_key, true);
+    dynamic_field::add(&mut pool.id, comm_key, current_epoch(clock));
     event::emit(DepositEvent { pool_id: pool.id.to_inner() });
 }
 
@@ -225,7 +233,6 @@ public fun withdraw(
     ctx: &mut TxContext,
 ) {
     assert_pool_admin(cap, pool);
-    assert!(!pool.frozen, E_FROZEN);
     assert!(pool.balance.value() >= amount, E_INSUFFICIENT_BALANCE);
     let withdrawn = coin::from_balance(balance::split(&mut pool.balance, amount), ctx);
     transfer::public_transfer(withdrawn, recipient);
@@ -269,9 +276,15 @@ public fun unfreeze_pool(pool: &mut Pool, cap: &AdminCap) {
     event::emit(FreezeEvent { pool_id: pool.id.to_inner(), frozen: false });
 }
 
+public fun set_compliance_required(pool: &mut Pool, cap: &AdminCap, required: bool) {
+    assert_pool_admin(cap, pool);
+    pool.compliance_required = required;
+}
+
 public fun is_frozen(pool: &Pool): bool { pool.frozen }
 public fun pool_balance(pool: &Pool): u64 { pool.balance.value() }
 public fun threshold(pool: &Pool): u64 { pool.threshold }
+public fun compliance_required(pool: &Pool): bool { pool.compliance_required }
 
 public fun current_epoch(clock: &sui::clock::Clock): u64 {
     sui::clock::timestamp_ms(clock) / EPOCH_DURATION_MS
