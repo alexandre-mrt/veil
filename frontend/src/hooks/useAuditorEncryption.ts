@@ -29,6 +29,7 @@ interface UseAuditorEncryptionReturn {
 const AUDITOR_P256_KEY_LENGTH = 65; // uncompressed P-256 public key
 const AES_GCM_IV_LENGTH = 12;
 const HKDF_INFO = "veil-auditor-v1";
+const FIXED_PLAINTEXT_LEN = 128; // fixed ciphertext length to prevent amount range leak (H4)
 
 // ---------------------------------------------------------------------------
 // Encryption helpers (Web Crypto API)
@@ -70,10 +71,15 @@ async function generateEphemeralKeypair(): Promise<CryptoKeyPair> {
 /**
  * Derives a shared secret via ECDH, then stretches it with HKDF-SHA256
  * into an AES-GCM-256 key.
+ *
+ * @param ephemeralPubRawBuffer - raw bytes of the ephemeral public key as an
+ *   ArrayBuffer, used as HKDF salt to bind the derived key to this specific
+ *   ephemeral keypair (M5)
  */
 async function deriveAesKey(
   ephemeralPrivateKey: CryptoKey,
   auditorPublicKey: CryptoKey,
+  ephemeralPubRawBuffer: ArrayBuffer,
 ): Promise<CryptoKey> {
   // ECDH: derive 256-bit shared secret
   const sharedBits = await crypto.subtle.deriveBits(
@@ -92,12 +98,13 @@ async function deriveAesKey(
   );
 
   // HKDF-SHA256 -> AES-GCM-256 key
+  // salt = ephemeral public key bytes for stronger key binding (M5)
   const encoder = new TextEncoder();
   return crypto.subtle.deriveKey(
     {
       name: "HKDF",
       hash: "SHA-256",
-      salt: new Uint8Array(32), // empty salt (32 zero bytes)
+      salt: ephemeralPubRawBuffer,
       info: encoder.encode(HKDF_INFO),
     },
     hkdfKey,
@@ -154,23 +161,36 @@ export function useAuditorEncryption(): UseAuditorEncryptionReturn {
         // 2. Generate ephemeral P-256 keypair
         const ephemeralKeypair = await generateEphemeralKeypair();
 
-        // 3. ECDH + HKDF -> AES-GCM-256 key
-        const aesKey = await deriveAesKey(
-          ephemeralKeypair.privateKey,
-          auditorKey,
-        );
-
-        // 4. Encrypt payload
-        const encoder = new TextEncoder();
-        const plaintext = encoder.encode(JSON.stringify(payload));
-        const { iv, ciphertext } = await aesGcmEncrypt(aesKey, plaintext);
-
-        // 5. Export ephemeral public key (raw, 65 bytes)
-        const ephemeralPublicKeyBuffer = await crypto.subtle.exportKey(
+        // 3. Export ephemeral public key (raw, 65 bytes) before HKDF
+        //    so it can be used as HKDF salt for stronger key binding (M5).
+        //    Keep as ArrayBuffer for Web Crypto strict typing; create Uint8Array
+        //    view separately for the return value.
+        const ephemeralPubRawBuffer = await crypto.subtle.exportKey(
           "raw",
           ephemeralKeypair.publicKey,
         );
-        const ephemeralPublicKey = new Uint8Array(ephemeralPublicKeyBuffer);
+        const ephemeralPublicKey = new Uint8Array(ephemeralPubRawBuffer);
+
+        // 4. ECDH + HKDF (salt = ephemeralPubRawBuffer) -> AES-GCM-256 key
+        const aesKey = await deriveAesKey(
+          ephemeralKeypair.privateKey,
+          auditorKey,
+          ephemeralPubRawBuffer,
+        );
+
+        // 5. Encode payload with fixed-length padding to prevent
+        //    ciphertext-length side-channel leaking the amount range (H4)
+        const jsonPayload = JSON.stringify(payload);
+        const rawBytes = new TextEncoder().encode(jsonPayload);
+        if (rawBytes.length > FIXED_PLAINTEXT_LEN) {
+          throw new Error(
+            `Payload too large: ${rawBytes.length} bytes exceeds FIXED_PLAINTEXT_LEN (${FIXED_PLAINTEXT_LEN})`,
+          );
+        }
+        const plaintext = new Uint8Array(FIXED_PLAINTEXT_LEN);
+        plaintext.set(rawBytes);
+        // Remaining bytes are zero-padded (AES-GCM authenticated, so padding is safe)
+        const { iv, ciphertext } = await aesGcmEncrypt(aesKey, plaintext);
 
         // 6. Build combined: [ephemeralPublicKey(65) | iv(12) | ciphertext]
         const combined = new Uint8Array(
