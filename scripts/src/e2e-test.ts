@@ -367,6 +367,7 @@ async function mintAndDeposit(
   packageId: string,
   treasuryCapId: string,
   poolId: string,
+  genesisCommitmentBytes: Uint8Array,
 ): Promise<void> {
   // First, mint tokens using token::faucet
   const mintTx = new Transaction();
@@ -411,8 +412,12 @@ async function mintAndDeposit(
   ]);
 
   depositTx.moveCall({
-    target: `${packageId}::pool::deposit`,
-    arguments: [depositTx.object(poolId), depositCoin],
+    target: `${packageId}::pool::deposit_and_register`,
+    arguments: [
+      depositTx.object(poolId),
+      depositCoin,
+      depositTx.pure.vector("u8", Array.from(genesisCommitmentBytes)),
+    ],
   });
 
   info(`Depositing ${FAUCET_MINT_AMOUNT} tokens to pool...`);
@@ -510,7 +515,7 @@ async function testNullifierReplay(
     ],
   });
 
-  info("Attempting nullifier replay (should fail with E_NULLIFIER_SPENT)...");
+  info("Attempting replay (should fail — old commitment consumed or nullifier spent)...");
   try {
     const result = await client.signAndExecuteTransaction({
       transaction: tx,
@@ -529,12 +534,8 @@ async function testNullifierReplay(
     const errMsg = error instanceof Error ? error.message : String(error);
     if (
       errMsg.includes("MoveAbort") ||
-      errMsg.includes("NULLIFIER") ||
-      errMsg.includes("abort") ||
-      errMsg.includes("E_NULLIFIER_SPENT") ||
-      // Error code 2 = E_NULLIFIER_SPENT from pool.move
-      errMsg.includes(", 2)") ||
-      errMsg.includes("InsufficientGas") === false
+      errMsg.includes(", 2)") ||  // E_NULLIFIER_SPENT
+      errMsg.includes(", 9)")     // E_COMMITMENT_CHAIN_BROKEN (UTXO consumed)
     ) {
       success(`Replay correctly rejected: ${errMsg.slice(0, 200)}`);
     } else {
@@ -591,30 +592,7 @@ async function main(): Promise<void> {
 
   // ── Step 8: Mint and deposit tokens ───────────────────────────────────
   step(8, "Minting and depositing VEIL tokens");
-  await mintAndDeposit(client, keypair, packageId, treasuryCapId, poolId);
-
-  // ── Step 8b: Register genesis commitment ──────────────────────────────
-  info("Registering genesis commitment (oldCommitment) on-chain...");
-  {
-    const tx = new Transaction();
-    tx.moveCall({
-      target: `${packageId}::pool::register_commitment`,
-      arguments: [
-        tx.object(poolId),
-        tx.pure.vector("u8", Array.from(publicInputsBytes.slice(0, 32))),
-      ],
-    });
-    const regResult = await client.signAndExecuteTransaction({
-      transaction: tx,
-      signer: keypair,
-      options: { showEffects: true },
-    });
-    if (regResult.effects?.status?.status !== "success") {
-      throw new Error(`register_commitment failed: ${JSON.stringify(regResult.effects?.status)}`);
-    }
-    await client.waitForTransaction({ digest: regResult.digest });
-    success("Genesis commitment registered.");
-  }
+  await mintAndDeposit(client, keypair, packageId, treasuryCapId, poolId, publicInputsBytes.slice(0, 32));
 
   // ── Step 9: Execute shielded transfer ─────────────────────────────────
   step(9, "Executing shielded transfer with ZK proof");
