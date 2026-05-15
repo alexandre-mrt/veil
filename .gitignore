@@ -4,12 +4,23 @@ node_modules/
 build/
 .next/
 target/
+
+# Circuit artifacts (large binaries)
 *.ptau
 *.zkey
 *.wasm
 *.r1cs
 *.wtns
-.claude/worktrees/
-transfer.wasm
-*.zkey
-*.ptau
+*.sym
+
+# Sui
+contracts/Published.toml
+
+# Night-shift operational files
+NIGHT_SHIFT_*
+GROUND_TRUTH_BRAINSTORM.md
+GROUND_TRUTH_HEALTH.md
+.ground_truth.sha256
+TODO.md
+LEARNINGS.md
+.claude/
