@@ -4,11 +4,16 @@ node_modules/
 build/
 .next/
 target/
+
+# Circuit artifacts (large binaries)
 *.ptau
 *.zkey
 *.wasm
 *.r1cs
 *.wtns
-transfer.wasm
-*.zkey
-*.ptau
+*.sym
+
+# Sui
+contracts/Published.toml
+
+TODO.md
