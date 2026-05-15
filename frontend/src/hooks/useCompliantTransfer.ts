@@ -158,7 +158,7 @@ export function useCompliantTransfer(): UseCompliantTransferReturn {
             (_, i) => (credential.merkleIndex >> i) & 1,
           ),
           currentEpoch: getCurrentEpochId(),
-          contextId: transferNullifier,
+          transferNullifier,
           requiredKycLevel: BigInt(complianceConfig.requiredKycLevel),
         };
 
