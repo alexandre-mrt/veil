@@ -5,7 +5,8 @@ export const TREASURY_CAP_ID = process.env.NEXT_PUBLIC_TREASURY_CAP_ID ?? "0xbc8
 export const ADMIN_CAP_ID = process.env.NEXT_PUBLIC_ADMIN_CAP_ID ?? "0x5ec96ea6b8a04f7cf7cdef299d7c0d1174fbedb5cf6772c67dd86e7f954e9f1f";
 export const TOKEN_TYPE = `${PACKAGE_ID}::token::TOKEN`;
 export const THRESHOLD = BigInt(process.env.NEXT_PUBLIC_THRESHOLD ?? "1000000000"); // 1000 VEIL (6 decimals)
-export const EPOCH_DURATION_MS = Number(process.env.NEXT_PUBLIC_EPOCH_DURATION_MS ?? "3600000"); // 1h testnet
+// Epoch duration: 1h for testnet, 30 days for production (2_592_000_000)
+export const EPOCH_DURATION_MS = Number(process.env.NEXT_PUBLIC_EPOCH_DURATION_MS ?? "3600000");
 
 // Polling
 export const REFETCH_INTERVAL_MS = 10_000;
