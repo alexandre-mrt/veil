@@ -72,8 +72,7 @@ fun assert_pool_admin(cap: &AdminCap, pool: &Pool) {
 
 public fun deposit(pool: &mut Pool, coin: Coin<TOKEN>, _ctx: &TxContext) {
     assert!(!pool.frozen, E_FROZEN);
-    let amount = coin.value();
-    assert!(amount >= MIN_DEPOSIT, E_DUST_DEPOSIT);
+    assert!(coin.value() >= MIN_DEPOSIT, E_DUST_DEPOSIT);
     balance::join(&mut pool.balance, coin.into_balance());
     event::emit(DepositEvent { pool_id: pool.id.to_inner() });
 }
@@ -86,7 +85,7 @@ public fun shielded_transfer(
     _ctx: &TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
-    assert!(public_inputs_bytes.length() >= 192, E_INVALID_INPUTS_LENGTH);
+    assert!(public_inputs_bytes.length() == 192, E_INVALID_INPUTS_LENGTH);
 
     // Apply pending VK update if epoch has passed
     apply_pending_vk(pool, clock);
@@ -107,13 +106,14 @@ public fun shielded_transfer(
     );
     assert!(valid, E_INVALID_PROOF);
 
-    // Verify commitment chain
+    // Verify commitment chain — UTXO-style: consume old, create new
     let old_commitment = extract_bytes(&public_inputs_bytes, 0, 32);
     let old_comm_key = CommitmentKey { bytes: old_commitment };
     assert!(
         dynamic_field::exists_(&pool.id, old_comm_key),
         E_COMMITMENT_CHAIN_BROKEN,
     );
+    dynamic_field::remove<CommitmentKey, bool>(&mut pool.id, old_comm_key);
 
     // Nullifier: bytes 128..160 (full 32-byte Poseidon hash — no truncation check)
     let nullifier = extract_bytes(&public_inputs_bytes, 128, 160);
@@ -136,20 +136,24 @@ public fun shielded_transfer(
     event::emit(TransferEvent { nullifier, new_commitment });
 }
 
-// Register a user's genesis commitment (first step after deposit)
-public fun register_commitment(
+// Register a user's genesis commitment (bundled with deposit for anti-griefing)
+public fun deposit_and_register(
     pool: &mut Pool,
+    coin: Coin<TOKEN>,
     commitment: vector<u8>,
     _ctx: &TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
+    assert!(coin.value() >= MIN_DEPOSIT, E_DUST_DEPOSIT);
     assert!(commitment.length() == 32, E_INVALID_INPUTS_LENGTH);
     let comm_key = CommitmentKey { bytes: commitment };
     assert!(
         !dynamic_field::exists_(&pool.id, comm_key),
         E_COMMITMENT_EXISTS,
     );
+    balance::join(&mut pool.balance, coin.into_balance());
     dynamic_field::add(&mut pool.id, comm_key, true);
+    event::emit(DepositEvent { pool_id: pool.id.to_inner() });
 }
 
 // Admin-gated emergency withdraw (documented as custodial — timelock in production)

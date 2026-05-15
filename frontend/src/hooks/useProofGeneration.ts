@@ -151,17 +151,17 @@ async function generateRealProof(
   const salt = generateRandomBigInt();
   const cumulativeNew = privateState.cumulativeSpending + txAmount;
 
-  // Compute Poseidon hashes with domain separation (array input, matching e2e-test.ts)
+  // Compute Poseidon hashes with domain separation (v2: Poseidon(4) for commitments/nullifiers)
   const oldCommitment = F.toString(
-    poseidon([DOMAIN_COMMITMENT, privateState.cumulativeSpending, privateState.randomness]),
+    poseidon([DOMAIN_COMMITMENT, privateState.cumulativeSpending, privateState.randomness, privateState.userSecret]),
   );
   const newCommitment = F.toString(
-    poseidon([DOMAIN_COMMITMENT, cumulativeNew, newRandomness]),
+    poseidon([DOMAIN_COMMITMENT, cumulativeNew, newRandomness, privateState.userSecret]),
   );
   const nullifier = F.toString(
-    poseidon([DOMAIN_NULLIFIER, privateState.userSecret, epochId]),
+    poseidon([DOMAIN_NULLIFIER, privateState.userSecret, epochId, privateState.randomness]),
   );
-  const txAmountHash = F.toString(poseidon([txAmount, salt]));
+  const txAmountHash = F.toString(poseidon([3n, txAmount, salt]));
 
   // Circuit input must match transfer.circom signal order
   const circuitInput = {

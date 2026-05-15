@@ -1,136 +1,63 @@
-# Ground Truth: Interfaces & Contracts
+# Ground Truth: Interfaces & Contracts (v2 — post-audit)
 
-## Circuit Interfaces
+## Circuit Interfaces (v2)
 
-### transfer.circom — Public Inputs (order matters for Sui verification)
+### transfer.circom — Public Inputs (6, order matters)
 ```
-signal input old_commitment;      // Poseidon(cumulative_old, randomness_old)
-signal input new_commitment;      // Poseidon(cumulative_new, randomness_new)
-signal input threshold;           // KYC-free limit (e.g., 1000 * 10^6 for USDC decimals)
-signal input epoch_id;            // Current epoch (from on-chain Clock)
-signal input nullifier;           // Poseidon(2, user_secret, epoch_id) — domain-separated
-signal input tx_amount_hash;      // Poseidon(tx_amount, salt) — for receiver verification
-```
-
-### transfer.circom — Private Inputs
-```
-signal input cumulative_old;      // Previous cumulative spending
-signal input cumulative_new;      // cumulative_old + tx_amount
-signal input tx_amount;           // This transaction's amount
-signal input randomness_old;      // Blinding factor for old commitment
-signal input randomness_new;      // Blinding factor for new commitment
-signal input user_secret;         // User's master secret (never revealed)
-signal input salt;                // Salt for tx_amount_hash
+signal input oldCommitment;      // Poseidon(1, cumulative_old, randomness_old, userSecret)
+signal input newCommitment;      // Poseidon(1, cumulative_new, randomness_new, userSecret)
+signal input threshold;          // KYC-free limit
+signal input epochId;            // Current epoch from Clock
+signal input nullifier;          // Poseidon(2, userSecret, epochId, randomnessOld)
+signal input txAmountHash;       // Poseidon(3, txAmount, salt)
 ```
 
-### transfer.circom — Constraints
+### transfer.circom — Private Inputs (7)
 ```
-1. old_commitment === Poseidon(1, cumulative_old, randomness_old)
-2. new_commitment === Poseidon(1, cumulative_new, randomness_new)
-3. cumulative_new === cumulative_old + tx_amount
-4. tx_amount > 0
-5. cumulative_old >= 0 AND cumulative_old < 2^64
-6. tx_amount >= 0 AND tx_amount < 2^64
-7. nullifier === Poseidon(2, user_secret, epoch_id)
-8. tx_amount_hash === Poseidon(tx_amount, salt)
+signal input cumulativeOld, cumulativeNew, txAmount;
+signal input randomnessOld, randomnessNew, userSecret, salt;
 ```
 
-### First-tx-of-epoch special case
+### Circuit Constraints (11)
 ```
-old_commitment === Poseidon(1, 0, 0)  // deterministic genesis
-cumulative_old === 0
-```
-
-## Move Contract Interfaces
-
-### veil::pool
-```move
-module veil::pool;
-
-// Shared objects
-public struct Pool has key {
-    id: UID,
-    transfer_pvk: vector<u8>,         // PreparedVerifyingKey for transfer circuit
-    compliance_pvk: vector<u8>,        // PreparedVerifyingKey for compliance circuit  
-    credential_root: u256,             // Merkle root of valid credentials
-    epoch_duration_ms: u64,            // 30 days in ms
-    threshold: u64,                    // KYC-free limit
-    total_deposited: u64,
-    frozen: bool,                      // Emergency freeze
-}
-
-public struct AdminCap has key, store { id: UID }
-
-// Entry functions
-public entry fun deposit(pool: &mut Pool, coin: Coin<VEIL>, clock: &Clock, ctx: &mut TxContext);
-public entry fun transfer(
-    pool: &mut Pool,
-    proof_bytes: vector<u8>,
-    public_inputs: vector<u8>,
-    recipient: address,
-    amount: u64,
-    clock: &Clock,
-    ctx: &mut TxContext,
-);
-public entry fun withdraw(pool: &mut Pool, nullifier: vector<u8>, amount: u64, clock: &Clock, ctx: &mut TxContext);
-public entry fun freeze(pool: &mut Pool, cap: &AdminCap);
-public entry fun update_credential_root(pool: &mut Pool, cap: &AdminCap, new_root: u256);
+C1:  oldCommitment === Poseidon(1, cumOld, randOld, userSecret)
+C2:  newCommitment === Poseidon(1, cumNew, randNew, userSecret)
+C3:  cumNew === cumOld + txAmount
+C4:  txAmount > 0  (GreaterThan(64))
+C5:  cumOld fits 64 bits  (Num2Bits(64))
+C6:  txAmount fits 64 bits  (Num2Bits(64))
+C7:  cumNew fits 64 bits  (Num2Bits(64))
+C8:  threshold fits 64 bits  (Num2Bits(64))
+C9:  cumNew <= threshold  (LessEqThan(64))
+C10: nullifier === Poseidon(2, userSecret, epochId, randOld)
+C11: txAmountHash === Poseidon(3, txAmount, salt)
 ```
 
-### veil::token
-```move
-module veil::token;
+### Key Changes from v1
+- Commitments: Poseidon(4) with userSecret (was Poseidon(3))
+- Nullifiers: Poseidon(4) with randomnessOld — multiple txs per epoch
+- txAmountHash: domain tag 3 (was no tag)
+- Threshold: range-proved (was unconstrained)
 
-public struct VEIL has drop {}
+## Contract: veil::pool (v2)
 
-public entry fun mint(treasury: &mut TreasuryCap<VEIL>, amount: u64, recipient: address, ctx: &mut TxContext);
-public entry fun faucet(treasury: &mut TreasuryCap<VEIL>, ctx: &mut TxContext); // 1000 VEIL
+### State model: UTXO-style commitments
+- Old commitment CONSUMED (removed) on each transfer
+- New commitment CREATED
+- Nullifier stored permanently (prevents replay)
+
+### Functions
+- `deposit_and_register(pool, coin, commitment)` — deposit + register genesis (anti-griefing)
+- `deposit(pool, coin)` — deposit only (for adding more funds)
+- `shielded_transfer(pool, proof, inputs, clock)` — verify + consume old + create new
+- `withdraw(pool, cap, amount, recipient)` — AdminCap-gated
+- `propose_vk_update(pool, cap, new_vk, clock)` — 1-epoch timelock
+- `freeze_pool / unfreeze_pool` — AdminCap-gated + events
+
+### Error Codes
 ```
-
-## Frontend Types
-
-### Private State (encrypted localStorage)
-```typescript
-interface VeilPrivateState {
-  userSecret: bigint;           // Master secret
-  currentEpoch: number;
-  cumulativeSpending: bigint;   // Current epoch total
-  randomness: bigint;           // Current commitment randomness
-  credentials: Credential[];    // KYC credentials (if any)
-}
-
-interface Credential {
-  leaf: bigint;                 // Poseidon hash of credential data
-  kycLevel: number;
-  expiry: number;
-  merkleProof: bigint[];
-  merkleIndex: number;
-}
-```
-
-### Proof Generation
-```typescript
-async function generateTransferProof(
-  privateState: VeilPrivateState,
-  txAmount: bigint,
-  epochId: bigint,
-  threshold: bigint,
-): Promise<{ proof: Uint8Array; publicInputs: Uint8Array }>;
-```
-
-## Naming Conventions
-- Move: snake_case (pool, transfer, credential_root)
-- Circom: camelCase signals (oldCommitment, newCommitment)
-- TypeScript: camelCase (generateTransferProof, VeilPrivateState)
-- Constants: UPPER_SNAKE_CASE (MAX_THRESHOLD, EPOCH_DURATION_MS)
-
-## Error Codes (Move)
-```
-E_FROZEN = 1
-E_NULLIFIER_ALREADY_SPENT = 2
-E_INVALID_PROOF = 3
-E_INVALID_EPOCH = 4
-E_THRESHOLD_EXCEEDED = 5
-E_INSUFFICIENT_BALANCE = 6
-E_INVALID_COMMITMENT = 7
+E_FROZEN = 1, E_NULLIFIER_SPENT = 2, E_INVALID_PROOF = 3, E_NOT_POOL_ADMIN = 4,
+E_THRESHOLD_MISMATCH = 5, E_INSUFFICIENT_BALANCE = 6, E_INVALID_INPUTS_LENGTH = 7,
+E_EPOCH_MISMATCH = 8, E_COMMITMENT_CHAIN_BROKEN = 9, E_COMMITMENT_EXISTS = 10,
+E_DUST_DEPOSIT = 11
 ```
