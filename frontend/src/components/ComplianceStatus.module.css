@@ -1,0 +1,155 @@
+.panel {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.accentLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+.accentAnonymous {
+  background-color: var(--accent);
+}
+
+.accentWarning {
+  background-color: var(--warning);
+}
+
+.accentDanger {
+  background-color: var(--danger);
+}
+
+.accentBlue {
+  background-color: #4488ff;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+}
+
+.title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotAnonymous {
+  background-color: var(--accent);
+}
+
+.dotWarning {
+  background-color: var(--warning);
+}
+
+.dotDanger {
+  background-color: var(--danger);
+}
+
+.dotBlue {
+  background-color: #4488ff;
+}
+
+.statusLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.labelAnonymous {
+  color: var(--accent);
+}
+
+.labelWarning {
+  color: var(--warning);
+}
+
+.labelDanger {
+  color: var(--danger);
+}
+
+.labelBlue {
+  color: #4488ff;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: var(--spacing-3);
+}
+
+.progressFill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.fillAnonymous {
+  background-color: var(--accent);
+}
+
+.fillWarning {
+  background-color: var(--warning);
+}
+
+.fillDanger {
+  background-color: var(--danger);
+}
+
+.fillBlue {
+  background-color: #4488ff;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+}
+
+.metaText {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.remaining {
+  font-size: 0.7rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.remainingBlue {
+  font-size: 0.7rem;
+  color: #4488ff;
+  letter-spacing: 0.04em;
+}
