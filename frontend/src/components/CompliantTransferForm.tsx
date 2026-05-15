@@ -169,8 +169,10 @@ export function CompliantTransferForm({
     [privateState, account, frozen, amount, validCredentials, transfer, onStateUpdate, onTxAppended],
   );
 
+  const chainConfigLoading = hasComplianceConfig && !chainConfig;
+
   const isDisabled =
-    transfer.isPending || !account || !amount || frozen || !privateState || validCredentials.length === 0 || !hasComplianceConfig;
+    transfer.isPending || !account || !amount || frozen || !privateState || validCredentials.length === 0 || !hasComplianceConfig || chainConfigLoading;
 
   const showProgress = transfer.step !== "idle" && transfer.step !== "error";
 
@@ -234,7 +236,7 @@ export function CompliantTransferForm({
       </span>
 
       <div className={styles.compliantSubtitle}>
-        KYC verified, amount encrypted for auditor
+        For above-threshold transfers. KYC verified, amount encrypted for auditor.
       </div>
 
       {frozen && (
@@ -312,7 +314,7 @@ export function CompliantTransferForm({
           className={styles.transferSubmitBtn}
           disabled={isDisabled}
         >
-          {transfer.isPending ? "Processing..." : "Compliant Transfer"}
+          {transfer.isPending ? "Processing..." : chainConfigLoading ? "Loading compliance config..." : "Compliant Transfer"}
         </button>
       </form>
 

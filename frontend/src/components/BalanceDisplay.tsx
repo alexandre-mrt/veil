@@ -55,6 +55,7 @@ export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
   const [suiLoading, setSuiLoading] = useState(false);
   const [veilRaw, setVeilRaw] = useState(0n);
   const [veilLoading, setVeilLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   const { balance: poolBalance, isLoading: poolLoading } =
     useVeilPool(POOL_ID);
@@ -68,6 +69,7 @@ export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
     async function fetchBalances() {
       setSuiLoading(true);
       setVeilLoading(true);
+      setFetchError(false);
 
       try {
         const [suiResult, coinsResult] = await Promise.all([
@@ -84,7 +86,9 @@ export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
         ) ?? 0n;
         setVeilRaw(total);
       } catch {
-        // Silently fail on balance fetch errors
+        if (!cancelled) {
+          setFetchError(true);
+        }
       } finally {
         if (!cancelled) {
           setSuiLoading(false);
@@ -102,11 +106,17 @@ export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
     };
   }, [address, client]);
 
-  const suiFormatted = suiBalance
-    ? formatBalance(suiBalance, SUI_DECIMALS)
-    : "0";
+  const suiFormatted = fetchError
+    ? "Error loading"
+    : suiBalance
+      ? formatBalance(suiBalance, SUI_DECIMALS)
+      : "0";
 
-  const veilFormatted = address ? formatBalance(veilRaw, VEIL_DECIMALS) : "--";
+  const veilFormatted = fetchError
+    ? "Error loading"
+    : address
+      ? formatBalance(veilRaw, VEIL_DECIMALS)
+      : "--";
 
   const poolFormatted = formatBalance(poolBalance, VEIL_DECIMALS);
 

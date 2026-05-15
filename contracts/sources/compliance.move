@@ -17,6 +17,7 @@ const E_INVALID_ENCRYPTED_AMOUNT: u64 = 29;
 const E_INVALID_AUDITOR_KEY: u64 = 30;
 const E_AUDITOR_KEY_UPDATE_PENDING: u64 = 31;
 const E_INVALID_VK_LENGTH: u64 = 32;
+const E_KYC_LEVEL_UPDATE_PENDING: u64 = 33;
 const MIN_ENCRYPTED_AMOUNT_LEN: u64 = 93; // 65 (ephemeral key) + 12 (IV) + 16 (GCM tag) minimum
 const MIN_VK_LENGTH: u64 = 232;
 const MIN_AUDITOR_KEY_LENGTH: u64 = 33;
@@ -32,6 +33,8 @@ public struct ComplianceConfig has key {
     credential_root_update_epoch: u64,
     pending_auditor_key: Option<vector<u8>>,
     pending_auditor_key_epoch: u64,
+    pending_kyc_level: Option<u64>,
+    pending_kyc_level_epoch: u64,
 }
 
 public struct CredentialNullifierKey has copy, drop, store { bytes: vector<u8> }
@@ -65,7 +68,17 @@ public struct AuditorKeyAppliedEvent has copy, drop {
     config_id: ID,
 }
 
-public struct KycLevelUpdatedEvent has copy, drop {
+public struct KycLevelUpdateProposedEvent has copy, drop {
+    config_id: ID,
+    new_level: u64,
+    effective_epoch: u64,
+}
+
+public struct KycLevelUpdateCancelledEvent has copy, drop {
+    config_id: ID,
+}
+
+public struct KycLevelAppliedEvent has copy, drop {
     config_id: ID,
     new_level: u64,
 }
@@ -99,6 +112,8 @@ public fun create_compliance_config(
         credential_root_update_epoch: 0,
         pending_auditor_key: option::none(),
         pending_auditor_key_epoch: 0,
+        pending_kyc_level: option::none(),
+        pending_kyc_level_epoch: 0,
     };
 
     transfer::share_object(config);
@@ -123,6 +138,16 @@ fun apply_pending_auditor_key(config: &mut ComplianceConfig, clock: &sui::clock:
     };
 }
 
+/// Apply pending KYC level if the timelock epoch has passed (mirrors auditor key timelock).
+fun apply_pending_kyc_level(config: &mut ComplianceConfig, clock: &sui::clock::Clock) {
+    if (config.pending_kyc_level.is_some() && pool::current_epoch(clock) >= config.pending_kyc_level_epoch) {
+        let new_level = config.pending_kyc_level.extract();
+        config.required_kyc_level = new_level;
+        config.pending_kyc_level_epoch = 0;
+        event::emit(KycLevelAppliedEvent { config_id: config.id.to_inner(), new_level });
+    };
+}
+
 public fun compliant_transfer(
     pool: &mut Pool,
     config: &mut ComplianceConfig,
@@ -142,6 +167,7 @@ public fun compliant_transfer(
     // Apply pending timelocked updates before checking state
     apply_pending_credential_root(config, clock);
     apply_pending_auditor_key(config, clock);
+    apply_pending_kyc_level(config, clock);
 
     // [M3] All compliance validations BEFORE any pool state mutation
     assert!(compliance_inputs_bytes.length() == 192, E_INVALID_COMPLIANCE_INPUTS);
@@ -251,19 +277,37 @@ public fun cancel_auditor_key_update(
     event::emit(AuditorKeyUpdateCancelledEvent { config_id: config.id.to_inner() });
 }
 
-public fun update_required_kyc_level(
+/// Propose KYC level update with 1-epoch timelock (mirrors auditor key timelock pattern).
+public fun propose_kyc_level_update(
     config: &mut ComplianceConfig,
     cap: &AdminCap,
     pool: &Pool,
     new_level: u64,
+    clock: &sui::clock::Clock,
 ) {
     pool::assert_pool_admin(cap, pool);
     assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
-    config.required_kyc_level = new_level;
-    event::emit(KycLevelUpdatedEvent {
+    assert!(config.pending_kyc_level.is_none(), E_KYC_LEVEL_UPDATE_PENDING);
+    let effective = pool::current_epoch(clock) + 1;
+    config.pending_kyc_level = option::some(new_level);
+    config.pending_kyc_level_epoch = effective;
+    event::emit(KycLevelUpdateProposedEvent {
         config_id: config.id.to_inner(),
         new_level,
+        effective_epoch: effective,
     });
+}
+
+public fun cancel_kyc_level_update(
+    config: &mut ComplianceConfig,
+    cap: &AdminCap,
+    pool: &Pool,
+) {
+    pool::assert_pool_admin(cap, pool);
+    assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
+    config.pending_kyc_level = option::none();
+    config.pending_kyc_level_epoch = 0;
+    event::emit(KycLevelUpdateCancelledEvent { config_id: config.id.to_inner() });
 }
 
 public fun credential_root(config: &ComplianceConfig): vector<u8> { config.credential_root }
