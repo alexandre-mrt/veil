@@ -97,12 +97,20 @@ template Compliance(merkleDepth) {
     computedValid <== expiryCheck.out * kycCheck.out;
     validCredential === computedValid;
 
-    // --- C7-C8: Range proofs to prevent overflow ---
+    // --- C7-C8: Range proofs for epoch values ---
     component epochBits = Num2Bits(64);
     epochBits.in <== currentEpoch;
 
     component expiryBits = Num2Bits(64);
     expiryBits.in <== expiryEpoch;
+
+    // --- C9-C10: Range proofs for credential fields (SKILL-002 fix) ---
+    // Prevents large field elements from wrapping in GreaterEqThan(8) comparator
+    component kycBits = Num2Bits(8);
+    kycBits.in <== kycLevel;
+
+    component issuerBits = Num2Bits(64);
+    issuerBits.in <== issuerId;
 }
 
 component main {public [merkleRoot, currentEpoch, contextId, requiredKycLevel, nullifier, validCredential]} = Compliance(20);

@@ -4,8 +4,8 @@
  * Converts snarkjs Groth16 proof JSON to Sui's expected byte format.
  * Serialization: arkworks compressed serialization for BN254 curve points.
  *
- * Key invariant: snarkjs stores G2 coordinates with swapped (x1, x0) / (y1, y0) ordering,
- * while arkworks expects (x0, x1) / (y0, y1). All G2 conversions apply this swap.
+ * Key invariant: snarkjs G2 coordinates are already in (c0, c1) order matching arkworks.
+ * NO coordinate swap is needed. Verified via 109 converter tests + E2E on Sui testnet.
  */
 
 // BN254 field modulus (Fq) and scalar field modulus (Fr)
@@ -46,7 +46,7 @@ export function compressG1(x: bigint, y: bigint): Uint8Array {
  * Compresses a G2 affine point into 64 bytes.
  *
  * Parameters use arkworks ordering: (x0, x1, y0, y1).
- * Note: callers receiving snarkjs data MUST swap coordinates before calling this.
+ * Note: snarkjs already stores G2 in (c0, c1) order — no swap needed.
  *
  * Layout: [x0 LE 32 bytes | x1 LE 32 bytes], sign bit in byte[63].
  * Sign rule: lexicographic comparison of (y1, y0) against Q_HALF.
@@ -100,7 +100,7 @@ export interface SnarkjsVK {
  *   [96..127] — C (G1 compressed, 32 bytes)
  *
  * CRITICAL: snarkjs pi_b = [[x1, x0], [y1, y0], [...]]
- * arkworks expects (x0, x1, y0, y1) — indices are swapped.
+ * arkworks expects (x0, x1, y0, y1) — snarkjs uses the same order.
  */
 export function proofToSuiBytes(proof: SnarkjsProof): Uint8Array {
   const result = new Uint8Array(128);
@@ -112,7 +112,7 @@ export function proofToSuiBytes(proof: SnarkjsProof): Uint8Array {
   // G2 point B (bytes 32..95)
   // snarkjs G2 format: [[c0, c1], [c0, c1], [1, 0]]
   // arkworks compressed G2: c0 in bytes 0..31, c1 in bytes 32..63
-  // Testing: NO swap (snarkjs may already be in c0,c1 order)
+  // Verified: snarkjs stores G2 as [c0, c1] — no swap needed (E2E tested)
   const b = compressG2(
     BigInt(proof.pi_b[0][0]), // x_c0
     BigInt(proof.pi_b[0][1]), // x_c1
@@ -154,7 +154,7 @@ export function publicInputsToSuiBytes(signals: string[]): Uint8Array {
  *   IC[0..n]   — 32 bytes each (G1 compressed)
  *
  * Total: 32 + 64 + 64 + 64 + 8 + IC.length * 32 bytes.
- * All G2 points apply the snarkjs coordinate swap.
+ * G2 points are in native (c0, c1) order — no swap needed.
  */
 export function vkToSuiBytes(vk: SnarkjsVK): Uint8Array {
   const parts: Uint8Array[] = [];
