@@ -14,6 +14,7 @@ include "templates/merkle_proof.circom";
 // Domain separation tags (first Poseidon input):
 //   4 -> credential leaf hash  H(4, userSecret, kycLevel, expiryEpoch, issuerId)
 //   5 -> compliance nullifier  H(5, userSecret, contextId)
+//   6 -> context binding hash  H(6, transferNullifier, userSecret)
 //
 // Tags 1-3 are reserved by the transfer circuit (transfer.circom).
 //
@@ -39,6 +40,7 @@ template Compliance(merkleDepth) {
     signal input issuerId;
     signal input pathElements[merkleDepth];
     signal input pathIndices[merkleDepth];
+    signal input transferNullifier;  // Transfer nullifier (private — not revealed)
 
     // --- C1: Credential leaf is well-formed ---
     // leaf = Poseidon(4, userSecret, kycLevel, expiryEpoch, issuerId)
@@ -65,6 +67,16 @@ template Compliance(merkleDepth) {
     nfHash.inputs[1] <== userSecret;
     nfHash.inputs[2] <== contextId;
     nullifier === nfHash.out;
+
+    // --- C_BIND: Context binding (transfer nullifier hidden) ---
+    // contextId = Poseidon(6, transferNullifier, userSecret)
+    // Proves compliance proof is bound to a specific transfer without
+    // revealing transferNullifier as a public input (fixes C4 linkability).
+    component ctxHash = Poseidon(3);
+    ctxHash.inputs[0] <== 6;
+    ctxHash.inputs[1] <== transferNullifier;
+    ctxHash.inputs[2] <== userSecret;
+    contextId === ctxHash.out;
 
     // --- C4: Credential has not expired ---
     component expiryCheck = GreaterEqThan(64);
