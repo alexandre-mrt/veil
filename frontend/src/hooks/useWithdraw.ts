@@ -3,8 +3,9 @@
 import { useCallback, useState } from "react";
 import {
   useCurrentAccount,
-  useSignAndExecuteTransaction,
-} from "@mysten/dapp-kit";
+  useCurrentClient,
+  useDAppKit,
+} from "@mysten/dapp-kit-react";
 import { Transaction } from "@mysten/sui/transactions";
 import { PACKAGE_ID, POOL_ID } from "@/lib/constants";
 
@@ -29,7 +30,8 @@ interface UseWithdrawReturn {
 
 export function useWithdraw(): UseWithdrawReturn {
   const account = useCurrentAccount();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const client = useCurrentClient();
+  const dAppKitInstance = useDAppKit();
   const [isPending, setIsPending] = useState(false);
 
   const withdraw = useCallback(
@@ -59,17 +61,28 @@ export function useWithdraw(): UseWithdrawReturn {
           ],
         });
 
-        const txResult = await signAndExecute({ transaction: tx });
+        const txResult = await dAppKitInstance.signAndExecuteTransaction({ transaction: tx });
+
+        if (txResult.FailedTransaction) {
+          throw new Error(
+            txResult.FailedTransaction.status.error?.message ?? "Transaction failed",
+          );
+        }
+
+        const digest = txResult.Transaction.digest;
+
+        // Wait for transaction finality before updating state
+        await client.core.waitForTransaction({ digest });
 
         setIsPending(false);
-        return { success: true, digest: txResult.digest };
+        return { success: true, digest };
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Withdraw failed";
         setIsPending(false);
         return { success: false, error: message };
       }
     },
-    [account, signAndExecute],
+    [account, client, dAppKitInstance],
   );
 
   return { withdraw, isPending };

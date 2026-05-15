@@ -1,0 +1,33 @@
+import { createDAppKit } from "@mysten/dapp-kit-core";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
+
+const GRPC_URLS: Record<string, string> = {
+  testnet: "https://fullnode.testnet.sui.io:443",
+  mainnet: "https://fullnode.mainnet.sui.io:443",
+};
+
+// Lazy-initialize dAppKit to avoid SSR issues (window/document/localStorage refs)
+let _instance: ReturnType<typeof createInstance> | null = null;
+
+function createInstance() {
+  return createDAppKit({
+    networks: ["testnet", "mainnet"] as const,
+    defaultNetwork: "testnet" as const,
+    createClient: (network) =>
+      new SuiGrpcClient({ network, baseUrl: GRPC_URLS[network] }),
+    autoConnect: true,
+  });
+}
+
+export function getDAppKit() {
+  if (!_instance) {
+    _instance = createInstance();
+  }
+  return _instance;
+}
+
+declare module "@mysten/dapp-kit-react" {
+  interface Register {
+    dAppKit: ReturnType<typeof createInstance>;
+  }
+}

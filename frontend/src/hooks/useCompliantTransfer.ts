@@ -3,8 +3,9 @@
 import { useCallback, useState } from "react";
 import {
   useCurrentAccount,
-  useSignAndExecuteTransaction,
-} from "@mysten/dapp-kit";
+  useCurrentClient,
+  useDAppKit,
+} from "@mysten/dapp-kit-react";
 import { Transaction } from "@mysten/sui/transactions";
 import { PACKAGE_ID, POOL_ID, THRESHOLD, EPOCH_DURATION_MS } from "@/lib/constants";
 import type { VeilPrivateState, ComplianceConfig, ComplianceStep } from "@/lib/types";
@@ -68,7 +69,8 @@ function extractTransferNullifier(publicInputs: Uint8Array): bigint {
 
 export function useCompliantTransfer(): UseCompliantTransferReturn {
   const account = useCurrentAccount();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const client = useCurrentClient();
+  const dAppKitInstance = useDAppKit();
   const transferProofGen = useProofGeneration();
   const complianceProofGen = useComplianceProof();
   const auditorEncryption = useAuditorEncryption();
@@ -214,7 +216,18 @@ export function useCompliantTransfer(): UseCompliantTransferReturn {
           ],
         });
 
-        const txResult = await signAndExecute({ transaction: tx });
+        const txResult = await dAppKitInstance.signAndExecuteTransaction({ transaction: tx });
+
+        if (txResult.FailedTransaction) {
+          throw new Error(
+            txResult.FailedTransaction.status.error?.message ?? "Transaction failed",
+          );
+        }
+
+        const digest = txResult.Transaction.digest;
+
+        // Wait for transaction finality before updating state
+        await client.core.waitForTransaction({ digest });
 
         // Step 6: Update private state on success
         onStateUpdate(transferResult.cumulativeNew, transferResult.newRandomness);
@@ -223,7 +236,7 @@ export function useCompliantTransfer(): UseCompliantTransferReturn {
         setProgress(100);
         setIsPending(false);
 
-        return { success: true, digest: txResult.digest };
+        return { success: true, digest };
       } catch (e) {
         const message = e instanceof Error ? e.message : "Compliant transfer failed";
         setError(message);
@@ -232,7 +245,7 @@ export function useCompliantTransfer(): UseCompliantTransferReturn {
         return { success: false, error: message };
       }
     },
-    [account, signAndExecute, transferProofGen, complianceProofGen, auditorEncryption],
+    [account, client, dAppKitInstance, transferProofGen, complianceProofGen, auditorEncryption],
   );
 
   return {

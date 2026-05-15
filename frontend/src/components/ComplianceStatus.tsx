@@ -1,13 +1,13 @@
 "use client";
 
 import type { Credential, PrivacyTier } from "@/lib/types";
+import { VEIL_DECIMALS } from "@/lib/constants";
 import styles from "./ComplianceStatus.module.css";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const VEIL_DECIMALS = 6n;
 const THRESHOLD_WARNING_PCT = 70;
 
 // ---------------------------------------------------------------------------
@@ -15,7 +15,7 @@ const THRESHOLD_WARNING_PCT = 70;
 // ---------------------------------------------------------------------------
 
 function formatAmount(value: bigint): string {
-  const divisor = 10n ** VEIL_DECIMALS;
+  const divisor = 10n ** BigInt(VEIL_DECIMALS);
   const whole = value / divisor;
   return whole.toString();
 }

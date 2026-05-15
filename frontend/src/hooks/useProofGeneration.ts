@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import type { VeilPrivateState } from "@/lib/types";
 import type { SnarkjsProof } from "@/lib/proof-converter";
+import { dynamicRequire } from "@/lib/dynamicRequire";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -105,18 +106,6 @@ async function generateMockProof(
 // ---------------------------------------------------------------------------
 // Real proof generation (snarkjs + circomlibjs)
 // ---------------------------------------------------------------------------
-
-/**
- * Dynamically imports a module by name, bypassing webpack static analysis.
- * This prevents build failures when optional dependencies are not installed.
- */
-async function dynamicRequire(moduleName: string): Promise<unknown> {
-  // Using Function constructor to create a dynamic import that webpack cannot
-  // statically analyze, allowing optional dependencies to be missing at build time.
-  // eslint-disable-next-line no-new-func
-  const importFn = new Function("m", "return import(m)") as (m: string) => Promise<unknown>;
-  return importFn(moduleName);
-}
 
 async function generateRealProof(
   privateState: VeilPrivateState,

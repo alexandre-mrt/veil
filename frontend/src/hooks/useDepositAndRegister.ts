@@ -3,11 +3,12 @@
 import { useCallback, useState } from "react";
 import {
   useCurrentAccount,
-  useSignAndExecuteTransaction,
-  useSuiClientQuery,
-} from "@mysten/dapp-kit";
+  useCurrentClient,
+  useDAppKit,
+} from "@mysten/dapp-kit-react";
 import { Transaction } from "@mysten/sui/transactions";
 import { PACKAGE_ID, POOL_ID, TOKEN_TYPE } from "@/lib/constants";
+import { dynamicRequire } from "@/lib/dynamicRequire";
 import type { VeilPrivateState } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -47,20 +48,6 @@ const DOMAIN_COMMITMENT = 1n;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Dynamically imports a module by name, bypassing webpack static analysis.
- * This prevents build failures when optional dependencies are not installed.
- */
-async function dynamicRequire(moduleName: string): Promise<unknown> {
-  // Using Function constructor to create a dynamic import that webpack cannot
-  // statically analyze, allowing optional dependencies to be missing at build time.
-  // eslint-disable-next-line no-new-func
-  const importFn = new Function("m", "return import(m)") as (
-    m: string,
-  ) => Promise<unknown>;
-  return importFn(moduleName);
-}
 
 /**
  * Converts a bigint to a 32-byte little-endian Uint8Array.
@@ -110,16 +97,11 @@ async function computeGenesisCommitment(
 
 export function useDepositAndRegister(): UseDepositAndRegisterReturn {
   const account = useCurrentAccount();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const client = useCurrentClient();
+  const dAppKitInstance = useDAppKit();
 
   const [step, setStep] = useState<DepositStep>("idle");
   const [isPending, setIsPending] = useState(false);
-
-  const { data: tokenCoins } = useSuiClientQuery(
-    "getCoins",
-    { owner: account?.address ?? "", coinType: TOKEN_TYPE },
-    { enabled: !!account },
-  );
 
   const reset = useCallback(() => {
     setStep("idle");
@@ -135,7 +117,12 @@ export function useDepositAndRegister(): UseDepositAndRegisterReturn {
         return { success: false, error: "Wallet not connected" };
       }
 
-      const tokenCoinId = tokenCoins?.data?.[0]?.coinObjectId;
+      // Fetch token coins for the current account
+      const tokenCoinsResult = await client.core.listCoins({
+        owner: account.address,
+        coinType: TOKEN_TYPE,
+      });
+      const tokenCoinId = tokenCoinsResult?.objects?.[0]?.objectId;
       if (!tokenCoinId) {
         return {
           success: false,
@@ -170,12 +157,23 @@ export function useDepositAndRegister(): UseDepositAndRegisterReturn {
           ],
         });
 
-        const txResult = await signAndExecute({ transaction: tx });
+        const txResult = await dAppKitInstance.signAndExecuteTransaction({ transaction: tx });
+
+        if (txResult.FailedTransaction) {
+          throw new Error(
+            txResult.FailedTransaction.status.error?.message ?? "Transaction failed",
+          );
+        }
+
+        const digest = txResult.Transaction.digest;
+
+        // Wait for transaction finality before updating state
+        await client.core.waitForTransaction({ digest });
 
         setStep("done");
         setIsPending(false);
 
-        return { success: true, digest: txResult.digest };
+        return { success: true, digest };
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Deposit transaction failed";
@@ -184,7 +182,7 @@ export function useDepositAndRegister(): UseDepositAndRegisterReturn {
         return { success: false, error: message };
       }
     },
-    [account, signAndExecute, tokenCoins],
+    [account, client, dAppKitInstance],
   );
 
   return { executeDeposit, step, isPending, reset };

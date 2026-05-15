@@ -43,7 +43,7 @@ public struct Pool has key {
     compliance_required: bool,
 }
 
-public struct AdminCap has key {
+public struct AdminCap has key, store {
     id: UID,
     pool_id: ID,
 }
@@ -125,12 +125,12 @@ fun execute_transfer(
     // Apply pending VK update if epoch has passed
     apply_pending_vk(pool, clock);
 
-    let proof_threshold = le_bytes_to_u64(&public_inputs_bytes, 64);
-    assert_upper_bytes_zero(&public_inputs_bytes, 72, 96);
+    let proof_threshold = verifier::le_bytes_to_u64(&public_inputs_bytes, 64);
+    verifier::assert_upper_bytes_zero(&public_inputs_bytes, 72, 96, E_INVALID_INPUTS_LENGTH);
     assert!(proof_threshold == pool.threshold, E_THRESHOLD_MISMATCH);
 
-    let proof_epoch = le_bytes_to_u64(&public_inputs_bytes, 96);
-    assert_upper_bytes_zero(&public_inputs_bytes, 104, 128);
+    let proof_epoch = verifier::le_bytes_to_u64(&public_inputs_bytes, 96);
+    verifier::assert_upper_bytes_zero(&public_inputs_bytes, 104, 128, E_INVALID_INPUTS_LENGTH);
     let on_chain_epoch = current_epoch(clock);
     // M7: Accept current epoch OR previous epoch (grace period at epoch boundaries)
     assert!(
@@ -146,29 +146,29 @@ fun execute_transfer(
     assert!(valid, E_INVALID_PROOF);
 
     // Verify commitment chain — UTXO-style: consume old, create new
-    let old_commitment = extract_bytes(&public_inputs_bytes, 0, 32);
+    let old_commitment = verifier::extract_bytes(&public_inputs_bytes, 0, 32);
     let old_comm_key = CommitmentKey { bytes: old_commitment };
     assert!(
-        dynamic_field::exists_(&pool.id, old_comm_key),
+        dynamic_field::exists(&pool.id, old_comm_key),
         E_COMMITMENT_CHAIN_BROKEN,
     );
     let created_epoch = dynamic_field::remove<CommitmentKey, u64>(&mut pool.id, old_comm_key);
     assert!(current_epoch(clock) > created_epoch, E_COMMITMENT_NOT_MATURE);
 
     // Nullifier: bytes 128..160 (full 32-byte Poseidon hash — no truncation check)
-    let nullifier = extract_bytes(&public_inputs_bytes, 128, 160);
+    let nullifier = verifier::extract_bytes(&public_inputs_bytes, 128, 160);
     let nullifier_key = NullifierKey { bytes: nullifier };
     assert!(
-        !dynamic_field::exists_(&pool.id, nullifier_key),
+        !dynamic_field::exists(&pool.id, nullifier_key),
         E_NULLIFIER_SPENT,
     );
     dynamic_field::add(&mut pool.id, nullifier_key, true);
 
     // New commitment: bytes 32..64
-    let new_commitment = extract_bytes(&public_inputs_bytes, 32, 64);
+    let new_commitment = verifier::extract_bytes(&public_inputs_bytes, 32, 64);
     let new_comm_key = CommitmentKey { bytes: new_commitment };
     assert!(
-        !dynamic_field::exists_(&pool.id, new_comm_key),
+        !dynamic_field::exists(&pool.id, new_comm_key),
         E_COMMITMENT_EXISTS,
     );
     dynamic_field::add(&mut pool.id, new_comm_key, current_epoch(clock));
@@ -191,7 +191,7 @@ public fun deposit_and_register(
     assert!(commitment.length() == 32, E_INVALID_INPUTS_LENGTH);
     let comm_key = CommitmentKey { bytes: commitment };
     assert!(
-        !dynamic_field::exists_(&pool.id, comm_key),
+        !dynamic_field::exists(&pool.id, comm_key),
         E_COMMITMENT_EXISTS,
     );
     balance::join(&mut pool.balance, coin.into_balance());
@@ -282,29 +282,3 @@ fun is_standard_amount(amount: u64): bool {
     amount == DENOM_SMALL || amount == DENOM_MEDIUM || amount == DENOM_LARGE
 }
 
-fun assert_upper_bytes_zero(data: &vector<u8>, start: u64, end: u64) {
-    let mut i = start;
-    while (i < end) {
-        assert!(data[i] == 0, E_INVALID_INPUTS_LENGTH);
-        i = i + 1;
-    };
-}
-
-fun le_bytes_to_u64(data: &vector<u8>, offset: u64): u64 {
-    let mut result: u64 = 0;
-    let mut i: u64 = 0;
-    while (i < 8) {
-        let byte_val = data[offset + i] as u64;
-        // Safe: max shift = 7 * 8 = 56, fits u8 and is valid for u64 shift
-        result = result | (byte_val << ((i * 8) as u8));
-        i = i + 1;
-    };
-    result
-}
-
-fun extract_bytes(data: &vector<u8>, start: u64, end: u64): vector<u8> {
-    let mut result = vector[];
-    let mut i = start;
-    while (i < end) { result.push_back(data[i]); i = i + 1; };
-    result
-}

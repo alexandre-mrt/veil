@@ -31,9 +31,15 @@ const THRESHOLD: u64 = 1_000_000_000;
 const DENOM_SMALL: u64 = 100_000_000;
 const DENOM_MEDIUM: u64 = 500_000_000;
 const DENOM_LARGE: u64 = 1_000_000_000;
-const EPOCH_DURATION_MS: u64 = 2_592_000_000;
+const EPOCH_DURATION_MS: u64 = 3_600_000;
 const REQUIRED_KYC_LEVEL: u64 = 1;
-const DUMMY_AUDITOR_KEY: vector<u8> = vector[0xABu8, 0xCDu8, 0xEFu8];
+const DUMMY_AUDITOR_KEY: vector<u8> = vector[
+    0xABu8, 0xCDu8, 0xEFu8, 0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8,
+    0x06u8, 0x07u8, 0x08u8, 0x09u8, 0x0Au8, 0x0Bu8, 0x0Cu8, 0x0Du8,
+    0x0Eu8, 0x0Fu8, 0x10u8, 0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8,
+    0x16u8, 0x17u8, 0x18u8, 0x19u8, 0x1Au8, 0x1Bu8, 0x1Cu8, 0x1Du8,
+    0x1Eu8,
+];
 
 const DUMMY_ROOT: vector<u8> = vector[
     1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,

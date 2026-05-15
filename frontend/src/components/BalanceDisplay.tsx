@@ -1,12 +1,14 @@
 "use client";
 
-import { useCurrentAccount, useSuiClientQuery } from "@mysten/dapp-kit";
-import { POOL_ID, TOKEN_TYPE } from "@/lib/constants";
+import { useEffect, useState } from "react";
+import { useCurrentAccount, useCurrentClient } from "@mysten/dapp-kit-react";
+import { POOL_ID, TOKEN_TYPE, VEIL_DECIMALS } from "@/lib/constants";
+import type { VeilPrivateState } from "@/lib/types";
 import { useVeilPool } from "@/hooks/useVeilPool";
 import styles from "./components.module.css";
 
 const SUI_DECIMALS = 9;
-const VEIL_DECIMALS = 6;
+const BALANCE_REFETCH_INTERVAL = 10_000;
 
 function formatBalance(raw: string | bigint, decimals: number): string {
   const value = typeof raw === "string" ? BigInt(raw) : raw;
@@ -40,35 +42,79 @@ function BalanceCard({ label, value, unit, isLoading }: BalanceCardProps) {
   );
 }
 
-export function BalanceDisplay() {
+interface BalanceDisplayProps {
+  readonly privateState?: VeilPrivateState | null;
+}
+
+export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
   const account = useCurrentAccount();
+  const client = useCurrentClient();
   const address = account?.address ?? "";
 
-  const { data: suiBalance, isLoading: suiLoading } = useSuiClientQuery(
-    "getBalance",
-    { owner: address },
-    { enabled: !!address },
-  );
+  const [suiBalance, setSuiBalance] = useState<string | null>(null);
+  const [suiLoading, setSuiLoading] = useState(false);
+  const [veilRaw, setVeilRaw] = useState(0n);
+  const [veilLoading, setVeilLoading] = useState(false);
 
   const { balance: poolBalance, isLoading: poolLoading } =
     useVeilPool(POOL_ID);
 
-  const { data: veilCoins, isLoading: veilLoading } = useSuiClientQuery(
-    "getCoins",
-    { owner: address, coinType: TOKEN_TYPE },
-    { enabled: !!address },
-  );
+  // Fetch SUI and VEIL balances
+  useEffect(() => {
+    if (!address || !client) return;
 
-  const veilRaw =
-    veilCoins?.data?.reduce((sum, c) => sum + BigInt(c.balance), 0n) ?? 0n;
+    let cancelled = false;
+
+    async function fetchBalances() {
+      setSuiLoading(true);
+      setVeilLoading(true);
+
+      try {
+        const [suiResult, coinsResult] = await Promise.all([
+          client.core.getBalance({ owner: address }),
+          client.core.listCoins({ owner: address, coinType: TOKEN_TYPE }),
+        ]);
+
+        if (cancelled) return;
+
+        setSuiBalance(suiResult.balance.balance);
+        const total = coinsResult.objects?.reduce(
+          (sum: bigint, c: { balance: string }) => sum + BigInt(c.balance),
+          0n,
+        ) ?? 0n;
+        setVeilRaw(total);
+      } catch {
+        // Silently fail on balance fetch errors
+      } finally {
+        if (!cancelled) {
+          setSuiLoading(false);
+          setVeilLoading(false);
+        }
+      }
+    }
+
+    fetchBalances();
+    const interval = setInterval(fetchBalances, BALANCE_REFETCH_INTERVAL);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [address, client]);
 
   const suiFormatted = suiBalance
-    ? formatBalance(suiBalance.totalBalance, SUI_DECIMALS)
+    ? formatBalance(suiBalance, SUI_DECIMALS)
     : "0";
 
   const veilFormatted = address ? formatBalance(veilRaw, VEIL_DECIMALS) : "--";
 
   const poolFormatted = formatBalance(poolBalance, VEIL_DECIMALS);
+
+  const shieldedValue = privateState
+    ? `Spent: ${formatBalance(privateState.cumulativeSpending, VEIL_DECIMALS)}`
+    : address
+      ? "---"
+      : "Connect wallet";
 
   return (
     <div className={styles.balanceGrid}>
@@ -89,6 +135,11 @@ export function BalanceDisplay() {
         value={poolFormatted}
         unit="VEIL"
         isLoading={poolLoading}
+      />
+      <BalanceCard
+        label="Shielded Balance"
+        value={shieldedValue}
+        unit="VEIL"
       />
     </div>
   );
