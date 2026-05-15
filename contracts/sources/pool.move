@@ -29,6 +29,8 @@ const E_DUST_DEPOSIT: u64 = 11;
 const E_COMPLIANCE_REQUIRED: u64 = 15;
 const E_COMMITMENT_NOT_MATURE: u64 = 16;
 const E_VK_UPDATE_PENDING: u64 = 17;
+const E_INVALID_VK_LENGTH: u64 = 18;
+const MIN_VK_LENGTH: u64 = 232;
 
 public struct Pool has key {
     id: UID,
@@ -55,8 +57,10 @@ public struct TransferEvent has copy, drop { nullifier: vector<u8>, new_commitme
 public struct WithdrawEvent has copy, drop { pool_id: ID }
 public struct VKUpdateProposedEvent has copy, drop { pool_id: ID, effective_epoch: u64 }
 public struct FreezeEvent has copy, drop { pool_id: ID, frozen: bool }
+public struct ComplianceRequiredEvent has copy, drop { pool_id: ID, required: bool }
 
 public fun create_pool(transfer_vk: vector<u8>, threshold: u64, ctx: &mut TxContext) {
+    assert!(transfer_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
     let pool_uid = object::new(ctx);
     let pool_id = pool_uid.to_inner();
     let pool = Pool {
@@ -214,6 +218,7 @@ public fun propose_vk_update(
     clock: &sui::clock::Clock,
 ) {
     assert_pool_admin(cap, pool);
+    assert!(new_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
     assert!(pool.pending_vk.length() == 0, E_VK_UPDATE_PENDING);
     // Safe from overflow: max epoch = u64::MAX / EPOCH_DURATION_MS ≈ 7.1B epochs
     let effective = current_epoch(clock) + 1;
@@ -254,6 +259,7 @@ public fun unfreeze_pool(pool: &mut Pool, cap: &AdminCap) {
 public fun set_compliance_required(pool: &mut Pool, cap: &AdminCap, required: bool) {
     assert_pool_admin(cap, pool);
     pool.compliance_required = required;
+    event::emit(ComplianceRequiredEvent { pool_id: pool.id.to_inner(), required });
 }
 
 public(package) fun pool_uid(pool: &Pool): &UID { &pool.id }
