@@ -12,6 +12,9 @@ const E_INVALID_COMPLIANCE_INPUTS: u64 = 23;
 const E_CREDENTIAL_INVALID: u64 = 25;
 const E_CONFIG_POOL_MISMATCH: u64 = 26;
 const E_EPOCH_MISMATCH: u64 = 8;
+const E_CREDENTIAL_ROOT_UPDATE_PENDING: u64 = 28;
+const E_INVALID_ENCRYPTED_AMOUNT: u64 = 29;
+const MIN_ENCRYPTED_AMOUNT_LEN: u64 = 93; // 65 (ephemeral key) + 12 (IV) + 16 (GCM tag) minimum
 
 public struct ComplianceConfig has key {
     id: UID,
@@ -20,6 +23,8 @@ public struct ComplianceConfig has key {
     credential_root: vector<u8>,
     required_kyc_level: u64,
     auditor_key: vector<u8>,
+    pending_credential_root: vector<u8>,
+    credential_root_update_epoch: u64,
 }
 
 public struct CredentialNullifierKey has copy, drop, store { bytes: vector<u8> }
@@ -72,10 +77,21 @@ public fun create_compliance_config(
         credential_root,
         required_kyc_level,
         auditor_key,
+        pending_credential_root: vector[],
+        credential_root_update_epoch: 0,
     };
 
     transfer::share_object(config);
     event::emit(ComplianceConfigCreatedEvent { config_id, pool_id, required_kyc_level });
+}
+
+/// Apply pending credential root if the timelock epoch has passed (mirrors VK timelock in pool.move).
+fun apply_pending_credential_root(config: &mut ComplianceConfig, clock: &sui::clock::Clock) {
+    if (config.pending_credential_root.length() > 0 && pool::current_epoch(clock) >= config.credential_root_update_epoch) {
+        config.credential_root = config.pending_credential_root;
+        config.pending_credential_root = vector[];
+        config.credential_root_update_epoch = 0;
+    };
 }
 
 public fun compliant_transfer(
@@ -91,8 +107,13 @@ public fun compliant_transfer(
 ) {
     assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
 
-    pool::verify_and_execute_transfer(pool, transfer_proof_bytes, transfer_inputs_bytes, clock);
+    // [M9] Validate encrypted_amount minimum length (ephemeral key + IV + GCM tag)
+    assert!(encrypted_amount.length() >= MIN_ENCRYPTED_AMOUNT_LEN, E_INVALID_ENCRYPTED_AMOUNT);
 
+    // [H2] Apply pending credential root timelock before checking root
+    apply_pending_credential_root(config, clock);
+
+    // [M3] All compliance validations BEFORE any pool state mutation
     assert!(compliance_inputs_bytes.length() == 192, E_INVALID_COMPLIANCE_INPUTS);
 
     let proof_root = extract_bytes(&compliance_inputs_bytes, 0, 32);
@@ -102,9 +123,6 @@ public fun compliant_transfer(
     assert_upper_bytes_zero(&compliance_inputs_bytes, 40, 64);
     let on_chain_epoch = pool::current_epoch(clock);
     assert!(proof_epoch == on_chain_epoch, E_EPOCH_MISMATCH);
-
-    // contextId binding to transferNullifier is proven inside the ZK circuit
-    // (contextId = Poseidon(6, transferNullifier, userSecret)), verified by Groth16
 
     let proof_kyc_level = le_bytes_to_u64(&compliance_inputs_bytes, 96);
     assert_upper_bytes_zero(&compliance_inputs_bytes, 104, 128);
@@ -128,6 +146,10 @@ public fun compliant_transfer(
     );
     assert!(valid, E_COMPLIANCE_PROOF_INVALID);
 
+    // [M3] THEN mutate pool state (transfer proof verification + state changes)
+    pool::verify_and_execute_transfer(pool, transfer_proof_bytes, transfer_inputs_bytes, clock);
+
+    // Store credential nullifier after all verifications pass
     dynamic_field::add(pool::pool_uid_mut(pool), cred_nf_key, true);
 
     event::emit(ComplianceVerifiedEvent {
@@ -136,17 +158,32 @@ public fun compliant_transfer(
     });
 }
 
+/// [H2] Propose credential root update with 1-epoch timelock (mirrors VK timelock pattern).
 public fun update_credential_root(
     config: &mut ComplianceConfig,
     cap: &AdminCap,
     pool: &Pool,
     new_root: vector<u8>,
+    clock: &sui::clock::Clock,
 ) {
     pool::assert_pool_admin(cap, pool);
     assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
     assert!(new_root.length() == 32, E_INVALID_COMPLIANCE_INPUTS);
-    config.credential_root = new_root;
+    assert!(config.pending_credential_root.length() == 0, E_CREDENTIAL_ROOT_UPDATE_PENDING);
+    config.pending_credential_root = new_root;
+    config.credential_root_update_epoch = pool::current_epoch(clock) + 1;
     event::emit(CredentialRootUpdatedEvent { config_id: config.id.to_inner(), new_root });
+}
+
+public fun cancel_credential_root_update(
+    config: &mut ComplianceConfig,
+    cap: &AdminCap,
+    pool: &Pool,
+) {
+    pool::assert_pool_admin(cap, pool);
+    assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
+    config.pending_credential_root = vector[];
+    config.credential_root_update_epoch = 0;
 }
 
 public fun update_auditor_key(
