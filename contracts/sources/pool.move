@@ -21,8 +21,6 @@ const E_EPOCH_MISMATCH: u64 = 8;
 const E_COMMITMENT_CHAIN_BROKEN: u64 = 9;
 const E_COMMITMENT_EXISTS: u64 = 10;
 const E_DUST_DEPOSIT: u64 = 11;
-const E_VK_UPDATE_LOCKED: u64 = 12;
-const E_NULLIFIER_NOT_CANONICAL: u64 = 13;
 
 public struct Pool has key {
     id: UID,
@@ -215,15 +213,6 @@ public fun threshold(pool: &Pool): u64 { pool.threshold }
 
 public fun current_epoch(clock: &sui::clock::Clock): u64 {
     sui::clock::timestamp_ms(clock) / EPOCH_DURATION_MS
-}
-
-fun all_zero(data: &vector<u8>): bool {
-    let mut i = 0;
-    while (i < data.length()) {
-        if (data[i] != 0) { return false };
-        i = i + 1;
-    };
-    true
 }
 
 fun assert_upper_bytes_zero(data: &vector<u8>, start: u64, end: u64) {
