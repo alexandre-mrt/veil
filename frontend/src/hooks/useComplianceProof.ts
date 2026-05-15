@@ -143,7 +143,8 @@ async function generateRealProof(
     poseidon([DOMAIN_NULLIFIER, input.userSecret, contextId]),
   );
 
-  const circuitInput: Record<string, string> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const circuitInput: any = {
     // Public
     merkleRoot: input.merkleRoot.toString(),
     currentEpoch: input.currentEpoch.toString(),
