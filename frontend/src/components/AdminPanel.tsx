@@ -29,6 +29,13 @@ interface PoolAdminFields {
   readonly complianceRequired: boolean;
   readonly pendingVk: number[];
   readonly vkUpdateEpoch: number;
+  // Pending withdrawal fields
+  readonly pendingWithdrawalAmount: bigint | null;
+  readonly pendingWithdrawalRecipient: string | null;
+  readonly pendingWithdrawalEpoch: number;
+  // Pending compliance toggle fields
+  readonly pendingComplianceRequired: boolean | null;
+  readonly pendingComplianceEpoch: number;
 }
 
 function parsePoolAdminJson(
@@ -40,12 +47,38 @@ function parsePoolAdminJson(
     ? (pendingVkRaw as number[])
     : [];
 
+  // Parse pending withdrawal (Option<u64> serialized as null or value)
+  const pendingWithdrawalRaw = json.pending_withdrawal;
+  const pendingWithdrawalAmount =
+    pendingWithdrawalRaw != null
+      ? BigInt(pendingWithdrawalRaw as string | number)
+      : null;
+  const pendingWithdrawalRecipientRaw = json.pending_withdrawal_recipient;
+  const pendingWithdrawalRecipient =
+    pendingWithdrawalRecipientRaw != null
+      ? String(pendingWithdrawalRecipientRaw)
+      : null;
+
+  // Parse pending compliance toggle (Option<bool>)
+  const pendingComplianceRaw = json.pending_compliance_required;
+  const pendingComplianceRequired =
+    pendingComplianceRaw != null ? (pendingComplianceRaw as boolean) : null;
+
   return {
     balance: BigInt((json.balance as string | number) ?? 0),
     frozen: (json.frozen as boolean) ?? false,
     complianceRequired: (json.compliance_required as boolean) ?? false,
     pendingVk,
     vkUpdateEpoch: Number((json.vk_update_epoch as string | number) ?? 0),
+    pendingWithdrawalAmount,
+    pendingWithdrawalRecipient,
+    pendingWithdrawalEpoch: Number(
+      (json.pending_withdrawal_epoch as string | number) ?? 0,
+    ),
+    pendingComplianceRequired,
+    pendingComplianceEpoch: Number(
+      (json.pending_compliance_epoch as string | number) ?? 0,
+    ),
   };
 }
 
@@ -82,9 +115,16 @@ export function AdminPanel() {
   // VK update form
   const [newVkHex, setNewVkHex] = useState("");
 
+  // Normal withdrawal form (timelocked)
+  const [proposeWithdrawAmount, setProposeWithdrawAmount] = useState("");
+  const [proposeWithdrawRecipient, setProposeWithdrawRecipient] = useState("");
+
   // Emergency withdraw form
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawRecipient, setWithdrawRecipient] = useState("");
+
+  // Compliance VK update form
+  const [newComplianceVkHex, setNewComplianceVkHex] = useState("");
 
   // Compliance config forms
   const [newCredentialRootHex, setNewCredentialRootHex] = useState("");
@@ -259,6 +299,72 @@ export function AdminPanel() {
   }, [withdrawAmount, withdrawRecipient, account?.address, execTx]);
 
   // -----------------------------------------------------------------------
+  // Normal withdrawal (timelocked)
+  // -----------------------------------------------------------------------
+
+  const handleProposeWithdrawal = useCallback(() => {
+    const parsed = Number.parseFloat(proposeWithdrawAmount);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      setResult({ success: false, message: "Invalid withdraw amount" });
+      return;
+    }
+    const rawAmount = parseAmountToBigInt(proposeWithdrawAmount, VEIL_DECIMALS);
+    const recipient = proposeWithdrawRecipient.trim() || account?.address;
+    if (!recipient) {
+      setResult({ success: false, message: "No recipient address" });
+      return;
+    }
+
+    execTx("Withdrawal proposed", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::pool::propose_withdrawal`,
+        arguments: [
+          tx.object(POOL_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.pure.u64(rawAmount),
+          tx.pure.address(recipient),
+          tx.object("0x6"), // Clock
+        ],
+      });
+    });
+  }, [proposeWithdrawAmount, proposeWithdrawRecipient, account?.address, execTx]);
+
+  const handleExecuteWithdrawal = useCallback(() => {
+    execTx("Withdrawal executed", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::pool::execute_pending_withdrawal`,
+        arguments: [
+          tx.object(POOL_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.object("0x6"), // Clock
+        ],
+      });
+    });
+  }, [execTx]);
+
+  const handleCancelWithdrawal = useCallback(() => {
+    execTx("Withdrawal cancelled", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::pool::cancel_withdrawal`,
+        arguments: [tx.object(POOL_ID), tx.object(ADMIN_CAP_ID)],
+      });
+    });
+  }, [execTx]);
+
+  // -----------------------------------------------------------------------
+  // Cancel compliance toggle
+  // -----------------------------------------------------------------------
+
+  const handleCancelComplianceToggle = useCallback(() => {
+    execTx("Compliance toggle cancelled", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::pool::cancel_compliance_toggle`,
+        arguments: [tx.object(POOL_ID), tx.object(ADMIN_CAP_ID)],
+      });
+    });
+  }, [execTx]);
+
+  // -----------------------------------------------------------------------
   // Compliance config actions
   // -----------------------------------------------------------------------
 
@@ -377,10 +483,56 @@ export function AdminPanel() {
   }, [execTx]);
 
   // -----------------------------------------------------------------------
+  // Compliance VK update
+  // -----------------------------------------------------------------------
+
+  const handleProposeComplianceVk = useCallback(() => {
+    const hex = newComplianceVkHex.trim();
+    if (hex.length === 0) {
+      setResult({ success: false, message: "Compliance VK hex cannot be empty" });
+      return;
+    }
+
+    execTx("Compliance VK update proposed", (tx) => {
+      const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
+      const vkBytes = Array.from(
+        { length: cleanHex.length / 2 },
+        (_, i) => Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16),
+      );
+
+      tx.moveCall({
+        target: `${PACKAGE_ID}::compliance::propose_compliance_vk_update`,
+        arguments: [
+          tx.object(COMPLIANCE_CONFIG_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.object(POOL_ID),
+          tx.pure.vector("u8", vkBytes),
+          tx.object("0x6"), // Clock
+        ],
+      });
+    });
+  }, [newComplianceVkHex, execTx]);
+
+  const handleCancelComplianceVk = useCallback(() => {
+    execTx("Compliance VK update cancelled", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::compliance::cancel_compliance_vk_update`,
+        arguments: [
+          tx.object(COMPLIANCE_CONFIG_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.object(POOL_ID),
+        ],
+      });
+    });
+  }, [execTx]);
+
+  // -----------------------------------------------------------------------
   // Render
   // -----------------------------------------------------------------------
 
   const hasPendingVk = (pool?.pendingVk.length ?? 0) > 0;
+  const hasPendingWithdrawal = pool?.pendingWithdrawalAmount != null;
+  const hasPendingComplianceToggle = pool?.pendingComplianceRequired != null;
 
   return (
     <div className={styles.adminPanel}>
@@ -437,6 +589,25 @@ export function AdminPanel() {
               </span>
             </div>
           )}
+          {hasPendingWithdrawal && (
+            <div className={styles.adminRow}>
+              <span className={styles.adminRowLabel}>Pending Withdrawal</span>
+              <span className={`${styles.adminRowValue} ${styles.adminValueWarning}`}>
+                {formatBalance(pool.pendingWithdrawalAmount!)} VEIL &rarr;{" "}
+                {pool.pendingWithdrawalRecipient?.slice(0, 8)}... (epoch{" "}
+                {pool.pendingWithdrawalEpoch})
+              </span>
+            </div>
+          )}
+          {hasPendingComplianceToggle && (
+            <div className={styles.adminRow}>
+              <span className={styles.adminRowLabel}>Pending Compliance Toggle</span>
+              <span className={`${styles.adminRowValue} ${styles.adminValueWarning}`}>
+                {pool.pendingComplianceRequired ? "Enable" : "Disable"} (epoch{" "}
+                {pool.pendingComplianceEpoch})
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -462,22 +633,34 @@ export function AdminPanel() {
       {/* Compliance Toggle */}
       <div className={styles.adminSection}>
         <span className={styles.adminSectionTitle}>Compliance Requirement</span>
-        <button
-          type="button"
-          className={
-            pool?.complianceRequired
-              ? styles.adminBtnDanger
-              : styles.adminBtnAccent
-          }
-          disabled={txPending || !account}
-          onClick={handleToggleCompliance}
-        >
-          {txPending
-            ? "Signing..."
-            : pool?.complianceRequired
-              ? "Disable Compliance"
-              : "Enable Compliance"}
-        </button>
+        <div className={styles.adminVkButtons}>
+          <button
+            type="button"
+            className={
+              pool?.complianceRequired
+                ? styles.adminBtnDanger
+                : styles.adminBtnAccent
+            }
+            disabled={txPending || !account}
+            onClick={handleToggleCompliance}
+          >
+            {txPending
+              ? "Signing..."
+              : pool?.complianceRequired
+                ? "Disable Compliance"
+                : "Enable Compliance"}
+          </button>
+          {hasPendingComplianceToggle && (
+            <button
+              type="button"
+              className={styles.adminBtnDanger}
+              disabled={txPending || !account}
+              onClick={handleCancelComplianceToggle}
+            >
+              Cancel Pending Toggle
+            </button>
+          )}
+        </div>
       </div>
 
       {/* VK Update */}
@@ -624,11 +807,114 @@ export function AdminPanel() {
             </button>
           </div>
         </div>
+
+        {/* Compliance VK Update */}
+        <div className={styles.adminVkForm}>
+          <span className={styles.adminRowLabel}>Compliance Verification Key</span>
+          <input
+            type="text"
+            placeholder="New compliance VK hex (0x...)"
+            value={newComplianceVkHex}
+            onChange={(e) => setNewComplianceVkHex(e.target.value)}
+            className={styles.adminInput}
+            disabled={txPending}
+          />
+          <div className={styles.adminVkButtons}>
+            <button
+              type="button"
+              className={styles.adminBtnAccent}
+              disabled={txPending || !account || newComplianceVkHex.trim().length === 0}
+              onClick={handleProposeComplianceVk}
+            >
+              {txPending ? "Signing..." : "Propose VK Update"}
+            </button>
+            <button
+              type="button"
+              className={styles.adminBtnDanger}
+              disabled={txPending || !account}
+              onClick={handleCancelComplianceVk}
+            >
+              Cancel VK Update
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Emergency Withdraw */}
+      {/* Normal Withdrawal (Timelocked) */}
       <div className={styles.adminSection}>
-        <span className={styles.adminSectionTitle}>Emergency Withdraw</span>
+        <span className={styles.adminSectionTitle}>Propose Withdrawal</span>
+
+        {hasPendingWithdrawal && (
+          <div className={styles.adminPendingVk}>
+            Pending withdrawal: {formatBalance(pool.pendingWithdrawalAmount!)}{" "}
+            VEIL &rarr; {pool.pendingWithdrawalRecipient?.slice(0, 10)}... — effective
+            epoch {pool.pendingWithdrawalEpoch}
+          </div>
+        )}
+
+        {!hasPendingWithdrawal && (
+          <div className={styles.adminVkForm}>
+            <input
+              type="number"
+              min="0"
+              step="0.000001"
+              placeholder="Amount (VEIL)"
+              value={proposeWithdrawAmount}
+              onChange={(e) => setProposeWithdrawAmount(e.target.value)}
+              className={styles.adminInput}
+              disabled={txPending}
+            />
+            <input
+              type="text"
+              placeholder={account?.address ?? "Recipient address (0x...)"}
+              value={proposeWithdrawRecipient}
+              onChange={(e) => setProposeWithdrawRecipient(e.target.value)}
+              className={styles.adminInput}
+              disabled={txPending}
+            />
+            <button
+              type="button"
+              className={styles.adminBtnAccent}
+              disabled={
+                txPending ||
+                !account ||
+                !proposeWithdrawAmount ||
+                Number.parseFloat(proposeWithdrawAmount) <= 0
+              }
+              onClick={handleProposeWithdrawal}
+            >
+              {txPending ? "Signing..." : "Propose Withdrawal"}
+            </button>
+          </div>
+        )}
+
+        {hasPendingWithdrawal && (
+          <div className={styles.adminVkButtons}>
+            <button
+              type="button"
+              className={styles.adminBtnAccent}
+              disabled={txPending || !account}
+              onClick={handleExecuteWithdrawal}
+            >
+              {txPending ? "Signing..." : "Execute Withdrawal"}
+            </button>
+            <button
+              type="button"
+              className={styles.adminBtnDanger}
+              disabled={txPending || !account}
+              onClick={handleCancelWithdrawal}
+            >
+              Cancel Withdrawal
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Emergency Withdraw (Frozen Only) */}
+      <div className={styles.adminSection}>
+        <span className={styles.adminSectionTitle}>
+          Emergency Withdraw (Frozen Only)
+        </span>
         <div className={styles.adminVkForm}>
           <input
             type="number"
