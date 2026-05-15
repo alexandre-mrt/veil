@@ -110,13 +110,28 @@ fun story_pool_lifecycle() {
         scenario.return_to_sender(cap);
     };
 
-    // Admin withdraws
+    // Admin proposes withdrawal
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::withdraw(&mut pool, &cap, DENOM_MEDIUM, ADMIN, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdrawal(&mut pool, &cap, DENOM_MEDIUM, ADMIN, &clock);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+
+    // Execute withdrawal after epoch passes
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS);
+        pool::execute_pending_withdrawal(&mut pool, &cap, &clock, scenario.ctx());
         assert!(pool.pool_balance() == 0, 7);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -136,22 +151,24 @@ fun story_compliance_lifecycle_shielded_blocked() {
         pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
     };
 
-    // Set compliance_required=true
+    // Propose compliance_required=true at epoch 0
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::set_compliance_required(&mut pool, &cap, true);
-        assert!(pool.compliance_required(), 0);
+        let clk = clock::create_for_testing(scenario.ctx());
+        pool::propose_compliance_toggle(&mut pool, &cap, true, &clk);
+        clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
 
-    // Alice tries shielded_transfer -- should fail with E_COMPLIANCE_REQUIRED
+    // Alice tries shielded_transfer at epoch 1 (compliance applied lazily) -- should fail
     scenario.next_tx(ALICE);
     {
         let mut pool = scenario.take_shared<Pool>();
-        let clk = clock::create_for_testing(scenario.ctx());
+        let mut clk = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clk, EPOCH_DURATION_MS); // epoch 1
         let proof = vector[0u8];
         let inputs = make_n_zero_bytes(192);
         pool::shielded_transfer(&mut pool, proof, inputs, &clk, scenario.ctx());
@@ -171,11 +188,11 @@ fun story_compliance_config_and_root_timelock() {
     // Create ComplianceConfig
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -374,13 +391,28 @@ fun story_multi_pool_isolation() {
         test_scenario::return_shared(pool1);
     };
 
-    // Admin withdraws from pool 1 (should work)
+    // Admin proposes withdrawal from pool 1
     scenario.next_tx(ADMIN);
     {
         let mut pool1 = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::withdraw(&mut pool1, &cap, DENOM_MEDIUM, ADMIN, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdrawal(&mut pool1, &cap, DENOM_MEDIUM, ADMIN, &clock);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool1);
+        scenario.return_to_sender(cap);
+    };
+
+    // Execute withdrawal after epoch passes
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool1 = scenario.take_shared_by_id<Pool>(pool1_id);
+        let cap = scenario.take_from_sender<AdminCap>();
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS);
+        pool::execute_pending_withdrawal(&mut pool1, &cap, &clock, scenario.ctx());
         assert!(pool1.pool_balance() == 0, 1);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool1);
         scenario.return_to_sender(cap);
     };
@@ -399,21 +431,24 @@ fun threat_bypass_compliance_direct_transfer() {
         pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
     };
 
-    // Admin enables compliance
+    // Admin proposes compliance toggle at epoch 0
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::set_compliance_required(&mut pool, &cap, true);
+        let clk = clock::create_for_testing(scenario.ctx());
+        pool::propose_compliance_toggle(&mut pool, &cap, true, &clk);
+        clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
 
-    // Attacker calls shielded_transfer directly -- must fail
+    // Attacker calls shielded_transfer at epoch 1 (compliance applied lazily) -- must fail
     scenario.next_tx(ATTACKER);
     {
         let mut pool = scenario.take_shared<Pool>();
-        let clk = clock::create_for_testing(scenario.ctx());
+        let mut clk = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clk, EPOCH_DURATION_MS); // epoch 1
         let proof = vector[0u8];
         let inputs = make_n_zero_bytes(192);
         pool::shielded_transfer(&mut pool, proof, inputs, &clk, scenario.ctx());
@@ -441,11 +476,11 @@ fun threat_wrong_admincap_create_compliance_config() {
     scenario.next_tx(ATTACKER);
     {
         // Attacker uses their cap (pool 2) against admin's pool (pool 1)
-        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>(); // attacker's cap
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -470,11 +505,11 @@ fun threat_wrong_admincap_update_credential_root() {
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
         // Admin creates compliance config for pool 1
-        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -656,11 +691,11 @@ fun threat_compliance_config_pool_mismatch() {
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
         // Create compliance config tied to pool 1
-        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -841,14 +876,14 @@ fun threat_emergency_withdraw_when_frozen() {
         test_scenario::return_shared(pool);
     };
 
-    // Admin freezes then withdraws (emergency path)
+    // Admin freezes then emergency_withdraws (emergency path)
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         pool::freeze_pool(&mut pool, &cap);
         assert!(pool.is_frozen(), 0);
-        pool::withdraw(&mut pool, &cap, DENOM_LARGE, ADMIN, scenario.ctx());
+        pool::emergency_withdraw(&mut pool, &cap, DENOM_LARGE, ADMIN, scenario.ctx());
         assert!(pool.pool_balance() == 0, 1);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -870,11 +905,11 @@ fun threat_credential_root_timelock_enforcement() {
     // Create config
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -1015,11 +1050,11 @@ fun threat_credential_root_double_proposal_blocked() {
 
     scenario.next_tx(ADMIN);
     {
-        let pool = scenario.take_shared<Pool>();
+        let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
@@ -1068,11 +1103,11 @@ fun threat_attacker_cannot_cancel_credential_root_update() {
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
-        let pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
             &cap,
-            &pool,
+            &mut pool,
             DUMMY_VK,
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,

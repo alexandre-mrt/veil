@@ -29,6 +29,7 @@ const THRESHOLD: u64 = 1_000_000_000;
 const DEPOSIT_AMOUNT: u64 = 500_000_000;
 const WITHDRAW_AMOUNT: u64 = 200_000_000;
 const MIN_DEPOSIT: u64 = 1_000;
+const EPOCH_DURATION_MS: u64 = 3_600_000;
 
 // Error codes referenced via pool::E_* in expected_failure annotations.
 // No local constants needed — Move 2024 resolves module-qualified constants.
@@ -96,7 +97,7 @@ fun test_deposit_and_register() {
     scenario.end();
 }
 
-// 4. withdraw — admin can withdraw
+// 4. withdraw — admin can withdraw via propose + execute after epoch passes
 #[test]
 fun test_withdraw() {
     let mut scenario = test_scenario::begin(ADMIN);
@@ -110,12 +111,27 @@ fun test_withdraw() {
         pool::deposit(&mut pool, deposit_coin, scenario.ctx());
         test_scenario::return_shared(pool);
     };
+    // Propose withdrawal at epoch 0
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdrawal(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, &clock);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Execute withdrawal at epoch 1
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS); // epoch 1
+        pool::execute_pending_withdrawal(&mut pool, &cap, &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT - WITHDRAW_AMOUNT, 0);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -246,7 +262,7 @@ fun test_shielded_transfer_when_frozen() {
     scenario.end();
 }
 
-// 10. withdraw when frozen — allowed (emergency rescue path)
+// 10. emergency_withdraw when frozen — allowed (emergency rescue path)
 #[test]
 fun test_withdraw_when_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
@@ -272,7 +288,7 @@ fun test_withdraw_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, scenario.ctx());
+        pool::emergency_withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT - WITHDRAW_AMOUNT, 0);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -315,7 +331,7 @@ fun test_deposit_and_register_when_frozen() {
 // most_recent_id_shared is called AFTER next_tx so the shared object is visible.
 // ===========================================================================
 
-// 12. withdraw with wrong AdminCap
+// 12. propose_withdrawal with wrong AdminCap
 #[test]
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_withdraw_wrong_admin_cap() {
@@ -335,7 +351,9 @@ fun test_withdraw_wrong_admin_cap() {
     {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, ATTACKER, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdrawal(&mut pool, &cap, WITHDRAW_AMOUNT, ATTACKER, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -516,7 +534,7 @@ fun test_deposit_and_register_duplicate_commitment() {
 // ERROR PATH TESTS — WITHDRAW VALIDATION
 // ===========================================================================
 
-// 20. withdraw more than pool balance
+// 20. propose_withdrawal more than pool balance
 #[test]
 #[expected_failure(abort_code = 6, location = veil::pool)]
 fun test_withdraw_insufficient_balance() {
@@ -535,7 +553,9 @@ fun test_withdraw_insufficient_balance() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::withdraw(&mut pool, &cap, DEPOSIT_AMOUNT + 1, RECIPIENT, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdrawal(&mut pool, &cap, DEPOSIT_AMOUNT + 1, RECIPIENT, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -691,7 +711,7 @@ fun test_multiple_deposits_different_users() {
     scenario.end();
 }
 
-// 27. Withdraw exact pool balance (drain to zero)
+// 27. Withdraw exact pool balance (drain to zero) via propose + execute
 #[test]
 fun test_withdraw_exact_balance_drain() {
     let mut scenario = test_scenario::begin(ADMIN);
@@ -709,8 +729,21 @@ fun test_withdraw_exact_balance_drain() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::withdraw(&mut pool, &cap, DEPOSIT_AMOUNT, RECIPIENT, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdrawal(&mut pool, &cap, DEPOSIT_AMOUNT, RECIPIENT, &clock);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS);
+        pool::execute_pending_withdrawal(&mut pool, &cap, &clock, scenario.ctx());
         assert!(pool.pool_balance() == 0, 0);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -880,7 +913,7 @@ fun test_multiple_deposit_and_register_unique_commitments() {
     scenario.end();
 }
 
-// 34. withdraw from empty pool
+// 34. propose_withdrawal from empty pool
 #[test]
 #[expected_failure(abort_code = 6, location = veil::pool)]
 fun test_withdraw_from_empty_pool() {
@@ -892,7 +925,9 @@ fun test_withdraw_from_empty_pool() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::withdraw(&mut pool, &cap, 1, RECIPIENT, scenario.ctx());
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdrawal(&mut pool, &cap, 1, RECIPIENT, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
