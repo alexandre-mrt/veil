@@ -5,6 +5,28 @@ use sui::event;
 use veil::pool::{Self, Pool, AdminCap};
 use veil::verifier;
 
+// ---------------------------------------------------------------------------
+// Error codes (compliance.move)
+// ---------------------------------------------------------------------------
+// 20   E_COMPLIANCE_PROOF_INVALID     -- Groth16 compliance proof verification failed
+// 21   E_CREDENTIAL_NULLIFIER_SPENT   -- credential nullifier already consumed
+// 22   E_CREDENTIAL_ROOT_MISMATCH     -- proof root != on-chain credential root
+// 23   E_INVALID_COMPLIANCE_INPUTS    -- malformed compliance public inputs (length, root, etc.)
+// 24   (reserved)
+// 25   E_CREDENTIAL_INVALID           -- valid_flag != 1 in compliance proof
+// 26   E_CONFIG_POOL_MISMATCH         -- ComplianceConfig.pool_id != pool object ID
+// 27   (reserved)
+// 28   E_CREDENTIAL_ROOT_UPDATE_PENDING -- cannot propose root update while one is pending
+// 29   E_INVALID_ENCRYPTED_AMOUNT     -- encrypted amount too short (< 93 bytes)
+// 30   E_INVALID_AUDITOR_KEY          -- auditor key too short (< 33 bytes)
+// 31   E_AUDITOR_KEY_UPDATE_PENDING   -- cannot propose auditor key update while one is pending
+// 32   E_INVALID_VK_LENGTH            -- VK too short (< 232 bytes)
+// 33   E_KYC_LEVEL_UPDATE_PENDING     -- cannot propose KYC level update while one is pending
+// 34   E_COMPLIANCE_VK_UPDATE_PENDING -- cannot propose compliance VK update while one is pending
+// 35-39 (reserved for future compliance error codes)
+// ---------------------------------------------------------------------------
+// Note: E_EPOCH_MISMATCH (8) is shared with pool.move.
+// ---------------------------------------------------------------------------
 const E_COMPLIANCE_PROOF_INVALID: u64 = 20;
 const E_CREDENTIAL_NULLIFIER_SPENT: u64 = 21;
 const E_CREDENTIAL_ROOT_MISMATCH: u64 = 22;
@@ -18,6 +40,7 @@ const E_INVALID_AUDITOR_KEY: u64 = 30;
 const E_AUDITOR_KEY_UPDATE_PENDING: u64 = 31;
 const E_INVALID_VK_LENGTH: u64 = 32;
 const E_KYC_LEVEL_UPDATE_PENDING: u64 = 33;
+const E_COMPLIANCE_VK_UPDATE_PENDING: u64 = 34;
 const MIN_ENCRYPTED_AMOUNT_LEN: u64 = 93; // 65 (ephemeral key) + 12 (IV) + 16 (GCM tag) minimum
 const MIN_VK_LENGTH: u64 = 232;
 const MIN_AUDITOR_KEY_LENGTH: u64 = 33;
@@ -35,6 +58,8 @@ public struct ComplianceConfig has key {
     pending_auditor_key_epoch: u64,
     pending_kyc_level: Option<u64>,
     pending_kyc_level_epoch: u64,
+    pending_compliance_vk: Option<vector<u8>>,
+    pending_compliance_vk_epoch: u64,
 }
 
 public struct CredentialNullifierKey has copy, drop, store { bytes: vector<u8> }
@@ -83,6 +108,19 @@ public struct KycLevelAppliedEvent has copy, drop {
     new_level: u64,
 }
 
+public struct ComplianceVkUpdateProposedEvent has copy, drop {
+    config_id: ID,
+    effective_epoch: u64,
+}
+
+public struct ComplianceVkUpdateCancelledEvent has copy, drop {
+    config_id: ID,
+}
+
+public struct ComplianceVkAppliedEvent has copy, drop {
+    config_id: ID,
+}
+
 public fun create_compliance_config(
     cap: &AdminCap,
     pool: &Pool,
@@ -114,6 +152,8 @@ public fun create_compliance_config(
         pending_auditor_key_epoch: 0,
         pending_kyc_level: option::none(),
         pending_kyc_level_epoch: 0,
+        pending_compliance_vk: option::none(),
+        pending_compliance_vk_epoch: 0,
     };
 
     transfer::share_object(config);
@@ -148,6 +188,15 @@ fun apply_pending_kyc_level(config: &mut ComplianceConfig, clock: &sui::clock::C
     };
 }
 
+/// Apply pending compliance VK if the timelock epoch has passed (mirrors auditor key timelock).
+fun apply_pending_compliance_vk(config: &mut ComplianceConfig, clock: &sui::clock::Clock) {
+    if (config.pending_compliance_vk.is_some() && pool::current_epoch(clock) >= config.pending_compliance_vk_epoch) {
+        config.compliance_vk = config.pending_compliance_vk.extract();
+        config.pending_compliance_vk_epoch = 0;
+        event::emit(ComplianceVkAppliedEvent { config_id: config.id.to_inner() });
+    };
+}
+
 public fun compliant_transfer(
     pool: &mut Pool,
     config: &mut ComplianceConfig,
@@ -168,6 +217,7 @@ public fun compliant_transfer(
     apply_pending_credential_root(config, clock);
     apply_pending_auditor_key(config, clock);
     apply_pending_kyc_level(config, clock);
+    apply_pending_compliance_vk(config, clock);
 
     // [M3] All compliance validations BEFORE any pool state mutation
     assert!(compliance_inputs_bytes.length() == 192, E_INVALID_COMPLIANCE_INPUTS);
@@ -308,6 +358,39 @@ public fun cancel_kyc_level_update(
     config.pending_kyc_level = option::none();
     config.pending_kyc_level_epoch = 0;
     event::emit(KycLevelUpdateCancelledEvent { config_id: config.id.to_inner() });
+}
+
+/// Propose compliance VK update with 1-epoch timelock (mirrors auditor key timelock pattern).
+public fun propose_compliance_vk_update(
+    config: &mut ComplianceConfig,
+    cap: &AdminCap,
+    pool: &Pool,
+    new_vk: vector<u8>,
+    clock: &sui::clock::Clock,
+) {
+    pool::assert_pool_admin(cap, pool);
+    assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
+    assert!(new_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
+    assert!(config.pending_compliance_vk.is_none(), E_COMPLIANCE_VK_UPDATE_PENDING);
+    let effective = pool::current_epoch(clock) + 1;
+    config.pending_compliance_vk = option::some(new_vk);
+    config.pending_compliance_vk_epoch = effective;
+    event::emit(ComplianceVkUpdateProposedEvent {
+        config_id: config.id.to_inner(),
+        effective_epoch: effective,
+    });
+}
+
+public fun cancel_compliance_vk_update(
+    config: &mut ComplianceConfig,
+    cap: &AdminCap,
+    pool: &Pool,
+) {
+    pool::assert_pool_admin(cap, pool);
+    assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
+    config.pending_compliance_vk = option::none();
+    config.pending_compliance_vk_epoch = 0;
+    event::emit(ComplianceVkUpdateCancelledEvent { config_id: config.id.to_inner() });
 }
 
 public fun credential_root(config: &ComplianceConfig): vector<u8> { config.credential_root }

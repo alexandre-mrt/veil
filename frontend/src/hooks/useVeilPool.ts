@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useCurrentClient } from "@mysten/dapp-kit-react";
+import { REFETCH_INTERVAL_MS } from "@/lib/constants";
 
 interface PoolFields {
   readonly balance: bigint;
@@ -25,8 +26,6 @@ function parsePoolJson(json: Record<string, unknown> | null | undefined): PoolFi
     frozen: (json.frozen as boolean) ?? false,
   };
 }
-
-const REFETCH_INTERVAL = 10_000;
 
 export function useVeilPool(poolId: string): UseVeilPoolReturn {
   const client = useCurrentClient();
@@ -63,7 +62,7 @@ export function useVeilPool(poolId: string): UseVeilPoolReturn {
     }
 
     fetchPool();
-    const interval = setInterval(fetchPool, REFETCH_INTERVAL);
+    const interval = setInterval(fetchPool, REFETCH_INTERVAL_MS);
 
     return () => {
       cancelled = true;

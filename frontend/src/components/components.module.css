@@ -114,6 +114,45 @@
   margin-left: var(--spacing-1);
 }
 
+/* === Epoch Spending (BalanceDisplay card) === */
+.epochSpendingBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-1);
+}
+
+.epochBarTrack {
+  width: 100%;
+  height: 6px;
+  background-color: var(--bg);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.epochBarFill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.epochBarNormal {
+  background-color: var(--accent);
+}
+
+.epochBarWarning {
+  background-color: var(--warning);
+}
+
+.epochBarDanger {
+  background-color: var(--danger);
+}
+
+.epochSpendingText {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
 /* === PrivacyStatus === */
 .privacyStatus {
   display: flex;
@@ -604,6 +643,22 @@
   color: var(--accent);
   text-decoration: underline;
   font-size: 0.7rem;
+}
+
+.switchTabLink {
+  background: none;
+  border: none;
+  color: var(--accent);
+  text-decoration: underline;
+  font-family: "JetBrains Mono", monospace;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+  display: inline;
+}
+
+.switchTabLink:hover {
+  opacity: 0.8;
 }
 
 /* === WithdrawForm === */
@@ -1331,4 +1386,64 @@
   background-color: rgba(255, 68, 68, 0.05);
   padding: var(--spacing-3);
   border-radius: var(--radius);
+}
+
+/* === Auditor Decrypt === */
+.auditorDecryptSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.auditorDecryptLabel {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.auditorDecryptNote {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+}
+
+.auditorDecryptBtn {
+  padding: var(--spacing-1) var(--spacing-3);
+  background-color: transparent;
+  color: #aa44ff;
+  border: 1px solid #aa44ff;
+  border-radius: var(--radius);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.auditorDecryptBtn:hover:not(:disabled) {
+  background-color: #aa44ff;
+  color: var(--bg);
+}
+
+.auditorDecryptBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.auditorDecryptedValue {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.auditorDecryptFailed {
+  font-size: 0.65rem;
+  color: var(--danger);
+  font-weight: 600;
 }

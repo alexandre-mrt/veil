@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useCurrentAccount, useCurrentClient } from "@mysten/dapp-kit-react";
-import { POOL_ID, TOKEN_TYPE, VEIL_DECIMALS } from "@/lib/constants";
+import { POOL_ID, TOKEN_TYPE, VEIL_DECIMALS, THRESHOLD, REFETCH_INTERVAL_MS } from "@/lib/constants";
 import type { VeilPrivateState } from "@/lib/types";
 import { useVeilPool } from "@/hooks/useVeilPool";
 import styles from "./components.module.css";
 
 const SUI_DECIMALS = 9;
-const BALANCE_REFETCH_INTERVAL = 10_000;
 
 function formatBalance(raw: string | bigint, decimals: number): string {
   const value = typeof raw === "string" ? BigInt(raw) : raw;
@@ -37,6 +36,69 @@ function BalanceCard({ label, value, unit, isLoading }: BalanceCardProps) {
           {isLoading ? "..." : value}
         </span>
         <span className={styles.balanceUnit}>{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+function EpochSpendingCard({
+  privateState,
+  hasWallet,
+}: {
+  readonly privateState?: VeilPrivateState | null;
+  readonly hasWallet: boolean;
+}) {
+  if (!hasWallet) {
+    return (
+      <div className={styles.balanceCard}>
+        <div className={styles.balanceCardAccent} />
+        <div className={styles.balanceLabel}>Epoch Spending</div>
+        <div>
+          <span className={styles.balanceValue}>Connect wallet</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!privateState) {
+    return (
+      <div className={styles.balanceCard}>
+        <div className={styles.balanceCardAccent} />
+        <div className={styles.balanceLabel}>Epoch Spending</div>
+        <div>
+          <span className={styles.balanceValue}>---</span>
+        </div>
+      </div>
+    );
+  }
+
+  const spent = privateState.cumulativeSpending;
+  const thresholdDisplay = THRESHOLD;
+  const pct =
+    thresholdDisplay === 0n
+      ? 100
+      : Math.min(Number((spent * 10000n) / thresholdDisplay) / 100, 100);
+  const barClass =
+    pct >= 100
+      ? styles.epochBarDanger
+      : pct >= 70
+        ? styles.epochBarWarning
+        : styles.epochBarNormal;
+
+  return (
+    <div className={styles.balanceCard}>
+      <div className={styles.balanceCardAccent} />
+      <div className={styles.balanceLabel}>Epoch Spending</div>
+      <div className={styles.epochSpendingBar}>
+        <div className={styles.epochBarTrack}>
+          <div
+            className={`${styles.epochBarFill} ${barClass}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className={styles.epochSpendingText}>
+          {formatBalance(spent, VEIL_DECIMALS)} / {formatBalance(thresholdDisplay, VEIL_DECIMALS)} VEIL
+        </span>
       </div>
     </div>
   );
@@ -98,7 +160,7 @@ export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
     }
 
     fetchBalances();
-    const interval = setInterval(fetchBalances, BALANCE_REFETCH_INTERVAL);
+    const interval = setInterval(fetchBalances, REFETCH_INTERVAL_MS);
 
     return () => {
       cancelled = true;
@@ -120,12 +182,6 @@ export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
 
   const poolFormatted = formatBalance(poolBalance, VEIL_DECIMALS);
 
-  const shieldedValue = privateState
-    ? `Spent: ${formatBalance(privateState.cumulativeSpending, VEIL_DECIMALS)}`
-    : address
-      ? "---"
-      : "Connect wallet";
-
   return (
     <div className={styles.balanceGrid}>
       <BalanceCard
@@ -146,11 +202,7 @@ export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
         unit="VEIL"
         isLoading={poolLoading}
       />
-      <BalanceCard
-        label="Shielded Balance"
-        value={shieldedValue}
-        unit="VEIL"
-      />
+      <EpochSpendingCard privateState={privateState} hasWallet={!!address} />
     </div>
   );
 }

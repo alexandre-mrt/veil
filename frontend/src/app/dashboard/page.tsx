@@ -173,6 +173,7 @@ export default function DashboardPage() {
                     frozen={frozen}
                     onStateUpdate={handleStateUpdate}
                     onTxAppended={handleTxAppended}
+                    onSwitchTab={setActiveTab}
                   />
                 </div>
               )}

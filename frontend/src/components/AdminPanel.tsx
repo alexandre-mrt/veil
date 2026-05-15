@@ -13,14 +13,9 @@ import {
   ADMIN_CAP_ID,
   VEIL_DECIMALS,
   EXPLORER_TX_URL,
+  REFETCH_INTERVAL_MS,
 } from "@/lib/constants";
 import styles from "./components.module.css";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const REFETCH_INTERVAL = 10_000;
 
 // ---------------------------------------------------------------------------
 // Pool admin fields (superset of useVeilPool — reads extra admin-relevant data)
@@ -85,6 +80,10 @@ export function AdminPanel() {
   // VK update form
   const [newVkHex, setNewVkHex] = useState("");
 
+  // Emergency withdraw form
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawRecipient, setWithdrawRecipient] = useState("");
+
   // -----------------------------------------------------------------------
   // Fetch pool data
   // -----------------------------------------------------------------------
@@ -110,7 +109,7 @@ export function AdminPanel() {
 
   useEffect(() => {
     fetchPool();
-    const interval = setInterval(fetchPool, REFETCH_INTERVAL);
+    const interval = setInterval(fetchPool, REFETCH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchPool]);
 
@@ -224,6 +223,34 @@ export function AdminPanel() {
       });
     });
   }, [pool?.complianceRequired, execTx]);
+
+  const handleEmergencyWithdraw = useCallback(() => {
+    const parsed = Number.parseFloat(withdrawAmount);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      setResult({ success: false, message: "Invalid withdraw amount" });
+      return;
+    }
+    const rawAmount = BigInt(
+      Math.round(parsed * 10 ** VEIL_DECIMALS),
+    );
+    const recipient = withdrawRecipient.trim() || account?.address;
+    if (!recipient) {
+      setResult({ success: false, message: "No recipient address" });
+      return;
+    }
+
+    execTx("Emergency withdraw", (tx) => {
+      tx.moveCall({
+        target: `${PACKAGE_ID}::pool::withdraw`,
+        arguments: [
+          tx.object(POOL_ID),
+          tx.object(ADMIN_CAP_ID),
+          tx.pure.u64(rawAmount),
+          tx.pure.address(recipient),
+        ],
+      });
+    });
+  }, [withdrawAmount, withdrawRecipient, account?.address, execTx]);
 
   // -----------------------------------------------------------------------
   // Render
@@ -370,6 +397,44 @@ export function AdminPanel() {
               </button>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Emergency Withdraw */}
+      <div className={styles.adminSection}>
+        <span className={styles.adminSectionTitle}>Emergency Withdraw</span>
+        <div className={styles.adminVkForm}>
+          <input
+            type="number"
+            min="0"
+            step="0.000001"
+            placeholder="Amount (VEIL)"
+            value={withdrawAmount}
+            onChange={(e) => setWithdrawAmount(e.target.value)}
+            className={styles.adminInput}
+            disabled={txPending}
+          />
+          <input
+            type="text"
+            placeholder={account?.address ?? "Recipient address (0x...)"}
+            value={withdrawRecipient}
+            onChange={(e) => setWithdrawRecipient(e.target.value)}
+            className={styles.adminInput}
+            disabled={txPending}
+          />
+          <button
+            type="button"
+            className={styles.adminBtnDanger}
+            disabled={
+              txPending ||
+              !account ||
+              !withdrawAmount ||
+              Number.parseFloat(withdrawAmount) <= 0
+            }
+            onClick={handleEmergencyWithdraw}
+          >
+            {txPending ? "Signing..." : "Emergency Withdraw"}
+          </button>
         </div>
       </div>
 

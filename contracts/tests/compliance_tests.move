@@ -433,7 +433,143 @@ fun test_accessors() {
 // ERROR PATH TESTS — INPUT VALIDATION
 // ===========================================================================
 
-// 6. create_config_invalid_root_length — 16-byte root fails
+// 6a. create_compliance_config with short VK — VK shorter than 232 bytes fails
+#[test]
+#[expected_failure(abort_code = 32, location = veil::compliance)]
+fun test_create_compliance_config_short_vk() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let short_vk = make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            short_vk,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 6b. create_compliance_config with short auditor key — key shorter than 33 bytes fails
+#[test]
+#[expected_failure(abort_code = 30, location = veil::compliance)]
+fun test_create_compliance_config_short_auditor_key() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let short_key = vector[0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8]; // 5 bytes < 33
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            short_key,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 6c. propose_auditor_key_update with short key — key shorter than 33 bytes fails
+#[test]
+#[expected_failure(abort_code = 30, location = veil::compliance)]
+fun test_propose_auditor_key_short() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        let short_key = vector[0x01u8, 0x02u8, 0x03u8]; // 3 bytes < 33
+        compliance::propose_auditor_key_update(&mut config, &cap, &pool, short_key, &test_clock);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 6d. propose_compliance_vk_update with short VK — VK shorter than 232 bytes fails
+#[test]
+#[expected_failure(abort_code = 32, location = veil::compliance)]
+fun test_propose_compliance_vk_short() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        let short_vk = make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
+        compliance::propose_compliance_vk_update(&mut config, &cap, &pool, short_vk, &test_clock);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 7. create_config_invalid_root_length — 16-byte root fails
 #[test]
 #[expected_failure(abort_code = 23, location = veil::compliance)]
 fun test_create_config_invalid_root_length() {
@@ -732,4 +868,18 @@ fun test_update_root_pool_mismatch() {
         scenario.return_to_sender(cap);
     };
     scenario.end();
+}
+
+// ===========================================================================
+// HELPERS
+// ===========================================================================
+
+fun make_n_zero_bytes(n: u64): vector<u8> {
+    let mut result = vector[];
+    let mut i: u64 = 0;
+    while (i < n) {
+        result.push_back(0u8);
+        i = i + 1;
+    };
+    result
 }

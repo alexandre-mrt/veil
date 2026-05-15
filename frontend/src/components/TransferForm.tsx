@@ -35,9 +35,10 @@ interface TransferFormProps {
   readonly frozen: boolean;
   readonly onStateUpdate: (cumulativeNew: bigint, newRandomness: bigint) => void;
   readonly onTxAppended?: () => void;
+  readonly onSwitchTab?: (tab: "deposit" | "transfer" | "compliant" | "withdraw" | "history" | "admin") => void;
 }
 
-export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended }: TransferFormProps) {
+export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended, onSwitchTab }: TransferFormProps) {
   const account = useCurrentAccount();
   const transfer = useShieldedTransfer();
 
@@ -80,7 +81,7 @@ export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended
       }
 
       if (isOverThreshold) {
-        setResult({ success: false, error: "Threshold exceeded. Import a KYC credential and use Compliant Transfer mode." });
+        setResult({ success: false, error: "threshold-exceeded" });
         return;
       }
 
@@ -143,7 +144,14 @@ export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended
 
         {isOverThreshold && txAmountRaw > 0n && (
           <div className={styles.transferDanger}>
-            This transfer exceeds the epoch threshold. KYC will be required.
+            This transfer exceeds the epoch threshold. KYC will be required.{" "}
+            <button
+              type="button"
+              className={styles.switchTabLink}
+              onClick={() => onSwitchTab?.("compliant")}
+            >
+              Switch to Compliant Transfer
+            </button>
           </div>
         )}
 
@@ -184,6 +192,17 @@ export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended
               >
                 View on Suiscan
               </a>
+            </>
+          ) : result.error === "threshold-exceeded" ? (
+            <>
+              Threshold exceeded. Import a KYC credential and use Compliant Transfer mode.{" "}
+              <button
+                type="button"
+                className={styles.switchTabLink}
+                onClick={() => onSwitchTab?.("compliant")}
+              >
+                Switch to Compliant Transfer
+              </button>
             </>
           ) : (
             result.error
