@@ -132,7 +132,11 @@ fun execute_transfer(
     let proof_epoch = le_bytes_to_u64(&public_inputs_bytes, 96);
     assert_upper_bytes_zero(&public_inputs_bytes, 104, 128);
     let on_chain_epoch = current_epoch(clock);
-    assert!(proof_epoch == on_chain_epoch, E_EPOCH_MISMATCH);
+    // M7: Accept current epoch OR previous epoch (grace period at epoch boundaries)
+    assert!(
+        proof_epoch == on_chain_epoch || (on_chain_epoch > 0 && proof_epoch == on_chain_epoch - 1),
+        E_EPOCH_MISMATCH,
+    );
 
     let valid = verifier::verify_transfer_proof(
         &pool.transfer_vk,

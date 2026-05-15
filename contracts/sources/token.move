@@ -4,6 +4,8 @@ module veil::token;
 use sui::coin::{Self, TreasuryCap};
 
 const FAUCET_AMOUNT: u64 = 1_000_000_000; // 1000 VEIL at 6 decimals
+const MAX_SUPPLY: u64 = 1_000_000_000_000; // 1M TOKEN max supply (6 decimals)
+const E_MAX_SUPPLY_REACHED: u64 = 1;
 
 public struct TOKEN has drop {}
 
@@ -27,11 +29,15 @@ public fun mint(
     recipient: address,
     ctx: &mut TxContext,
 ) {
+    assert!(coin::total_supply(treasury) + amount <= MAX_SUPPLY, E_MAX_SUPPLY_REACHED);
     let minted = coin::mint(treasury, amount, ctx);
     transfer::public_transfer(minted, recipient);
 }
 
+/// Testnet faucet -- mints FAUCET_AMOUNT to caller.
+/// REMOVE or gate behind AdminCap before mainnet deployment.
 public fun faucet(treasury: &mut TreasuryCap<TOKEN>, ctx: &mut TxContext) {
+    assert!(coin::total_supply(treasury) + FAUCET_AMOUNT <= MAX_SUPPLY, E_MAX_SUPPLY_REACHED);
     let minted = coin::mint(treasury, FAUCET_AMOUNT, ctx);
     transfer::public_transfer(minted, ctx.sender());
 }
