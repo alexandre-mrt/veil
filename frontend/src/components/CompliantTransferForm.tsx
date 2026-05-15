@@ -145,10 +145,14 @@ export function CompliantTransferForm({
         auditorPublicKey: chainConfig?.auditorPublicKey ?? new Uint8Array(65),
       };
 
-      // Inject selected credential into private state for the hook
+      const selectedCred = validCredentials[selectedCredIdx] ?? validCredentials[0];
+      if (!selectedCred) {
+        setResult({ success: false, error: "No credential selected" });
+        return;
+      }
       const stateWithCreds: VeilPrivateState = {
         ...privateState,
-        credentials: [...validCredentials],
+        credentials: [selectedCred],
       };
 
       const txResult = await transfer.executeCompliantTransfer(

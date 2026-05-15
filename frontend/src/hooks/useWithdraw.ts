@@ -7,7 +7,7 @@ import {
   useDAppKit,
 } from "@mysten/dapp-kit-react";
 import { Transaction } from "@mysten/sui/transactions";
-import { PACKAGE_ID, POOL_ID } from "@/lib/constants";
+import { PACKAGE_ID, POOL_ID, ADMIN_CAP_ID } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -56,6 +56,7 @@ export function useWithdraw(): UseWithdrawReturn {
           target: `${PACKAGE_ID}::pool::withdraw`,
           arguments: [
             tx.object(POOL_ID),
+            tx.object(ADMIN_CAP_ID),
             tx.pure.u64(amount),
             tx.pure.address(recipient),
           ],
