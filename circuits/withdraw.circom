@@ -1,3 +1,7 @@
+// Note: withdrawals reveal which commitment is consumed (via dynamic field removal
+// on-chain). The Merkle accumulator provides anonymity for transfers but not
+// withdrawals. This is an inherent design choice — the exit path is identifiable.
+
 pragma circom 2.1.0;
 
 include "node_modules/circomlib/circuits/poseidon.circom";

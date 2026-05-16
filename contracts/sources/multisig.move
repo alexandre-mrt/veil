@@ -161,6 +161,45 @@ public fun multisig_freeze(
     });
 }
 
+/// Propose a timelocked withdrawal, requiring multisig approval first.
+public fun multisig_propose_withdrawal(
+    config: &mut MultisigConfig,
+    pool: &mut Pool,
+    cap: &AdminCap,
+    action_hash: vector<u8>,
+    amount: u64,
+    recipient: address,
+    clock: &sui::clock::Clock,
+) {
+    pool::assert_pool_admin(cap, pool);
+    assert!(config.pool_id == object::id(pool), E_POOL_MISMATCH);
+    verify_and_consume_approval(config, action_hash);
+    pool::propose_withdrawal(pool, cap, amount, recipient, clock);
+    event::emit(ActionExecutedEvent {
+        config_id: config.id.to_inner(),
+        action_hash,
+    });
+}
+
+/// Propose a VK update, requiring multisig approval first.
+public fun multisig_propose_vk_update(
+    config: &mut MultisigConfig,
+    pool: &mut Pool,
+    cap: &AdminCap,
+    action_hash: vector<u8>,
+    new_vk: vector<u8>,
+    clock: &sui::clock::Clock,
+) {
+    pool::assert_pool_admin(cap, pool);
+    assert!(config.pool_id == object::id(pool), E_POOL_MISMATCH);
+    verify_and_consume_approval(config, action_hash);
+    pool::propose_vk_update(pool, cap, new_vk, clock);
+    event::emit(ActionExecutedEvent {
+        config_id: config.id.to_inner(),
+        action_hash,
+    });
+}
+
 /// Unfreeze the pool, requiring multisig approval first.
 public fun multisig_unfreeze(
     config: &mut MultisigConfig,

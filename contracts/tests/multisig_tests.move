@@ -20,24 +20,11 @@ const NON_SIGNER: address = @0xE;
 const THRESHOLD: u64 = 1_000_000_000;
 const EPOCH_DURATION_MS: u64 = 3_600_000;
 
-const DUMMY_ROOT: vector<u8> = vector[
-    1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
-    9u8, 10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8,
-    17u8, 18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8,
-    25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8,
-];
 const UPDATED_ROOT: vector<u8> = vector[
     2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8, 9u8,
     10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8, 17u8,
     18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8, 25u8,
     26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8, 33u8,
-];
-const DUMMY_AUDITOR_KEY: vector<u8> = vector[
-    0xABu8, 0xCDu8, 0xEFu8, 0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8,
-    0x06u8, 0x07u8, 0x08u8, 0x09u8, 0x0Au8, 0x0Bu8, 0x0Cu8, 0x0Du8,
-    0x0Eu8, 0x0Fu8, 0x10u8, 0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8,
-    0x16u8, 0x17u8, 0x18u8, 0x19u8, 0x1Au8, 0x1Bu8, 0x1Cu8, 0x1Du8,
-    0x1Eu8,
 ];
 const REQUIRED_APPROVALS: u64 = 2;
 
@@ -531,9 +518,9 @@ fun test_stale_compliance_config_pool_reference_updated() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             1,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -560,7 +547,7 @@ fun test_stale_compliance_config_pool_reference_updated() {
             test_helpers::dummy_vk(),
             UPDATED_ROOT,
             2,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         pool::unfreeze_pool(&mut pool, &cap);
@@ -577,6 +564,211 @@ fun test_stale_compliance_config_pool_reference_updated() {
         // Config A's ID should NOT match the pool's current compliance config
         assert!(*pool_config_id.borrow() != config_a_id, 1);
         test_scenario::return_shared(pool);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// 13. multisig_propose_withdrawal — end-to-end with 2-of-3 approval
+// ===========================================================================
+#[test]
+fun test_multisig_propose_withdrawal_end_to_end() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    // Deposit so pool has funds
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let deposit = sui::coin::mint_for_testing<veil::token::TOKEN>(500_000_000, scenario.ctx());
+        pool::deposit(&mut pool, deposit);
+        multisig::create_multisig(
+            &pool, &cap, vector[SIGNER1, SIGNER2, SIGNER3], REQUIRED_APPROVALS, scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    let action_hash: vector<u8> = vector[3u8, 0u8, 0u8, 0u8]; // unique action for withdrawal
+    // Signer 1 approves
+    scenario.next_tx(SIGNER1);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        multisig::approve_action(&mut config, action_hash, scenario.ctx());
+        test_scenario::return_shared(config);
+    };
+    // Signer 2 approves
+    scenario.next_tx(SIGNER2);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        multisig::approve_action(&mut config, action_hash, scenario.ctx());
+        test_scenario::return_shared(config);
+    };
+    // Admin executes multisig_propose_withdrawal
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        multisig::multisig_propose_withdrawal(
+            &mut config, &mut pool, &cap, action_hash,
+            200_000_000, ADMIN, &clock,
+        );
+        // Withdrawal is now pending (timelock)
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// 14. multisig_propose_withdrawal — fails with only 1 approval
+// ===========================================================================
+#[test]
+#[expected_failure(abort_code = 202, location = veil::multisig)]
+fun test_multisig_propose_withdrawal_insufficient_approvals() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        multisig::create_multisig(
+            &pool, &cap, vector[SIGNER1, SIGNER2, SIGNER3], REQUIRED_APPROVALS, scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    let action_hash: vector<u8> = vector[3u8, 0u8, 0u8, 0u8];
+    // Only 1 approval
+    scenario.next_tx(SIGNER1);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        multisig::approve_action(&mut config, action_hash, scenario.ctx());
+        test_scenario::return_shared(config);
+    };
+    // Admin tries to execute — should fail
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        multisig::multisig_propose_withdrawal(
+            &mut config, &mut pool, &cap, action_hash,
+            200_000_000, ADMIN, &clock,
+        );
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// 15. multisig_propose_vk_update — end-to-end with 2-of-3 approval
+// ===========================================================================
+#[test]
+fun test_multisig_propose_vk_update_end_to_end() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        multisig::create_multisig(
+            &pool, &cap, vector[SIGNER1, SIGNER2, SIGNER3], REQUIRED_APPROVALS, scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    let action_hash: vector<u8> = vector[4u8, 0u8, 0u8, 0u8]; // unique action for VK update
+    // Signer 1 approves
+    scenario.next_tx(SIGNER1);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        multisig::approve_action(&mut config, action_hash, scenario.ctx());
+        test_scenario::return_shared(config);
+    };
+    // Signer 2 approves
+    scenario.next_tx(SIGNER2);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        multisig::approve_action(&mut config, action_hash, scenario.ctx());
+        test_scenario::return_shared(config);
+    };
+    // Admin executes multisig_propose_vk_update
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        multisig::multisig_propose_vk_update(
+            &mut config, &mut pool, &cap, action_hash,
+            test_helpers::dummy_vk(), &clock,
+        );
+        // VK update is now pending (timelock)
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// 16. multisig_propose_vk_update — fails with only 1 approval
+// ===========================================================================
+#[test]
+#[expected_failure(abort_code = 202, location = veil::multisig)]
+fun test_multisig_propose_vk_update_insufficient_approvals() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        multisig::create_multisig(
+            &pool, &cap, vector[SIGNER1, SIGNER2, SIGNER3], REQUIRED_APPROVALS, scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    let action_hash: vector<u8> = vector[4u8, 0u8, 0u8, 0u8];
+    // Only 1 approval
+    scenario.next_tx(SIGNER1);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        multisig::approve_action(&mut config, action_hash, scenario.ctx());
+        test_scenario::return_shared(config);
+    };
+    // Admin tries to execute — should fail
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        multisig::multisig_propose_vk_update(
+            &mut config, &mut pool, &cap, action_hash,
+            test_helpers::dummy_vk(), &clock,
+        );
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
     };
     scenario.end();
 }
