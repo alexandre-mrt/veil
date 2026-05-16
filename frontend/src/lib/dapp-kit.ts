@@ -2,8 +2,8 @@ import { createDAppKit } from "@mysten/dapp-kit-core";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 
 const BASE_URLS: Record<string, string> = {
-  testnet: "https://sui-testnet.mystenlabs.com",
-  mainnet: "https://sui-mainnet.mystenlabs.com",
+  testnet: "https://fullnode.testnet.sui.io:443",
+  mainnet: "https://fullnode.mainnet.sui.io:443",
 };
 
 let _instance: ReturnType<typeof createInstance> | null = null;
