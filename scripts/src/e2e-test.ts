@@ -370,11 +370,11 @@ async function mintAndDeposit(
   poolId: string,
   genesisCommitmentBytes: Uint8Array,
 ): Promise<void> {
-  // First, mint tokens using token::faucet
+  // First, mint tokens using token_faucet::faucet
   const mintTx = new Transaction();
   mintTx.setGasBudget(GAS_BUDGET);
   mintTx.moveCall({
-    target: `${packageId}::token::faucet`,
+    target: `${packageId}::token_faucet::faucet`,
     arguments: [mintTx.object(treasuryCapId)],
   });
 

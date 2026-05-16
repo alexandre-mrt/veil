@@ -431,6 +431,166 @@ fun test_accessors() {
 }
 
 // ===========================================================================
+// COMPLIANCE CONFIG REPLACEMENT TESTS
+// ===========================================================================
+
+// 5b. replace_compliance_config — admin replaces config on frozen pool
+#[test]
+fun test_replace_compliance_config() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        // Freeze pool — required for replacement
+        pool::freeze_pool(&mut pool, &cap, &test_clock);
+        assert!(pool::is_frozen(&pool), 0);
+        // Replace compliance config with new parameters
+        compliance::replace_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            UPDATED_ROOT,
+            UPDATED_KYC_LEVEL,
+            UPDATED_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Verify the new config has the updated values
+    scenario.next_tx(ADMIN);
+    {
+        // There are now 2 ComplianceConfig objects — take the most recent one
+        let config = scenario.take_shared<ComplianceConfig>();
+        let pool = scenario.take_shared<Pool>();
+        // New config should have updated values
+        assert!(compliance::credential_root(&config) == UPDATED_ROOT, 1);
+        assert!(compliance::required_kyc_level(&config) == UPDATED_KYC_LEVEL, 2);
+        assert!(compliance::auditor_key(&config) == UPDATED_AUDITOR_KEY, 3);
+        assert!(compliance::config_pool_id(&config) == object::id(&pool), 4);
+        // Pool should reference the new config
+        assert!(pool::pool_compliance_config(&pool).is_some(), 5);
+        test_scenario::return_shared(pool);
+        test_scenario::return_shared(config);
+    };
+    scenario.end();
+}
+
+// 5c. replace_compliance_config — fails on unfrozen pool
+#[test]
+#[expected_failure(abort_code = 115, location = veil::compliance)]
+fun test_replace_compliance_config_not_frozen() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        // Pool is NOT frozen — replacement should fail
+        compliance::replace_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            UPDATED_ROOT,
+            UPDATED_KYC_LEVEL,
+            UPDATED_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 5d. replace_compliance_config — wrong AdminCap fails
+#[test]
+#[expected_failure(abort_code = 4, location = veil::pool)]
+fun test_replace_compliance_config_wrong_admin() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    scenario.next_tx(ADMIN);
+    let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
+    {
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &test_clock);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Attacker creates their own pool to get an AdminCap
+    scenario.next_tx(ATTACKER);
+    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    scenario.next_tx(ATTACKER);
+    {
+        let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
+        let cap = scenario.take_from_sender<AdminCap>(); // attacker's cap
+        compliance::replace_compliance_config(
+            &cap,
+            &mut pool,
+            DUMMY_VK,
+            UPDATED_ROOT,
+            UPDATED_KYC_LEVEL,
+            UPDATED_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
 // ERROR PATH TESTS — INPUT VALIDATION
 // ===========================================================================
 

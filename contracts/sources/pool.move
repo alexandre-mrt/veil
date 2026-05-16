@@ -489,6 +489,12 @@ public(package) fun set_pool_compliance_config(pool: &mut Pool, config_id: ID) {
     assert!(pool.compliance_config.is_none(), E_COMPLIANCE_CONFIG_ALREADY_SET);
     pool.compliance_config = option::some(config_id);
 }
+
+/// Reset compliance config to allow a new one during migration.
+/// Requires pool to be frozen (enforced by caller in compliance.move).
+public(package) fun reset_pool_compliance_config(pool: &mut Pool) {
+    pool.compliance_config = option::none();
+}
 public fun pool_compliance_config(pool: &Pool): Option<ID> { pool.compliance_config }
 
 // ---------------------------------------------------------------------------

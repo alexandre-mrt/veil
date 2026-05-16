@@ -21,7 +21,7 @@ export function FaucetButton() {
     try {
       const tx = new Transaction();
       tx.moveCall({
-        target: `${PACKAGE_ID}::token::faucet`,
+        target: `${PACKAGE_ID}::token_faucet::faucet`,
         arguments: [tx.object(TREASURY_CAP_ID)],
       });
       const txResult = await dAppKitInstance.signAndExecuteTransaction({ transaction: tx });

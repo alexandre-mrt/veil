@@ -23,7 +23,8 @@ use veil::verifier;
 // 112  E_INVALID_VK_LENGTH            -- VK too short (< 232 bytes)
 // 113  E_KYC_LEVEL_UPDATE_PENDING     -- cannot propose KYC level update while one is pending
 // 114  E_COMPLIANCE_VK_UPDATE_PENDING -- cannot propose compliance VK update while one is pending
-// 115-119 (reserved for future compliance error codes)
+// 115  E_POOL_NOT_FROZEN               -- pool must be frozen for compliance config replacement
+// 116-119 (reserved for future compliance error codes)
 // ---------------------------------------------------------------------------
 const E_COMPLIANCE_PROOF_INVALID: u64 = 100;
 const E_CREDENTIAL_NULLIFIER_SPENT: u64 = 101;
@@ -39,6 +40,7 @@ const E_AUDITOR_KEY_UPDATE_PENDING: u64 = 111;
 const E_INVALID_VK_LENGTH: u64 = 112;
 const E_KYC_LEVEL_UPDATE_PENDING: u64 = 113;
 const E_COMPLIANCE_VK_UPDATE_PENDING: u64 = 114;
+const E_POOL_NOT_FROZEN: u64 = 115;
 const MIN_ENCRYPTED_AMOUNT_LEN: u64 = 93; // 65 (ephemeral key) + 12 (IV) + 16 (GCM tag) minimum
 const MIN_VK_LENGTH: u64 = 232;
 const MIN_AUDITOR_KEY_LENGTH: u64 = 33;
@@ -119,6 +121,12 @@ public struct ComplianceVkAppliedEvent has copy, drop {
     config_id: ID,
 }
 
+public struct ComplianceConfigReplacedEvent has copy, drop {
+    old_config_id: ID,
+    new_config_id: ID,
+    pool_id: ID,
+}
+
 public fun create_compliance_config(
     cap: &AdminCap,
     pool: &mut Pool,
@@ -159,6 +167,57 @@ public fun create_compliance_config(
 
     transfer::share_object(config);
     event::emit(ComplianceConfigCreatedEvent { config_id, pool_id, required_kyc_level });
+}
+
+/// Replace the compliance config on a frozen pool. The old config remains as a shared object
+/// (cannot be deleted in Sui) but is no longer referenced by the pool.
+/// Safety: pool must be frozen to prevent transfers during migration.
+public fun replace_compliance_config(
+    cap: &AdminCap,
+    pool: &mut Pool,
+    compliance_vk: vector<u8>,
+    credential_root: vector<u8>,
+    required_kyc_level: u64,
+    auditor_key: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    pool::assert_pool_admin(cap, pool);
+    assert!(pool::is_frozen(pool), E_POOL_NOT_FROZEN);
+    assert!(compliance_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
+    assert!(credential_root.length() == 32, E_INVALID_COMPLIANCE_INPUTS);
+    assert!(auditor_key.length() >= MIN_AUDITOR_KEY_LENGTH, E_INVALID_AUDITOR_KEY);
+
+    let old_config_id = *pool::pool_compliance_config(pool).borrow();
+    let pool_id = object::id(pool);
+
+    // Reset pool reference to allow a new config
+    pool::reset_pool_compliance_config(pool);
+
+    let config_uid = object::new(ctx);
+    let new_config_id = config_uid.to_inner();
+
+    // Set the new config on the pool
+    pool::set_pool_compliance_config(pool, new_config_id);
+
+    let config = ComplianceConfig {
+        id: config_uid,
+        pool_id,
+        compliance_vk,
+        credential_root,
+        required_kyc_level,
+        auditor_key,
+        pending_credential_root: vector[],
+        credential_root_update_epoch: 0,
+        pending_auditor_key: option::none(),
+        pending_auditor_key_epoch: 0,
+        pending_kyc_level: option::none(),
+        pending_kyc_level_epoch: 0,
+        pending_compliance_vk: option::none(),
+        pending_compliance_vk_epoch: 0,
+    };
+
+    transfer::share_object(config);
+    event::emit(ComplianceConfigReplacedEvent { old_config_id, new_config_id, pool_id });
 }
 
 /// Apply pending credential root if the timelock epoch has passed (mirrors VK timelock in pool.move).
