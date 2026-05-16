@@ -5,41 +5,40 @@ use veil::pool::{Self, Pool, AdminCap};
 use veil::verifier;
 
 // ---------------------------------------------------------------------------
-// Error codes (compliance.move)
+// Error codes (compliance.move) — namespace 100+ to avoid collision with pool.move
 // ---------------------------------------------------------------------------
-// 20   E_COMPLIANCE_PROOF_INVALID     -- Groth16 compliance proof verification failed
-// 21   E_CREDENTIAL_NULLIFIER_SPENT   -- credential nullifier already consumed
-// 22   E_CREDENTIAL_ROOT_MISMATCH     -- proof root != on-chain credential root
-// 23   E_INVALID_COMPLIANCE_INPUTS    -- malformed compliance public inputs (length, root, etc.)
-// 24   (reserved)
-// 25   E_CREDENTIAL_INVALID           -- valid_flag != 1 in compliance proof
-// 26   E_CONFIG_POOL_MISMATCH         -- ComplianceConfig.pool_id != pool object ID
-// 27   (reserved)
-// 28   E_CREDENTIAL_ROOT_UPDATE_PENDING -- cannot propose root update while one is pending
-// 29   E_INVALID_ENCRYPTED_AMOUNT     -- encrypted amount too short (< 93 bytes)
-// 30   E_INVALID_AUDITOR_KEY          -- auditor key too short (< 33 bytes)
-// 31   E_AUDITOR_KEY_UPDATE_PENDING   -- cannot propose auditor key update while one is pending
-// 32   E_INVALID_VK_LENGTH            -- VK too short (< 232 bytes)
-// 33   E_KYC_LEVEL_UPDATE_PENDING     -- cannot propose KYC level update while one is pending
-// 34   E_COMPLIANCE_VK_UPDATE_PENDING -- cannot propose compliance VK update while one is pending
-// 35-39 (reserved for future compliance error codes)
+// 8    E_EPOCH_MISMATCH               -- shared with pool.move (intentional)
+// 100  E_COMPLIANCE_PROOF_INVALID     -- Groth16 compliance proof verification failed
+// 101  E_CREDENTIAL_NULLIFIER_SPENT   -- credential nullifier already consumed
+// 102  E_CREDENTIAL_ROOT_MISMATCH     -- proof root != on-chain credential root
+// 103  E_INVALID_COMPLIANCE_INPUTS    -- malformed compliance public inputs (length, root, etc.)
+// 104  (reserved)
+// 105  E_CREDENTIAL_INVALID           -- valid_flag != 1 in compliance proof
+// 106  E_CONFIG_POOL_MISMATCH         -- ComplianceConfig.pool_id != pool object ID
+// 107  (reserved)
+// 108  E_CREDENTIAL_ROOT_UPDATE_PENDING -- cannot propose root update while one is pending
+// 109  E_INVALID_ENCRYPTED_AMOUNT     -- encrypted amount too short (< 93 bytes)
+// 110  E_INVALID_AUDITOR_KEY          -- auditor key too short (< 33 bytes)
+// 111  E_AUDITOR_KEY_UPDATE_PENDING   -- cannot propose auditor key update while one is pending
+// 112  E_INVALID_VK_LENGTH            -- VK too short (< 232 bytes)
+// 113  E_KYC_LEVEL_UPDATE_PENDING     -- cannot propose KYC level update while one is pending
+// 114  E_COMPLIANCE_VK_UPDATE_PENDING -- cannot propose compliance VK update while one is pending
+// 115-119 (reserved for future compliance error codes)
 // ---------------------------------------------------------------------------
-// Note: E_EPOCH_MISMATCH (8) is shared with pool.move.
-// ---------------------------------------------------------------------------
-const E_COMPLIANCE_PROOF_INVALID: u64 = 20;
-const E_CREDENTIAL_NULLIFIER_SPENT: u64 = 21;
-const E_CREDENTIAL_ROOT_MISMATCH: u64 = 22;
-const E_INVALID_COMPLIANCE_INPUTS: u64 = 23;
-const E_CREDENTIAL_INVALID: u64 = 25;
-const E_CONFIG_POOL_MISMATCH: u64 = 26;
+const E_COMPLIANCE_PROOF_INVALID: u64 = 100;
+const E_CREDENTIAL_NULLIFIER_SPENT: u64 = 101;
+const E_CREDENTIAL_ROOT_MISMATCH: u64 = 102;
+const E_INVALID_COMPLIANCE_INPUTS: u64 = 103;
+const E_CREDENTIAL_INVALID: u64 = 105;
+const E_CONFIG_POOL_MISMATCH: u64 = 106;
 const E_EPOCH_MISMATCH: u64 = 8;
-const E_CREDENTIAL_ROOT_UPDATE_PENDING: u64 = 28;
-const E_INVALID_ENCRYPTED_AMOUNT: u64 = 29;
-const E_INVALID_AUDITOR_KEY: u64 = 30;
-const E_AUDITOR_KEY_UPDATE_PENDING: u64 = 31;
-const E_INVALID_VK_LENGTH: u64 = 32;
-const E_KYC_LEVEL_UPDATE_PENDING: u64 = 33;
-const E_COMPLIANCE_VK_UPDATE_PENDING: u64 = 34;
+const E_CREDENTIAL_ROOT_UPDATE_PENDING: u64 = 108;
+const E_INVALID_ENCRYPTED_AMOUNT: u64 = 109;
+const E_INVALID_AUDITOR_KEY: u64 = 110;
+const E_AUDITOR_KEY_UPDATE_PENDING: u64 = 111;
+const E_INVALID_VK_LENGTH: u64 = 112;
+const E_KYC_LEVEL_UPDATE_PENDING: u64 = 113;
+const E_COMPLIANCE_VK_UPDATE_PENDING: u64 = 114;
 const MIN_ENCRYPTED_AMOUNT_LEN: u64 = 93; // 65 (ephemeral key) + 12 (IV) + 16 (GCM tag) minimum
 const MIN_VK_LENGTH: u64 = 232;
 const MIN_AUDITOR_KEY_LENGTH: u64 = 33;
