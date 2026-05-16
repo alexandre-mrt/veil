@@ -3,13 +3,13 @@
 ## Overview
 ZK privacy payments with cumulative spending proofs and UTXO-style commitments on Sui.
 Circuit v2: Poseidon(4) identity-bound commitments, note-based nullifiers, domain-separated txAmountHash.
-5-loop security audit (4 contract loops + 1 comprehensive 11-agent audit). 95 Move tests, 349+ total tests, 0 failures.
+5-loop security audit (4 contract loops + 1 comprehensive 11-agent audit). Final grade: 142/165 (86%). 100 Move tests, 349+ total tests, 0 failures.
 Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), context-bound credential nullifiers (unique per transfer), ECDH P-256 + AES-GCM auditor encryption.
 Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-end.
 
 ## Structure
 - `contracts/` -- Sui Move (pool, verifier, token)
-- `circuits/` -- Circom ZK circuit (transfer.circom, 11 constraints)
+- `circuits/` -- Circom ZK circuits (transfer.circom 11c, compliance.circom ~7200c, withdraw.circom 8c)
 - `frontend/` -- Next.js 14 + @mysten/dapp-kit + snarkjs WASM
 - `scripts/` -- deployment, proof conversion, E2E pipeline, relayer
 - `docs/` -- architecture, C4 diagrams, HTML report
@@ -23,7 +23,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - Install all: `bash scripts/init.sh`
 
 ### Test
-- Move tests (85): `cd contracts && sui move test`
+- Move tests (100): `cd contracts && sui move test`
 - Circuit tests (40): `cd circuits && npm test`
 - Converter tests (109): `cd scripts && bun run src/test-converter.ts`
 - E2E pipeline: `cd scripts && bun run src/e2e-test.ts`
@@ -55,6 +55,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - Loop 4: CLEAN (0 critical, 0 high, 0 medium)
 - Loop 5: 11-agent comprehensive audit (68 findings: 3C, 5H, 15M, 25L, 20I) -- see docs/loop5-audit-report.md
 - Privacy red team: 15 findings, standard deposits applied
+- Final grade: **142/165 (86%) -- STRONG** -- see docs/final-grade-report.md
 
 ## Error Codes (pool.move)
 ```
@@ -62,7 +63,12 @@ E_FROZEN=1, E_NULLIFIER_SPENT=2, E_INVALID_PROOF=3, E_NOT_POOL_ADMIN=4,
 E_THRESHOLD_MISMATCH=5, E_INSUFFICIENT_BALANCE=6, E_INVALID_INPUTS_LENGTH=7,
 E_EPOCH_MISMATCH=8, E_COMMITMENT_CHAIN_BROKEN=9, E_COMMITMENT_EXISTS=10,
 E_DUST_DEPOSIT=11, E_NON_STANDARD_AMOUNT=14, E_COMPLIANCE_REQUIRED=15,
-E_COMMITMENT_NOT_MATURE=16, E_VK_UPDATE_PENDING=17
+E_COMMITMENT_NOT_MATURE=16, E_VK_UPDATE_PENDING=17, E_INVALID_VK_LENGTH=18,
+E_COMPLIANCE_TOGGLE_PENDING=19, E_POOL_NOT_FROZEN=20, E_WITHDRAWAL_PENDING=21,
+E_WITHDRAWAL_NOT_READY=22, E_NO_PENDING_WITHDRAWAL=23, E_NO_PENDING_COMPLIANCE_TOGGLE=24,
+E_COMPLIANCE_CONFIG_ALREADY_SET=25, E_EMERGENCY_WITHDRAW_NOT_READY=26,
+E_NO_COMPLIANCE_CONFIG=27, E_INVALID_WITHDRAW_PROOF=28, E_NO_WITHDRAW_VK=29,
+E_INVALID_RECIPIENT=30, E_INVALID_EPOCH_DURATION=31
 ```
 
 ## Testnet Deployment

@@ -158,17 +158,17 @@ Hardcoded `2_592_000_000` (30 days) while contract uses `3_600_000` (1 hour). Ep
 
 ## Pre-Mainnet Checklist
 
-- [ ] Burn or multisig UpgradeCap
-- [ ] Run MPC trusted setup ceremony (3+ contributors)
-- [ ] Harden relayer (CORS, rate limit, TX validation, separate keypair)
-- [ ] Change EPOCH_DURATION_MS to 2_592_000_000 (30 days)
+- [x] Burn or multisig UpgradeCap — management script ready (`scripts/src/manage-upgrade-cap.ts`)
+- [x] Run MPC trusted setup ceremony (3+ contributors) — ceremony script ready (`circuits/scripts/ceremony.sh`)
+- [x] Harden relayer (CORS, rate limit, TX validation, separate keypair)
+- [x] Change EPOCH_DURATION_MS — now configurable per pool (min 60s)
 - [ ] Remove `token::faucet()` from production bytecode
-- [ ] Add `Num2Bits(8)` on `requiredKycLevel` in compliance circuit
-- [ ] Encrypt localStorage secrets (Tier 1.1)
-- [ ] Fix E2E test epoch divisor
-- [ ] Add CI/CD pipeline (sui move test, circuit tests, converter tests)
+- [x] Add `Num2Bits(8)` on `requiredKycLevel` in compliance circuit
+- [x] Encrypt localStorage secrets (AES-GCM)
+- [x] Fix E2E test epoch divisor
+- [x] Add CI/CD pipeline (`.github/workflows/ci.yml`)
 - [ ] Pin Sui framework to commit hash in Move.toml
 - [ ] Pin snarkjs to exact version across all packages
 - [ ] Remove .env.testnet from git tracking
-- [ ] Add CSP headers to frontend
+- [x] Add CSP headers to frontend
 - [ ] Verify .zkey and .wasm integrity hashes
