@@ -147,12 +147,13 @@ The credential nullifier (`Poseidon(5, credentialSecret, epoch, contextId)`) pre
 
 | Layer | Tests | Coverage |
 |-------|-------|---------|
-| Move contract | 79 | Every function, every error code, compliance config, admin isolation, 19 attacker threat scenarios |
+| Move contract | 95 | Every function, every error code, 7 timelocks, 19 attacker threats, 10 negative-validation |
 | Circom circuit (transfer) | 40 | Every constraint (C1-C11), boundaries, domain separation |
 | Proof converter | 109 | bigintToLE32, G1/G2 compression, sign bits, VK layout |
 | Compliance utils | 67 | Credential leaf, nullifier, Merkle tree builder, depth-20 proofs |
 | E2E compliance (real Groth16) | 32 | Dual proofs, ECDH encryption, expired/low-KYC, no mocks |
-| **Total** | **298** | **0 failures** |
+| Fuzz (fast-check) | 6×500 | Commitment determinism, nullifier uniqueness, overflow, Merkle soundness, domain separation, credential validity |
+| **Total** | **349+** | **0 failures** |
 
 ## Tech Stack
 
