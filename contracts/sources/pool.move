@@ -463,7 +463,7 @@ public fun zk_withdraw(
     // Consume commitment (UTXO-style)
     let comm_key = CommitmentKey { bytes: commitment_bytes };
     assert!(
-        dynamic_field::exists_(&pool.id, comm_key),
+        dynamic_field::exists(&pool.id, comm_key),
         E_COMMITMENT_CHAIN_BROKEN,
     );
     let created_epoch = dynamic_field::remove<CommitmentKey, u64>(&mut pool.id, comm_key);
@@ -472,7 +472,7 @@ public fun zk_withdraw(
     // Check nullifier
     let nf_key = NullifierKey { bytes: nullifier };
     assert!(
-        !dynamic_field::exists_(&pool.id, nf_key),
+        !dynamic_field::exists(&pool.id, nf_key),
         E_NULLIFIER_SPENT,
     );
     dynamic_field::add(&mut pool.id, nf_key, true);
