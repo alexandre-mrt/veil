@@ -19,13 +19,14 @@ include "node_modules/circomlib/circuits/bitify.circom";
 //
 // Tags 1-6 are reserved by transfer.circom (1-3) and compliance.circom (4-6).
 //
-// Constraints (7):
+// Constraints (8):
 //   C1  commitment well-formed       (Poseidon(4) identity-bound)
 //   C2  withdrawAmount range proof   (64-bit, prevents field overflow)
 //   C3  withdrawAmount > 0           (no zero withdrawals)
 //   C4  cumulativeOld range proof    (64-bit, prevents field overflow)
-//   C5  nullifier correctly derived  (domain tag 7, unique per commitment)
-//   C6  recipient hash binding       (domain tag 8, ties withdrawal to address)
+//   C5  withdrawAmount <= cumulativeOld (can only withdraw deposited amount)
+//   C6  nullifier correctly derived  (domain tag 7, unique per commitment)
+//   C7  recipient hash binding       (domain tag 8, ties withdrawal to address)
 //
 // Curve: BN254 (Groth16, Sui curve id 1)
 // Compiled with circom 2.1.x, proven with snarkjs 0.7.x
@@ -67,7 +68,14 @@ template Withdraw() {
     component cumBits = Num2Bits(64);
     cumBits.in <== cumulativeOld;
 
-    // --- C5: Nullifier is correctly derived (domain tag 7) ---
+    // --- C5: withdrawAmount <= cumulativeOld (can only withdraw up to deposited amount) ---
+    component amountCheck = LessEqThan(64);
+    amountCheck.in[0] <== withdrawAmount;
+    amountCheck.in[1] <== cumulativeOld;
+    amountCheck.out === 1;
+
+    // --- C6: Nullifier is correctly derived (domain tag 7) ---
+
     // Unique per commitment (randomnessOld + cumulativeOld make it unique)
     component nfHash = Poseidon(4);
     nfHash.inputs[0] <== 7;
@@ -76,7 +84,7 @@ template Withdraw() {
     nfHash.inputs[3] <== cumulativeOld;
     nullifier === nfHash.out;
 
-    // --- C6: Recipient hash binds the withdrawal to a specific address ---
+    // --- C7: Recipient hash binds the withdrawal to a specific address ---
     // Prevents front-running: attacker cannot redirect withdrawal to another address
     component recipHash = Poseidon(2);
     recipHash.inputs[0] <== 8;

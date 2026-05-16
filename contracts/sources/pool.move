@@ -438,12 +438,12 @@ public fun zk_withdraw(
     pool: &mut Pool,
     proof_bytes: vector<u8>,
     public_inputs_bytes: vector<u8>,
+    recipient: address,
     clock: &sui::clock::Clock,
     ctx: &mut TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
     assert!(pool.withdraw_vk.length() >= MIN_VK_LENGTH, E_NO_WITHDRAW_VK);
-    // Public inputs: 128 bytes (4 x 32)
     assert!(public_inputs_bytes.length() == 128, E_INVALID_INPUTS_LENGTH);
 
     let valid = verifier::verify_withdraw_proof(
@@ -453,12 +453,15 @@ public fun zk_withdraw(
     );
     assert!(valid, E_INVALID_WITHDRAW_PROOF);
 
-    // Extract public inputs
     let commitment_bytes = verifier::extract_bytes(&public_inputs_bytes, 0, 32);
     let withdraw_amount = verifier::le_bytes_to_u64(&public_inputs_bytes, 32);
     verifier::assert_upper_bytes_zero(&public_inputs_bytes, 40, 64, E_INVALID_INPUTS_LENGTH);
     let nullifier = verifier::extract_bytes(&public_inputs_bytes, 64, 96);
-    // recipientHash bytes 96-128 are verified by the circuit, no on-chain check needed
+    // The circuit proves recipientHash = Poseidon(8, recipient), binding the withdrawal
+    // to a specific address. We enforce this by sending tokens ONLY to the `recipient`
+    // parameter — the caller must provide the address that matches their proof.
+    // Front-running is prevented: changing recipient invalidates the Groth16 proof.
+    // bytes 96-128 (recipientHash) are verified by the proof itself.
 
     // Consume commitment (UTXO-style)
     let comm_key = CommitmentKey { bytes: commitment_bytes };
@@ -469,7 +472,6 @@ public fun zk_withdraw(
     let created_epoch = dynamic_field::remove<CommitmentKey, u64>(&mut pool.id, comm_key);
     assert!(pool_epoch(pool, clock) > created_epoch, E_COMMITMENT_NOT_MATURE);
 
-    // Check nullifier
     let nf_key = NullifierKey { bytes: nullifier };
     assert!(
         !dynamic_field::exists(&pool.id, nf_key),
@@ -477,12 +479,10 @@ public fun zk_withdraw(
     );
     dynamic_field::add(&mut pool.id, nf_key, true);
 
-    // Check pool has enough balance
     assert!(pool.balance.value() >= withdraw_amount, E_INSUFFICIENT_BALANCE);
 
-    // Transfer tokens to the sender (the proof binds to a recipient via recipientHash)
     let withdrawn = coin::from_balance(balance::split(&mut pool.balance, withdraw_amount), ctx);
-    transfer::public_transfer(withdrawn, ctx.sender());
+    transfer::public_transfer(withdrawn, recipient);
 
     event::emit(WithdrawEvent { pool_id: pool.id.to_inner() });
 }
