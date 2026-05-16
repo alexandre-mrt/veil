@@ -52,7 +52,7 @@
 <h1>Veil — System Context Diagram</h1>
 <p class="subtitle">C4 Level 1 &mdash; Who uses Veil and what it connects to</p>
 
-<svg viewBox="0 0 1100 720" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 1100 780" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#00ff88" />
@@ -60,16 +60,28 @@
     <marker id="arrow-dim" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
     </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ff4444" />
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ff9900" />
+    </marker>
+    <marker id="arrow-yellow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ffcc00" />
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#4488ff" />
+    </marker>
   </defs>
 
   <!-- Background grid (subtle) -->
   <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
     <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#111" stroke-width="0.5"/>
   </pattern>
-  <rect width="1100" height="720" fill="url(#grid)" />
+  <rect width="1100" height="780" fill="url(#grid)" />
 
   <!-- ACTOR: User -->
-  <g transform="translate(180, 40)">
+  <g transform="translate(120, 30)">
     <!-- Person icon -->
     <circle cx="70" cy="28" r="22" fill="none" stroke="#00ff88" stroke-width="1.5"/>
     <line x1="70" y1="50" x2="70" y2="90" stroke="#00ff88" stroke-width="1.5"/>
@@ -79,93 +91,116 @@
     <text x="70" y="145" text-anchor="middle" fill="#00ff88" font-size="14" font-weight="600">User</text>
     <text x="70" y="162" text-anchor="middle" fill="#888" font-size="10">Wallet holder</text>
     <text x="70" y="176" text-anchor="middle" fill="#888" font-size="10">Generates ZK proofs</text>
-    <text x="70" y="190" text-anchor="middle" fill="#888" font-size="10">Sends transactions</text>
+    <text x="70" y="190" text-anchor="middle" fill="#888" font-size="10">Deposit / transfer / withdraw</text>
   </g>
 
   <!-- ACTOR: Auditor / Regulator -->
-  <g transform="translate(700, 40)">
+  <g transform="translate(750, 30)">
     <circle cx="70" cy="28" r="22" fill="none" stroke="#ff9900" stroke-width="1.5"/>
     <line x1="70" y1="50" x2="70" y2="90" stroke="#ff9900" stroke-width="1.5"/>
     <line x1="40" y1="65" x2="100" y2="65" stroke="#ff9900" stroke-width="1.5"/>
     <line x1="70" y1="90" x2="45" y2="120" stroke="#ff9900" stroke-width="1.5"/>
     <line x1="70" y1="90" x2="95" y2="120" stroke="#ff9900" stroke-width="1.5"/>
-    <text x="70" y="145" text-anchor="middle" fill="#ff9900" font-size="14" font-weight="600">Auditor / Regulator</text>
-    <text x="70" y="162" text-anchor="middle" fill="#888" font-size="10">Requests selective disclosure</text>
-    <text x="70" y="176" text-anchor="middle" fill="#888" font-size="10">(Future: ElGamal Tier 2)</text>
+    <text x="70" y="145" text-anchor="middle" fill="#ff9900" font-size="14" font-weight="600">Auditor</text>
+    <text x="70" y="162" text-anchor="middle" fill="#888" font-size="10">Reads encrypted events</text>
+    <text x="70" y="176" text-anchor="middle" fill="#888" font-size="10">ECDH P-256 + AES-GCM</text>
+    <text x="70" y="190" text-anchor="middle" fill="#888" font-size="10">Selective disclosure (Tier 2)</text>
   </g>
 
   <!-- SYSTEM: Veil Protocol (central) -->
-  <g transform="translate(325, 300)">
-    <rect x="0" y="0" width="400" height="160" rx="6" fill="#0f1f15" stroke="#00ff88" stroke-width="2"/>
-    <text x="200" y="36" text-anchor="middle" fill="#00ff88" font-size="18" font-weight="700">Veil Protocol</text>
-    <line x1="30" y1="50" x2="370" y2="50" stroke="#1a3a25" stroke-width="1"/>
-    <text x="200" y="72" text-anchor="middle" fill="#ccc" font-size="11">Privacy payment system on Sui</text>
-    <text x="200" y="90" text-anchor="middle" fill="#888" font-size="10">Cumulative spending proofs (ZK)</text>
-    <text x="200" y="106" text-anchor="middle" fill="#888" font-size="10">UTXO commitments + nullifiers</text>
-    <text x="200" y="122" text-anchor="middle" fill="#888" font-size="10">Tiered KYC: anonymous &lt; CHF 1K/epoch</text>
-    <text x="200" y="138" text-anchor="middle" fill="#888" font-size="10">Freeze mechanism + AdminCap governance</text>
-  </g>
-
-  <!-- SYSTEM: Sui Blockchain -->
-  <g transform="translate(50, 540)">
-    <rect x="0" y="0" width="340" height="130" rx="6" fill="#0f0f1f" stroke="#4488ff" stroke-width="1.5"/>
-    <text x="170" y="30" text-anchor="middle" fill="#4488ff" font-size="15" font-weight="600">Sui Blockchain</text>
-    <line x1="20" y1="42" x2="320" y2="42" stroke="#1a1a3a" stroke-width="1"/>
-    <text x="170" y="62" text-anchor="middle" fill="#ccc" font-size="10">Layer 1 — Object-centric model</text>
-    <text x="170" y="78" text-anchor="middle" fill="#888" font-size="10">Hosts Move smart contracts</text>
-    <text x="170" y="94" text-anchor="middle" fill="#888" font-size="10">Native Groth16 BN254 verifier</text>
-    <text x="170" y="110" text-anchor="middle" fill="#888" font-size="10">Clock object for epoch calculation</text>
-  </g>
-
-  <!-- SYSTEM: Browser -->
-  <g transform="translate(660, 540)">
-    <rect x="0" y="0" width="340" height="130" rx="6" fill="#1f1a0f" stroke="#ffcc00" stroke-width="1.5"/>
-    <text x="170" y="30" text-anchor="middle" fill="#ffcc00" font-size="15" font-weight="600">Browser</text>
-    <line x1="20" y1="42" x2="320" y2="42" stroke="#3a3a1a" stroke-width="1"/>
-    <text x="170" y="62" text-anchor="middle" fill="#ccc" font-size="10">Client-side application</text>
-    <text x="170" y="78" text-anchor="middle" fill="#888" font-size="10">Next.js 14 frontend + dApp-kit</text>
-    <text x="170" y="94" text-anchor="middle" fill="#888" font-size="10">snarkjs WASM proof generation (~2s)</text>
-    <text x="170" y="110" text-anchor="middle" fill="#888" font-size="10">Encrypted private state (localStorage)</text>
+  <g transform="translate(300, 280)">
+    <rect x="0" y="0" width="440" height="170" rx="6" fill="#0f1f15" stroke="#00ff88" stroke-width="2"/>
+    <text x="220" y="36" text-anchor="middle" fill="#00ff88" font-size="18" font-weight="700">Veil Protocol</text>
+    <line x1="30" y1="50" x2="410" y2="50" stroke="#1a3a25" stroke-width="1"/>
+    <text x="220" y="72" text-anchor="middle" fill="#ccc" font-size="11">Privacy payment system on Sui</text>
+    <text x="220" y="90" text-anchor="middle" fill="#888" font-size="10">3 ZK circuits: transfer (11), compliance (~7200), withdraw (8)</text>
+    <text x="220" y="106" text-anchor="middle" fill="#888" font-size="10">UTXO commitments + note-based nullifiers</text>
+    <text x="220" y="122" text-anchor="middle" fill="#888" font-size="10">Tiered KYC: anonymous &lt; threshold/epoch</text>
+    <text x="220" y="138" text-anchor="middle" fill="#888" font-size="10">Freeze (frozen_at_epoch) + timelocked admin ops</text>
+    <text x="220" y="154" text-anchor="middle" fill="#888" font-size="10">MPC ceremony (3 contributors, 2 circuits)</text>
   </g>
 
   <!-- ACTOR: Admin -->
-  <g transform="translate(0, 280)">
+  <g transform="translate(0, 290)">
     <circle cx="70" cy="28" r="22" fill="none" stroke="#ff4444" stroke-width="1.5"/>
     <line x1="70" y1="50" x2="70" y2="90" stroke="#ff4444" stroke-width="1.5"/>
     <line x1="40" y1="65" x2="100" y2="65" stroke="#ff4444" stroke-width="1.5"/>
     <line x1="70" y1="90" x2="45" y2="120" stroke="#ff4444" stroke-width="1.5"/>
     <line x1="70" y1="90" x2="95" y2="120" stroke="#ff4444" stroke-width="1.5"/>
     <text x="70" y="145" text-anchor="middle" fill="#ff4444" font-size="14" font-weight="600">Admin</text>
-    <text x="70" y="162" text-anchor="middle" fill="#888" font-size="10">Holds AdminCap</text>
-    <text x="70" y="176" text-anchor="middle" fill="#888" font-size="10">Freeze / VK update</text>
-    <text x="70" y="190" text-anchor="middle" fill="#888" font-size="10">Emergency withdraw</text>
+    <text x="70" y="162" text-anchor="middle" fill="#888" font-size="10">Holds AdminCap (key only)</text>
+    <text x="70" y="176" text-anchor="middle" fill="#888" font-size="10">Timelocked operations</text>
+    <text x="70" y="190" text-anchor="middle" fill="#888" font-size="10">Freeze / VK / compliance</text>
+  </g>
+
+  <!-- SYSTEM: Veil Frontend -->
+  <g transform="translate(340, 530)">
+    <rect x="0" y="0" width="360" height="110" rx="6" fill="#1f1a0f" stroke="#ffcc00" stroke-width="1.5"/>
+    <text x="180" y="28" text-anchor="middle" fill="#ffcc00" font-size="15" font-weight="600">Veil Frontend</text>
+    <line x1="20" y1="40" x2="340" y2="40" stroke="#3a3a1a" stroke-width="1"/>
+    <text x="180" y="58" text-anchor="middle" fill="#ccc" font-size="10">Next.js 14, dapp-kit v2</text>
+    <text x="180" y="74" text-anchor="middle" fill="#888" font-size="10">AES-GCM encrypted localStorage</text>
+    <text x="180" y="90" text-anchor="middle" fill="#888" font-size="10">CSP headers, mock proof gate</text>
+  </g>
+
+  <!-- SYSTEM: Sui Network -->
+  <g transform="translate(50, 560)">
+    <rect x="0" y="0" width="240" height="100" rx="6" fill="#0f0f1f" stroke="#4488ff" stroke-width="1.5"/>
+    <text x="120" y="28" text-anchor="middle" fill="#4488ff" font-size="15" font-weight="600">Sui Network</text>
+    <line x1="20" y1="40" x2="220" y2="40" stroke="#1a1a3a" stroke-width="1"/>
+    <text x="120" y="58" text-anchor="middle" fill="#ccc" font-size="10">L1 — Object-centric</text>
+    <text x="120" y="74" text-anchor="middle" fill="#888" font-size="10">Native Groth16 BN254</text>
+    <text x="120" y="90" text-anchor="middle" fill="#888" font-size="10">Clock, shared objects</text>
+  </g>
+
+  <!-- SYSTEM: Relayer -->
+  <g transform="translate(760, 540)">
+    <rect x="0" y="0" width="280" height="120" rx="6" fill="#0f1a1f" stroke="#44ccff" stroke-width="1.5"/>
+    <text x="140" y="28" text-anchor="middle" fill="#44ccff" font-size="15" font-weight="600">Relayer</text>
+    <line x1="20" y1="40" x2="260" y2="40" stroke="#1a2a2f" stroke-width="1"/>
+    <text x="140" y="58" text-anchor="middle" fill="#ccc" font-size="10">Sponsored transaction relay</text>
+    <text x="140" y="74" text-anchor="middle" fill="#888" font-size="10">CORS restricted, rate limited</text>
+    <text x="140" y="90" text-anchor="middle" fill="#888" font-size="10">Error sanitization</text>
+    <text x="140" y="106" text-anchor="middle" fill="#888" font-size="10">Hides sender on-chain</text>
   </g>
 
   <!-- ARROWS -->
 
-  <!-- User -> Veil Protocol -->
-  <line x1="250" y1="235" x2="430" y2="300" stroke="#00ff88" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <text x="310" y="258" fill="#00ff88" font-size="9" transform="rotate(-15, 310, 258)">deposit / transfer / prove</text>
+  <!-- User -> Veil Frontend -->
+  <line x1="190" y1="225" x2="430" y2="280" stroke="#00ff88" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="280" y="244" fill="#00ff88" font-size="9" transform="rotate(-14, 280, 244)">deposit / transfer / withdraw</text>
 
-  <!-- Auditor -> Veil Protocol (dashed, future) -->
-  <line x1="770" y1="235" x2="620" y2="300" stroke="#555" stroke-width="1" stroke-dasharray="6,4" marker-end="url(#arrow-dim)"/>
-  <text x="720" y="258" fill="#666" font-size="9" transform="rotate(15, 720, 258)">selective disclosure (future)</text>
+  <!-- User -> Frontend (direct) -->
+  <line x1="190" y1="225" x2="430" y2="530" stroke="#ffcc00" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-yellow)"/>
+  <text x="260" y="400" fill="#ffcc00" font-size="8" transform="rotate(52, 260, 400)">browser UI</text>
+
+  <!-- Auditor -> Veil Protocol -->
+  <line x1="820" y1="225" x2="650" y2="280" stroke="#ff9900" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+  <text x="760" y="244" fill="#ff9900" font-size="9" transform="rotate(14, 760, 244)">read encrypted events</text>
 
   <!-- Admin -> Veil Protocol -->
-  <line x1="145" y1="370" x2="325" y2="380" stroke="#ff4444" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <text x="220" y="365" fill="#ff4444" font-size="9">freeze / withdraw / VK update</text>
+  <line x1="145" y1="370" x2="300" y2="370" stroke="#ff4444" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+  <text x="210" y="362" fill="#ff4444" font-size="9">timelocked admin ops</text>
 
-  <!-- Veil Protocol -> Sui -->
-  <line x1="430" y1="460" x2="300" y2="540" stroke="#4488ff" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <text x="330" y="505" fill="#4488ff" font-size="9" transform="rotate(30, 330, 505)">Move transactions</text>
+  <!-- Frontend -> Sui Network -->
+  <line x1="340" y1="600" x2="290" y2="600" stroke="#4488ff" stroke-width="1.2" marker-end="url(#arrow-blue)"/>
+  <text x="310" y="594" fill="#4488ff" font-size="8" text-anchor="middle">RPC</text>
 
-  <!-- Veil Protocol -> Browser -->
-  <line x1="620" y1="460" x2="750" y2="540" stroke="#ffcc00" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <text x="710" y="495" fill="#ffcc00" font-size="9" transform="rotate(-30, 710, 495)">proof generation</text>
+  <!-- Veil Protocol -> Frontend -->
+  <line x1="520" y1="450" x2="520" y2="530" stroke="#ffcc00" stroke-width="1.2" marker-end="url(#arrow-yellow)"/>
+  <text x="530" y="495" fill="#ffcc00" font-size="8">proof gen + UI</text>
 
-  <!-- Browser -> Sui (bidirectional) -->
-  <line x1="660" y1="620" x2="390" y2="620" stroke="#888" stroke-width="1" marker-end="url(#arrow-dim)"/>
-  <text x="525" y="612" fill="#888" font-size="9" text-anchor="middle">signed transactions via RPC</text>
+  <!-- Veil Protocol -> Sui Network -->
+  <line x1="380" y1="450" x2="200" y2="560" stroke="#4488ff" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+  <text x="260" y="510" fill="#4488ff" font-size="9" transform="rotate(30, 260, 510)">Move txns</text>
+
+  <!-- Frontend -> Relayer -->
+  <line x1="700" y1="580" x2="760" y2="580" stroke="#44ccff" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="730" y="574" fill="#44ccff" font-size="8" text-anchor="middle">relay tx</text>
+
+  <!-- Relayer -> Sui Network -->
+  <line x1="760" y1="650" x2="290" y2="640" stroke="#4488ff" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-blue)"/>
+  <text x="530" y="638" fill="#4488ff" font-size="8" text-anchor="middle">sponsored tx submission</text>
 </svg>
 
 <div class="legend">
@@ -175,15 +210,15 @@
   </div>
   <div class="legend-item">
     <div class="legend-swatch" style="background:#0f0f1f; border-color:#4488ff;"></div>
-    <span>External System</span>
+    <span>External System (Sui)</span>
   </div>
   <div class="legend-item">
     <div class="legend-swatch" style="background:#1f1a0f; border-color:#ffcc00;"></div>
-    <span>Client Environment</span>
+    <span>Client (Frontend)</span>
   </div>
   <div class="legend-item">
-    <div class="legend-swatch" style="background:transparent; border-color:#555;"></div>
-    <span style="color:#555;">Future (planned)</span>
+    <div class="legend-swatch" style="background:#0f1a1f; border-color:#44ccff;"></div>
+    <span>Relayer (Sender Privacy)</span>
   </div>
 </div>
 </body>
