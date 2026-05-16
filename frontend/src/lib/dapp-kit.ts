@@ -2,11 +2,10 @@ import { createDAppKit } from "@mysten/dapp-kit-core";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 
 const GRPC_URLS: Record<string, string> = {
-  testnet: "https://fullnode.testnet.sui.io:443",
-  mainnet: "https://fullnode.mainnet.sui.io:443",
+  testnet: "https://sui-testnet.mystenlabs.com",
+  mainnet: "https://sui-mainnet.mystenlabs.com",
 };
 
-// Lazy-initialize dAppKit to avoid SSR issues (window/document/localStorage refs)
 let _instance: ReturnType<typeof createInstance> | null = null;
 
 function createInstance() {
