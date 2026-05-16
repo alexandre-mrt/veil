@@ -48,6 +48,7 @@ const SUI_CLOCK_OBJECT_ID = "0x6";
 const MIN_SUI_BALANCE_MIST = 100_000_000; // 0.1 SUI minimum for operations
 const GAS_BUDGET = 50_000_000;
 const FAUCET_MINT_AMOUNT = 1_000_000; // Amount to deposit into pool
+const EPOCH_DURATION_MS = 3_600_000; // Must match pool.move EPOCH_DURATION_MS
 const DOMAIN_COMMITMENT = 1n;
 const DOMAIN_NULLIFIER = 2n;
 const DOMAIN_TX_AMOUNT = 3n;
@@ -205,7 +206,7 @@ async function generateProof(poseidon: PoseidonFunction): Promise<WitnessData> {
   const randomnessOld = 0n; // Genesis randomness
   const randomnessNew = 42424242n;
   const userSecret = 123456789n;
-  const epochId = BigInt(Math.floor(Date.now() / 2_592_000_000));
+  const epochId = BigInt(Math.floor(Date.now() / EPOCH_DURATION_MS));
   const salt = 777n;
 
   // Compute public inputs using Poseidon

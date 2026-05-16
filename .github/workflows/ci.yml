@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  move-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install Sui CLI
+        run: |
+          curl -fsSL https://sui.io/install.sh | sh
+          echo "$HOME/.sui/bin" >> $GITHUB_PATH
+      - name: Build contracts
+        run: cd contracts && sui move build
+      - name: Run Move tests
+        run: cd contracts && sui move test
+
+  circuit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+      - name: Install circom
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/nicholasgasior/circom-installer/main/install.sh | bash
+      - name: Install dependencies
+        run: cd circuits && npm ci
+      - name: Run circuit tests
+        run: cd circuits && npm test
+
+  script-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44e0a462d63b48e3324cb
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: cd scripts && bun install
+      - name: Run converter tests
+        run: cd scripts && bun run src/test-converter.ts
+      - name: Run compliance utils tests
+        run: cd scripts && bun run src/test-compliance-utils.ts
