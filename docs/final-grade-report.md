@@ -35,12 +35,14 @@ Overall Score: **142/165 (86%) -- STRONG**
 
 ## Architecture -- 17/20 (STRONG)
 
-- 4 Move modules with clean public(package) boundaries
-- 3 Circom circuits (transfer 11, compliance ~7200, withdraw 8 constraints)
+- 6 Move modules (pool, compliance, verifier, token, token_faucet, multisig) with clean public(package) boundaries
+- 3 Circom circuits (transfer 11, compliance ~7200, withdraw 9 constraints)
 - UTXO model with dynamic fields: O(1) nullifier/commitment lookup
+- Depth-20 Poseidon Merkle accumulator: commitment root on-chain, anonymity set = all commitments ever inserted
 - Configurable epoch duration per pool (min 60s)
+- N-of-M multi-sig governance for admin operations (freeze/unfreeze)
 - UpgradeCap management script (burn/transfer)
-- Gap: no Merkle accumulator (UTXO chain traceable)
+- Wallet-signature key derivation (IndexedDB non-extractable AES-GCM-256 + PBKDF2 fallback)
 
 ## Code Quality -- 13/15 (STRONG)
 
@@ -61,13 +63,15 @@ Overall Score: **142/165 (86%) -- STRONG**
 | Railgun | LEADING | Behind | Competitive |
 | Penumbra | LEADING | Behind | Behind |
 
-### 5 Novel Contributions
+### 7 Novel Contributions
 
 1. Cumulative spending proofs -- first on any chain
 2. Dual-proof compliance -- transfer + KYC atomic
 3. Context-bound credential nullifiers -- unique per transfer
 4. Auditor encryption with fixed-length padding -- ECDH P-256 + AES-GCM
 5. Epoch-scoped configurable spending per pool
+6. Depth-20 Poseidon Merkle accumulator -- commitment root on-chain, anonymity set = all commitments ever inserted
+7. N-of-M multi-sig governance -- opt-in signer approval for admin operations
 
 ## DeFi/Token Design -- 9.5/10 (Production-ready)
 
@@ -99,13 +103,16 @@ Overall Score: **142/165 (86%) -- STRONG**
 
 | Layer | Tests | Coverage |
 |-------|-------|---------|
-| Move contract | 100 | Every function, every error code, 7 timelocks, 19 attacker threats, 10 negative-validation |
+| Move contract | 113 | Every function, every error code, 8 timelocks, 19 attacker threats, 10 negative-validation, multisig |
 | Circom circuit (transfer) | 40 | Every constraint (C1-C11), boundaries, domain separation |
+| Circom circuit (compliance) | 30 | Credential validity, Merkle proof, context binding, nullifier uniqueness, range proofs |
+| Circom circuit (withdraw) | 30 | Commitment ownership, overdraw, zero-amount, nullifier derivation, recipient binding |
 | Proof converter | 109 | bigintToLE32, G1/G2 compression, sign bits, VK layout |
 | Compliance utils | 67 | Credential leaf, nullifier, Merkle tree builder, depth-20 proofs |
 | E2E compliance (real Groth16) | 32 | Dual proofs, ECDH encryption, expired/low-KYC, no mocks |
+| Frontend (vitest) | 14 | requireEnv logic, AES-GCM encrypt/decrypt roundtrip, key isolation, corruption detection |
 | Fuzz (fast-check) | 6x500 | Commitment determinism, nullifier uniqueness, overflow, Merkle soundness, domain separation, credential validity |
-| **Total** | **349+** | **0 failures** |
+| **Total** | **438+** | **0 failures** |
 
 ## Persona Flows -- 50/60
 
@@ -143,12 +150,14 @@ Overall Score: **142/165 (86%) -- STRONG**
 - [x] Configurable epoch duration per pool
 - [x] Faucet function documented as testnet-only
 - [x] requiredKycLevel Num2Bits(8) range proof
-- [x] AES-GCM encrypted localStorage
+- [x] AES-GCM encrypted localStorage (wallet-signature key derivation)
 - [x] CSP security headers
 - [x] GitHub Actions CI pipeline
-- [x] ZK withdrawal circuit + contract
+- [x] ZK withdrawal circuit + contract (partial withdrawal + change commitment)
 - [x] Withdraw VK timelock
+- [x] Merkle accumulator for commitment privacy (depth-20 Poseidon tree)
+- [x] Multi-sig governance (N-of-M signer approval)
+- [x] STRIDE threat model (37 threats, 30 controls -- see docs/threat-model.md)
 - [ ] Burn UpgradeCap on mainnet (script ready)
 - [ ] Change epoch to 30 days for mainnet
 - [ ] Remove faucet() from production bytecode
-- [ ] Merkle accumulator for commitment privacy (Tier 2.3)

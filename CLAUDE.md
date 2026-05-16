@@ -3,7 +3,7 @@
 ## Overview
 ZK privacy payments with cumulative spending proofs and UTXO-style commitments on Sui.
 Circuit v2: Poseidon(4) identity-bound commitments, note-based nullifiers, domain-separated txAmountHash.
-5-loop security audit (4 contract loops + 1 comprehensive 11-agent audit). Final grade: 142/165 (86%). 110 Move tests, 438+ total tests, 0 failures.
+5-loop security audit (4 contract loops + 1 comprehensive 11-agent audit). Final grade: 142/165 (86%). 113 Move tests, 438+ total tests, 0 failures.
 Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), context-bound credential nullifiers (unique per transfer), ECDH P-256 + AES-GCM auditor encryption.
 Merkle accumulator (depth-20 Poseidon tree) for commitment privacy. Multi-sig governance (multisig.move). Partial ZK withdrawal.
 Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-end.
@@ -24,7 +24,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - Install all: `bash scripts/init.sh`
 
 ### Test
-- Move tests (110): `cd contracts && sui move test`
+- Move tests (113): `cd contracts && sui move test`
 - Circuit tests (100): `cd circuits && npm test`
 - Converter tests (109): `cd scripts && bun run src/test-converter.ts`
 - Frontend tests (14): `cd frontend && bun run test`
@@ -47,7 +47,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - **Note-based nullifiers**: Poseidon(2, secret, epoch, randOld) -- unique per transfer, not per epoch
 - **Identity-bound commitments**: Poseidon(1, cum, rand, userSecret) -- prevents commitment theft
 - **Standard deposits**: 100/500/1000 TOKEN denominations only (amount correlation resistance)
-- **VK timelock**: 1-epoch delay for verification key updates
+- **VK timelock**: 1-epoch delay for verification key updates (both transfer VK and withdraw VK)
 - **Privacy events**: no sender, recipient, or amount in any emitted event
 - **Sponsored tx relayer**: hides sender address on-chain via Sui gas sponsorship
 
@@ -60,7 +60,8 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - Privacy red team: 15 findings, standard deposits applied
 - Final grade: **142/165 (86%) -- STRONG** -- see docs/final-grade-report.md
 
-## Error Codes (pool.move)
+## Error Codes
+### pool.move (1-34)
 ```
 E_FROZEN=1, E_NULLIFIER_SPENT=2, E_INVALID_PROOF=3, E_NOT_POOL_ADMIN=4,
 E_THRESHOLD_MISMATCH=5, E_INSUFFICIENT_BALANCE=6, E_INVALID_INPUTS_LENGTH=7,
@@ -74,6 +75,21 @@ E_NO_COMPLIANCE_CONFIG=27, E_INVALID_WITHDRAW_PROOF=28, E_NO_WITHDRAW_VK=29,
 E_INVALID_RECIPIENT=30, E_INVALID_EPOCH_DURATION=31,
 E_MERKLE_ROOT_MISMATCH=32, E_INVALID_COMMITMENT_ROOT_LENGTH=33,
 E_COMMITMENT_ROOT_UPDATE_PENDING=34
+```
+### compliance.move (100-115)
+```
+E_COMPLIANCE_PROOF_INVALID=100, E_CREDENTIAL_NULLIFIER_SPENT=101,
+E_CREDENTIAL_ROOT_MISMATCH=102, E_INVALID_COMPLIANCE_INPUTS=103,
+E_CREDENTIAL_INVALID=105, E_CONFIG_POOL_MISMATCH=106,
+E_CREDENTIAL_ROOT_UPDATE_PENDING=108, E_INVALID_ENCRYPTED_AMOUNT=109,
+E_INVALID_AUDITOR_KEY=110, E_AUDITOR_KEY_UPDATE_PENDING=111,
+E_INVALID_VK_LENGTH=112, E_KYC_LEVEL_UPDATE_PENDING=113,
+E_COMPLIANCE_VK_UPDATE_PENDING=114, E_POOL_NOT_FROZEN=115
+```
+### multisig.move (200-205)
+```
+E_NOT_SIGNER=200, E_ALREADY_APPROVED=201, E_INSUFFICIENT_APPROVALS=202,
+E_ACTION_NOT_APPROVED=203, E_INVALID_SIGNER_COUNT=204, E_POOL_MISMATCH=205
 ```
 
 ## Testnet Deployment

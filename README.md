@@ -217,7 +217,7 @@ Veil leads on compliance (cumulative spending proofs, dual-proof KYC, context-bo
 
 | Layer | Tests | Coverage |
 |-------|-------|---------|
-| Move contract | 110 | Every function, every error code, 8 timelocks, 19 attacker threats, 10 negative-validation, multisig |
+| Move contract | 113 | Every function, every error code, 8 timelocks, 19 attacker threats, 10 negative-validation, multisig |
 | Circom circuit (transfer) | 40 | Every constraint (C1-C11), boundaries, domain separation |
 | Circom circuit (compliance) | 30 | Credential validity, Merkle proof, context binding, nullifier uniqueness, range proofs |
 | Circom circuit (withdraw) | 30 | Commitment ownership, overdraw, zero-amount, nullifier derivation, recipient binding |
@@ -247,7 +247,7 @@ git clone https://github.com/alexandre-mrt/veil
 cd veil && bash scripts/init.sh
 
 # Build and test the Move contract
-cd contracts && sui move build && sui move test       # 110/110 pass
+cd contracts && sui move build && sui move test       # 113/113 pass
 
 # Compile the ZK circuit and run tests
 cd ../circuits && bash scripts/compile.sh && npm test  # 100/100 pass (transfer 40 + compliance 30 + withdraw 30)
@@ -334,7 +334,7 @@ veil/
 │   │   ├── token.move               # VEIL token (6 decimals, TreasuryCap)
 │   │   ├── multisig.move            # N-of-M multi-sig governance for admin operations
 │   │   └── token_faucet.move        # Testnet-only faucet (remove before mainnet)
-│   └── tests/                       # 110 tests (pool, compliance, scenario/threat, multisig)
+│   └── tests/                       # 113 tests (pool, compliance, scenario/threat, multisig)
 ├── frontend/
 │   ├── src/app/                     # Next.js 14 App Router
 │   ├── src/components/              # UI: deposit, transfer, withdraw, privacy status
@@ -377,6 +377,8 @@ veil/
 7. **Dual-proof compliant transfers** -- transfer proof + compliance proof verified atomically on-chain
 8. **Epoch-scoped credential nullifiers** -- prove KYC once per epoch without linking epochs
 9. **ZK withdrawal with partial withdrawal** -- users exit pool without admin via Groth16 proof (recipient-bound, front-run resistant, change commitment for remaining balance)
+10. **Depth-20 Poseidon Merkle accumulator** -- commitment root on-chain, anonymity set = all commitments ever inserted, timelocked root updates
+11. **N-of-M multi-sig governance** -- opt-in signer approval for admin operations (freeze/unfreeze), preventing unilateral admin actions
 
 ## Sender Privacy (Relayer)
 

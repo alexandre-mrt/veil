@@ -99,8 +99,8 @@ export interface SnarkjsVK {
  *   [32..95]  — B (G2 compressed, 64 bytes)
  *   [96..127] — C (G1 compressed, 32 bytes)
  *
- * CRITICAL: snarkjs pi_b = [[x1, x0], [y1, y0], [...]]
- * arkworks expects (x0, x1, y0, y1) — snarkjs uses the same order.
+ * snarkjs pi_b = [[c0, c1], [c0, c1], [1, 0]] — already in arkworks order.
+ * No coordinate swap needed (verified by E2E tests on testnet).
  */
 export function proofToSuiBytes(proof: SnarkjsProof): Uint8Array {
   const result = new Uint8Array(128);
