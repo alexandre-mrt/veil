@@ -1,6 +1,5 @@
 module veil::compliance;
 
-use sui::dynamic_field;
 use sui::event;
 use veil::pool::{Self, Pool, AdminCap};
 use veil::verifier;
@@ -248,7 +247,7 @@ public fun compliant_transfer(
     let credential_nullifier = verifier::extract_bytes(&compliance_inputs_bytes, 128, 160);
     let cred_nf_key = CredentialNullifierKey { bytes: credential_nullifier };
     assert!(
-        !dynamic_field::exists(pool::pool_uid(pool), cred_nf_key),
+        !pool::credential_nullifier_exists(pool, cred_nf_key),
         E_CREDENTIAL_NULLIFIER_SPENT,
     );
 
@@ -267,7 +266,7 @@ public fun compliant_transfer(
     pool::verify_and_execute_transfer(pool, transfer_proof_bytes, transfer_inputs_bytes, clock);
 
     // Store credential nullifier after all verifications pass
-    dynamic_field::add(pool::pool_uid_mut(pool), cred_nf_key, true);
+    pool::add_credential_nullifier(pool, cred_nf_key, true);
 
     event::emit(ComplianceVerifiedEvent {
         credential_nullifier,

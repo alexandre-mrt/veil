@@ -131,7 +131,7 @@ public(package) fun assert_pool_admin(cap: &AdminCap, pool: &Pool) {
     assert!(cap.pool_id == pool.id.to_inner(), E_NOT_POOL_ADMIN);
 }
 
-public(package) fun deposit(pool: &mut Pool, coin: Coin<TOKEN>, _ctx: &TxContext) {
+public(package) fun deposit(pool: &mut Pool, coin: Coin<TOKEN>) {
     assert!(!pool.frozen, E_FROZEN);
     let amount = coin.value();
     assert!(amount >= MIN_DEPOSIT, E_DUST_DEPOSIT);
@@ -413,7 +413,14 @@ public(package) fun apply_pending_compliance(pool: &mut Pool, clock: &sui::clock
 }
 
 public(package) fun pool_uid(pool: &Pool): &UID { &pool.id }
-public(package) fun pool_uid_mut(pool: &mut Pool): &mut UID { &mut pool.id }
+
+public(package) fun add_credential_nullifier<K: copy + drop + store>(pool: &mut Pool, key: K, value: bool) {
+    dynamic_field::add(&mut pool.id, key, value);
+}
+
+public(package) fun credential_nullifier_exists<K: copy + drop + store>(pool: &Pool, key: K): bool {
+    dynamic_field::exists(&pool.id, key)
+}
 
 // FIX 2: Single ComplianceConfig per pool
 public(package) fun set_pool_compliance_config(pool: &mut Pool, config_id: ID) {
