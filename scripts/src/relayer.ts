@@ -86,6 +86,23 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+/** Extract client IP using Bun's native requestIP (most reliable), with x-forwarded-for fallback. */
+function getClientIP(request: Request, server: { requestIP?: (req: Request) => { address: string } | null }): string {
+  // Bun native IP (most reliable — direct socket address)
+  const nativeIP = server?.requestIP?.(request)?.address;
+  if (nativeIP) return nativeIP;
+
+  // Fallback: x-forwarded-for (trusted only behind reverse proxy in production)
+  const xff = request.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+
+  // Last resort: x-real-ip header
+  const xri = request.headers.get("x-real-ip");
+  if (xri) return xri;
+
+  return "unknown";
+}
+
 function resolveAllowedOrigin(requestOrigin: string | null): string {
   if (LOCAL_DEV_ORIGIN && requestOrigin === LOCAL_DEV_ORIGIN) return LOCAL_DEV_ORIGIN;
   if (requestOrigin === ALLOWED_ORIGIN) return ALLOWED_ORIGIN;
@@ -347,7 +364,7 @@ async function serve(port: number): Promise<void> {
 
   const server = Bun.serve({
     port,
-    async fetch(req) {
+    async fetch(req, bunServer) {
       const url = new URL(req.url);
       const method = req.method;
       const requestOrigin = req.headers.get("origin");
@@ -364,11 +381,8 @@ async function serve(port: number): Promise<void> {
         return new Response(null, { status: 204, headers: corsHeaders });
       }
 
-      // Rate limiting — extract IP from headers or fallback
-      const clientIp =
-        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-        req.headers.get("x-real-ip") ||
-        "unknown";
+      // Rate limiting — use Bun native IP with header fallback
+      const clientIp = getClientIP(req, bunServer);
 
       if (!checkRateLimit(clientIp)) {
         console.warn(`[rate-limit] Blocked ${clientIp}`);
