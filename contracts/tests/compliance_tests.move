@@ -5,6 +5,7 @@ use sui::test_scenario;
 use sui::clock;
 use veil::compliance::{Self, ComplianceConfig};
 use veil::pool::{Self, Pool, AdminCap};
+use veil::test_helpers;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -142,7 +143,7 @@ fun test_update_credential_root() {
 
 // 2b. update_credential_root — double proposal blocked by pending check
 #[test]
-#[expected_failure(abort_code = 28, location = veil::compliance)]
+#[expected_failure(abort_code = 108, location = veil::compliance)]
 fun test_update_credential_root_double_proposal_blocked() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -311,7 +312,7 @@ fun test_propose_kyc_level_update() {
 
 // 4b. propose_kyc_level_update — double proposal blocked
 #[test]
-#[expected_failure(abort_code = 33, location = veil::compliance)]
+#[expected_failure(abort_code = 113, location = veil::compliance)]
 fun test_propose_kyc_level_update_double_proposal_blocked() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -435,7 +436,7 @@ fun test_accessors() {
 
 // 6a. create_compliance_config with short VK — VK shorter than 232 bytes fails
 #[test]
-#[expected_failure(abort_code = 32, location = veil::compliance)]
+#[expected_failure(abort_code = 112, location = veil::compliance)]
 fun test_create_compliance_config_short_vk() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -445,7 +446,7 @@ fun test_create_compliance_config_short_vk() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        let short_vk = make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
+        let short_vk = test_helpers::make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
         compliance::create_compliance_config(
             &cap,
             &mut pool,
@@ -463,7 +464,7 @@ fun test_create_compliance_config_short_vk() {
 
 // 6b. create_compliance_config with short auditor key — key shorter than 33 bytes fails
 #[test]
-#[expected_failure(abort_code = 30, location = veil::compliance)]
+#[expected_failure(abort_code = 110, location = veil::compliance)]
 fun test_create_compliance_config_short_auditor_key() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -491,7 +492,7 @@ fun test_create_compliance_config_short_auditor_key() {
 
 // 6c. propose_auditor_key_update with short key — key shorter than 33 bytes fails
 #[test]
-#[expected_failure(abort_code = 30, location = veil::compliance)]
+#[expected_failure(abort_code = 110, location = veil::compliance)]
 fun test_propose_auditor_key_short() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -531,7 +532,7 @@ fun test_propose_auditor_key_short() {
 
 // 6d. propose_compliance_vk_update with short VK — VK shorter than 232 bytes fails
 #[test]
-#[expected_failure(abort_code = 32, location = veil::compliance)]
+#[expected_failure(abort_code = 112, location = veil::compliance)]
 fun test_propose_compliance_vk_short() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -559,7 +560,7 @@ fun test_propose_compliance_vk_short() {
         let pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         let test_clock = clock::create_for_testing(scenario.ctx());
-        let short_vk = make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
+        let short_vk = test_helpers::make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
         compliance::propose_compliance_vk_update(&mut config, &cap, &pool, short_vk, &test_clock);
         clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(config);
@@ -571,7 +572,7 @@ fun test_propose_compliance_vk_short() {
 
 // 7. create_config_invalid_root_length — 16-byte root fails
 #[test]
-#[expected_failure(abort_code = 23, location = veil::compliance)]
+#[expected_failure(abort_code = 103, location = veil::compliance)]
 fun test_create_config_invalid_root_length() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -602,7 +603,7 @@ fun test_create_config_invalid_root_length() {
 
 // 7. create_config_empty_root_fails — 0-byte root fails
 #[test]
-#[expected_failure(abort_code = 23, location = veil::compliance)]
+#[expected_failure(abort_code = 103, location = veil::compliance)]
 fun test_create_config_empty_root_fails() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -629,7 +630,7 @@ fun test_create_config_empty_root_fails() {
 
 // 8. update_root_invalid_length — 3-byte replacement root fails
 #[test]
-#[expected_failure(abort_code = 23, location = veil::compliance)]
+#[expected_failure(abort_code = 103, location = veil::compliance)]
 fun test_update_root_invalid_length() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -829,7 +830,7 @@ fun test_attacker_cannot_update_kyc_level() {
 
 // 13. update_root_pool_mismatch — correct cap but wrong pool fails
 #[test]
-#[expected_failure(abort_code = 26, location = veil::compliance)]
+#[expected_failure(abort_code = 106, location = veil::compliance)]
 fun test_update_root_pool_mismatch() {
     let mut scenario = test_scenario::begin(ADMIN);
     // Create pool 1 (ADMIN) + compliance config tied to it
@@ -920,7 +921,7 @@ fun test_create_second_compliance_config() {
 
 // 15. propose_compliance_vk_update twice — must fail E_COMPLIANCE_VK_UPDATE_PENDING
 #[test]
-#[expected_failure(abort_code = 34, location = veil::compliance)]
+#[expected_failure(abort_code = 114, location = veil::compliance)]
 fun test_propose_compliance_vk_double() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -961,7 +962,7 @@ fun test_propose_compliance_vk_double() {
 
 // 16. propose_auditor_key_update twice — must fail E_AUDITOR_KEY_UPDATE_PENDING
 #[test]
-#[expected_failure(abort_code = 31, location = veil::compliance)]
+#[expected_failure(abort_code = 111, location = veil::compliance)]
 fun test_propose_auditor_key_double() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -1000,16 +1001,3 @@ fun test_propose_auditor_key_double() {
     scenario.end();
 }
 
-// ===========================================================================
-// HELPERS
-// ===========================================================================
-
-fun make_n_zero_bytes(n: u64): vector<u8> {
-    let mut result = vector[];
-    let mut i: u64 = 0;
-    while (i < n) {
-        result.push_back(0u8);
-        i = i + 1;
-    };
-    result
-}
