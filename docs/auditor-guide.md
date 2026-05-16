@@ -147,6 +147,18 @@ The report includes:
 - Date range (earliest to latest event)
 - Full event list with decrypted amounts, salts, and nullifiers
 
+## Credential Revocation
+
+Veil supports credential revocation through Merkle root rotation:
+
+1. The issuer removes the revoked credential from the off-chain Merkle tree
+2. The admin calls `update_credential_root(new_root)` with the updated tree
+3. After 1-epoch timelock, the new root is applied
+4. The revoked credential can no longer produce a valid Merkle membership proof
+
+For faster revocation, use short credential expiry epochs (e.g., 7 days).
+The credential must be re-issued periodically, providing natural revocation points.
+
 ## Security Considerations
 
 - The auditor's private key grants access to all transaction amounts in the pool

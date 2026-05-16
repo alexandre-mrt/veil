@@ -1,3 +1,9 @@
+/// Compliance module for Veil privacy pools.
+///
+/// Credential revocation: admin updates credential_root via `update_credential_root`
+/// (1-epoch timelock) to exclude revoked credentials from the Merkle tree.
+/// Short credential expiry epochs (e.g., 7 days) provide natural revocation points:
+/// expired credentials cannot produce valid membership proofs after root rotation.
 module veil::compliance;
 
 use sui::event;

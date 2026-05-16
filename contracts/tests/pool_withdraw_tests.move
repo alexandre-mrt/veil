@@ -85,7 +85,9 @@ fun test_emergency_withdraw_not_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        pool::deposit(&mut pool, deposit_coin);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, test_helpers::valid_commitment(200), &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.next_tx(ADMIN);
@@ -114,7 +116,9 @@ fun test_propose_withdrawal_double() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        pool::deposit(&mut pool, deposit_coin);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, test_helpers::valid_commitment(201), &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.next_tx(ADMIN);
@@ -144,7 +148,9 @@ fun test_execute_withdrawal_too_early() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        pool::deposit(&mut pool, deposit_coin);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, test_helpers::valid_commitment(202), &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.next_tx(ADMIN);
@@ -173,7 +179,9 @@ fun test_cancel_withdrawal_success() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        pool::deposit(&mut pool, deposit_coin);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, test_helpers::valid_commitment(203), &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     scenario.next_tx(ADMIN);
@@ -425,8 +433,10 @@ fun test_execute_withdrawal_balance_decreased() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        pool::deposit(&mut pool, deposit_coin);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit_coin, test_helpers::valid_commitment(204), &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT, 0);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
     // Propose withdrawal for full balance (500 TOKEN) at epoch 0
@@ -482,6 +492,84 @@ fun test_execute_withdrawal_balance_decreased() {
         let mut clock = clock::create_for_testing(scenario.ctx());
         clock::set_for_testing(&mut clock, EPOCH_DURATION_MS * 2); // epoch 2
         pool::execute_pending_withdrawal(&mut pool, &cap, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// EPOCH DURATION UPDATE TESTS
+// ===========================================================================
+
+// 51. propose_epoch_duration_update + cancel + re-propose
+#[test]
+fun test_epoch_duration_propose_cancel_repropose() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        // Verify initial epoch duration
+        assert!(pool.epoch_duration() == EPOCH_DURATION_MS, 0);
+        // Propose update
+        pool::propose_epoch_duration_update(&mut pool, &cap, 7_200_000, &clock);
+        // Cancel
+        pool::cancel_epoch_duration_update(&mut pool, &cap);
+        // Re-propose (should succeed after cancel)
+        pool::propose_epoch_duration_update(&mut pool, &cap, 7_200_000, &clock);
+        // Epoch duration should NOT have changed yet (timelock)
+        assert!(pool.epoch_duration() == EPOCH_DURATION_MS, 1);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 52. propose_epoch_duration_update double — must fail E_EPOCH_DURATION_UPDATE_PENDING
+#[test]
+#[expected_failure(abort_code = 35, location = veil::pool)]
+fun test_epoch_duration_double_propose() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_epoch_duration_update(&mut pool, &cap, 7_200_000, &clock);
+        // Second proposal while first pending — must abort
+        pool::propose_epoch_duration_update(&mut pool, &cap, 14_400_000, &clock);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// 53. propose_epoch_duration_update with too-short duration — must fail E_INVALID_EPOCH_DURATION
+#[test]
+#[expected_failure(abort_code = 31, location = veil::pool)]
+fun test_epoch_duration_too_short() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        // 59_999 ms < 60_000 minimum
+        pool::propose_epoch_duration_update(&mut pool, &cap, 59_999, &clock);
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);

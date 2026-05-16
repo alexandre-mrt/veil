@@ -583,7 +583,9 @@ fun test_multisig_propose_withdrawal_end_to_end() {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         let deposit = sui::coin::mint_for_testing<veil::token::TOKEN>(500_000_000, scenario.ctx());
-        pool::deposit(&mut pool, deposit);
+        let clock = sui::clock::create_for_testing(scenario.ctx());
+        pool::deposit_and_register(&mut pool, deposit, test_helpers::valid_commitment(220), &clock, scenario.ctx());
+        sui::clock::destroy_for_testing(clock);
         multisig::create_multisig(
             &pool, &cap, vector[SIGNER1, SIGNER2, SIGNER3], REQUIRED_APPROVALS, scenario.ctx(),
         );
