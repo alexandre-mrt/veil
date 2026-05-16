@@ -83,7 +83,7 @@ export function CompliantTransferForm({
     let cancelled = false;
     client.core
       .getObject({ objectId: COMPLIANCE_CONFIG_ID, include: { json: true } })
-      .then((res) => {
+      .then((res: any) => {
         if (cancelled) return;
         const json = res.object.json as Record<string, unknown> | null;
         if (!json) return;

@@ -1,7 +1,7 @@
 import { createDAppKit } from "@mysten/dapp-kit-core";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 
-const GRPC_URLS: Record<string, string> = {
+const BASE_URLS: Record<string, string> = {
   testnet: "https://sui-testnet.mystenlabs.com",
   mainnet: "https://sui-mainnet.mystenlabs.com",
 };
@@ -13,7 +13,7 @@ function createInstance() {
     networks: ["testnet", "mainnet"] as const,
     defaultNetwork: "testnet" as const,
     createClient: (network) =>
-      new SuiGrpcClient({ network, baseUrl: GRPC_URLS[network] }),
+      new SuiGrpcClient({ network, baseUrl: BASE_URLS[network] }),
     autoConnect: true,
   });
 }
