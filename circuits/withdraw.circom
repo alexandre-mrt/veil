@@ -7,10 +7,11 @@ include "node_modules/circomlib/circuits/bitify.circom";
 // Withdrawal circuit for Veil privacy protocol.
 //
 // Proves ownership of a commitment and authorizes withdrawal of funds.
+// Partial withdrawal: creates a change commitment for the remaining balance.
 // Users can exit the pool without admin involvement (fixes PRIV-011).
 //
-// Public inputs (4):
-//   commitment, withdrawAmount, nullifier, recipientHash
+// Public inputs (5):
+//   commitment, withdrawAmount, nullifier, recipientHash, newCommitment
 //
 // Domain separation tags (first Poseidon input):
 //   1 -> commitment hash   H(1, cumulative, randomness, userSecret)  (shared with transfer.circom)
@@ -19,30 +20,34 @@ include "node_modules/circomlib/circuits/bitify.circom";
 //
 // Tags 1-6 are reserved by transfer.circom (1-3) and compliance.circom (4-6).
 //
-// Constraints (8):
+// Constraints (10):
 //   C1  commitment well-formed       (Poseidon(4) identity-bound)
 //   C2  withdrawAmount range proof   (64-bit, prevents field overflow)
 //   C3  withdrawAmount > 0           (no zero withdrawals)
 //   C4  cumulativeOld range proof    (64-bit, prevents field overflow)
 //   C5  withdrawAmount <= cumulativeOld (can only withdraw deposited amount)
-//   C6  nullifier correctly derived  (domain tag 7, unique per commitment)
-//   C7  recipient hash binding       (domain tag 8, ties withdrawal to address)
+//   C6  change commitment            (Poseidon(4) with domain tag 1, remaining balance)
+//   C7  remaining balance range proof (64-bit, prevents field overflow)
+//   C8  nullifier correctly derived  (domain tag 7, unique per commitment)
+//   C9  recipient hash binding       (domain tag 8, ties withdrawal to address)
 //
 // Curve: BN254 (Groth16, Sui curve id 1)
 // Compiled with circom 2.1.x, proven with snarkjs 0.7.x
 
 template Withdraw() {
-    // --- PUBLIC INPUTS (4 total -- order matters for Sui on-chain verification) ---
+    // --- PUBLIC INPUTS (5 total -- order matters for Sui on-chain verification) ---
     signal input commitment;      // Poseidon(1, cumulativeOld, randomnessOld, userSecret)
     signal input withdrawAmount;  // Amount to withdraw (public for token transfer)
     signal input nullifier;       // Poseidon(7, userSecret, randomnessOld, cumulativeOld)
     signal input recipientHash;   // Poseidon(8, recipient) -- binds withdrawal to address
+    signal input newCommitment;   // Change commitment for remaining balance
 
-    // --- PRIVATE INPUTS (4) ---
+    // --- PRIVATE INPUTS (5) ---
     signal input cumulativeOld;   // Current cumulative value in commitment
     signal input randomnessOld;   // Blinding factor for commitment
     signal input userSecret;      // User's master secret (proves ownership)
     signal input recipient;       // Sui address as field element
+    signal input randomnessNew;   // Blinding factor for change commitment
 
     // --- C1: Commitment is well-formed ---
     // Uses same structure as transfer.circom (domain tag 1, Poseidon(4))
@@ -74,7 +79,23 @@ template Withdraw() {
     amountCheck.in[1] <== cumulativeOld;
     amountCheck.out === 1;
 
-    // --- C6: Nullifier is correctly derived (domain tag 7) ---
+    // --- C6: Change commitment for remaining balance ---
+    // remainingBalance = cumulativeOld - withdrawAmount (safe: C5 ensures >= 0)
+    signal remainingBalance;
+    remainingBalance <== cumulativeOld - withdrawAmount;
+
+    component changeHash = Poseidon(4);
+    changeHash.inputs[0] <== 1;  // domain tag 1 = commitment (same as transfer)
+    changeHash.inputs[1] <== remainingBalance;
+    changeHash.inputs[2] <== randomnessNew;
+    changeHash.inputs[3] <== userSecret;
+    newCommitment === changeHash.out;
+
+    // --- C7: Remaining balance range proof (64-bit) ---
+    component remBits = Num2Bits(64);
+    remBits.in <== remainingBalance;
+
+    // --- C8: Nullifier is correctly derived (domain tag 7) ---
 
     // Unique per commitment (randomnessOld + cumulativeOld make it unique)
     component nfHash = Poseidon(4);
@@ -84,7 +105,7 @@ template Withdraw() {
     nfHash.inputs[3] <== cumulativeOld;
     nullifier === nfHash.out;
 
-    // --- C7: Recipient hash binds the withdrawal to a specific address ---
+    // --- C9: Recipient hash binds the withdrawal to a specific address ---
     // Prevents front-running: attacker cannot redirect withdrawal to another address
     component recipHash = Poseidon(2);
     recipHash.inputs[0] <== 8;
@@ -92,4 +113,4 @@ template Withdraw() {
     recipientHash === recipHash.out;
 }
 
-component main {public [commitment, withdrawAmount, nullifier, recipientHash]} = Withdraw();
+component main {public [commitment, withdrawAmount, nullifier, recipientHash, newCommitment]} = Withdraw();
