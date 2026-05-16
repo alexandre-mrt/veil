@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veil Protocol Flow</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #e0e0e0; font-family: 'JetBrains Mono', monospace; min-height: 100vh; padding: 24px; overflow-x: hidden; }
+h1 { font-size: 1.4rem; color: #00ff88; margin-bottom: 4px; letter-spacing: -0.5px; }
+.subtitle { font-size: 0.75rem; color: #666; margin-bottom: 32px; }
+.legend { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: #888; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+svg { width: 100%; height: auto; display: block; }
+.node { cursor: pointer; }
+.node rect, .node polygon { transition: stroke 0.2s, fill 0.15s; }
+.node:hover rect, .node:hover polygon { stroke-width: 2; }
+.flow-line { stroke-dasharray: 8 4; animation: dash 1.5s linear infinite; }
+.flow-line-compliance { stroke-dasharray: 8 4; animation: dash 2s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -24; } }
+.tooltip { position: fixed; background: #1a1a1a; border: 1px solid #333; border-radius: 2px; padding: 8px 12px; font-size: 0.65rem; color: #ccc; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; max-width: 320px; line-height: 1.5; }
+.tooltip.visible { opacity: 1; }
+.expand-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; border: 1px solid #00ff88; border-radius: 2px; padding: 24px; max-width: 480px; width: 90%; max-height: 80vh; overflow-y: auto; z-index: 200; display: none; }
+.expand-panel.active { display: block; }
+.expand-panel h3 { color: #00ff88; font-size: 0.85rem; margin-bottom: 12px; }
+.expand-panel table { width: 100%; border-collapse: collapse; font-size: 0.65rem; }
+.expand-panel th { text-align: left; color: #00ff88; padding: 4px 8px; border-bottom: 1px solid #333; }
+.expand-panel td { padding: 4px 8px; border-bottom: 1px solid #1a1a1a; color: #ccc; }
+.expand-panel .close-btn { position: absolute; top: 8px; right: 12px; color: #ff4444; cursor: pointer; font-size: 1rem; }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 150; display: none; }
+.overlay.active { display: block; }
+.tag { display: inline-block; font-size: 0.55rem; padding: 1px 5px; border-radius: 2px; margin-left: 4px; }
+@media (max-width: 768px) { body { padding: 12px; } h1 { font-size: 1.1rem; } svg { min-height: 600px; } }
+</style>
+</head>
+<body>
+<h1>VEIL PROTOCOL FLOW</h1>
+<p class="subtitle">Privacy payments with cumulative spending proofs on Sui -- UTXO model, BN254 Groth16</p>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#00ff88"></div>Anonymous path</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00aaff"></div>Compliance path</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div>Blocked / Frozen</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#333"></div>On-chain (Sui Move)</div>
+</div>
+
+<svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background regions -->
+  <rect x="20" y="60" width="960" height="180" rx="2" fill="#0f0f0f" stroke="#222" stroke-width="0.5"/>
+  <text x="36" y="80" font-size="9" fill="#555" font-family="monospace">BROWSER (client-side)</text>
+  <rect x="20" y="260" width="960" height="200" rx="2" fill="#080808" stroke="#222" stroke-width="0.5"/>
+  <text x="36" y="280" font-size="9" fill="#555" font-family="monospace">SUI MOVE (on-chain)</text>
+  <rect x="20" y="480" width="960" height="120" rx="2" fill="#0a0a06" stroke="#222" stroke-width="0.5"/>
+  <text x="36" y="500" font-size="9" fill="#555" font-family="monospace">STATE</text>
+
+  <!-- USER node -->
+  <g class="node" data-tip="User initiates transfer via frontend. Private state stored in encrypted localStorage.">
+    <rect x="60" y="100" width="100" height="50" rx="2" fill="#1a1a1a" stroke="#00ff88" stroke-width="1"/>
+    <text x="110" y="128" text-anchor="middle" font-size="10" fill="#00ff88" font-family="monospace">USER</text>
+    <text x="110" y="141" text-anchor="middle" font-size="7" fill="#666" font-family="monospace">private state</text>
+  </g>
+
+  <!-- Threshold check (diamond) -->
+  <g class="node" data-tip="Check: cumNew <= threshold (1000 TOKEN/epoch). If exceeded, compliance proof required or transfer blocked.">
+    <polygon points="280,125 330,100 380,125 330,150" fill="#1a1a1a" stroke="#ffaa00" stroke-width="1"/>
+    <text x="330" y="128" text-anchor="middle" font-size="8" fill="#ffaa00" font-family="monospace">cumNew</text>
+    <text x="330" y="138" text-anchor="middle" font-size="7" fill="#ffaa00" font-family="monospace">&lt;= threshold?</text>
+  </g>
+
+  <!-- Flow: User to threshold -->
+  <line x1="160" y1="125" x2="280" y2="125" class="flow-line" stroke="#00ff88" stroke-width="1.5"/>
+  <polygon points="275,122 280,125 275,128" fill="#00ff88"/>
+
+  <!-- ANONYMOUS PATH (top) -->
+  <!-- Poseidon commitment -->
+  <g class="node" data-tip="Poseidon(4) hash: H(domain=1, cumNew, randNew, userSecret). BN254 field arithmetic. ~50ms in WASM.">
+    <rect x="420" y="85" width="130" height="40" rx="2" fill="#1a1a1a" stroke="#00ff88" stroke-width="1"/>
+    <text x="485" y="105" text-anchor="middle" font-size="8" fill="#00ff88" font-family="monospace">Poseidon Commit</text>
+    <text x="485" y="116" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">H(1, cum, rand, secret)</text>
+  </g>
+  <line x1="380" y1="115" x2="420" y2="105" class="flow-line" stroke="#00ff88" stroke-width="1"/>
+  <text x="395" y="107" font-size="7" fill="#00ff88" font-family="monospace">YES</text>
+
+  <!-- Transfer proof gen -->
+  <g class="node" id="transfer-proof-node" data-tip="Groth16 proof via snarkjs WASM. 11 constraints (C1-C11). ~2s proving time. Click to expand constraints.">
+    <rect x="580" y="85" width="140" height="40" rx="2" fill="#1a1a1a" stroke="#00ff88" stroke-width="1.5"/>
+    <text x="650" y="105" text-anchor="middle" font-size="8" fill="#00ff88" font-family="monospace">Transfer Proof</text>
+    <text x="650" y="116" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">Groth16 / 11 constraints / ~2s</text>
+  </g>
+  <line x1="550" y1="105" x2="580" y2="105" class="flow-line" stroke="#00ff88" stroke-width="1"/>
+
+  <!-- COMPLIANCE PATH (bottom) -->
+  <!-- Compliance proof -->
+  <g class="node" id="compliance-proof-node" data-tip="Second Groth16 proof: credential Merkle membership + KYC level >= required + not expired. ~3s. Click to expand.">
+    <rect x="420" y="155" width="130" height="40" rx="2" fill="#1a1a1a" stroke="#00aaff" stroke-width="1"/>
+    <text x="485" y="172" text-anchor="middle" font-size="8" fill="#00aaff" font-family="monospace">Compliance Proof</text>
+    <text x="485" y="183" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">credential Merkle / ~3s</text>
+  </g>
+  <line x1="380" y1="135" x2="420" y2="165" class="flow-line-compliance" stroke="#00aaff" stroke-width="1"/>
+  <text x="388" y="152" font-size="7" fill="#ff4444" font-family="monospace">NO</text>
+
+  <!-- ECDH Encryption -->
+  <g class="node" data-tip="ECDH P-256 key agreement + AES-128-GCM. Encrypts txAmount for auditor public key. Bound to txAmountHash (C11).">
+    <rect x="580" y="155" width="140" height="40" rx="2" fill="#1a1a1a" stroke="#00aaff" stroke-width="1"/>
+    <text x="650" y="172" text-anchor="middle" font-size="8" fill="#00aaff" font-family="monospace">ECDH Encrypt</text>
+    <text x="650" y="183" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">P-256 + AES-GCM for auditor</text>
+  </g>
+  <line x1="550" y1="175" x2="580" y2="175" class="flow-line-compliance" stroke="#00aaff" stroke-width="1"/>
+
+  <!-- Merge point -->
+  <circle cx="790" cy="125" r="6" fill="#1a1a1a" stroke="#00ff88" stroke-width="1"/>
+  <line x1="720" y1="105" x2="784" y2="122" class="flow-line" stroke="#00ff88" stroke-width="1.5"/>
+  <line x1="720" y1="175" x2="784" y2="128" class="flow-line-compliance" stroke="#00aaff" stroke-width="1"/>
+
+  <!-- Arrow down to on-chain -->
+  <line x1="790" y1="131" x2="790" y2="290" class="flow-line" stroke="#00ff88" stroke-width="1.5"/>
+  <polygon points="787,285 790,292 793,285" fill="#00ff88"/>
+  <text x="798" y="220" font-size="7" fill="#555" font-family="monospace">proof_bytes +</text>
+  <text x="798" y="230" font-size="7" fill="#555" font-family="monospace">public_inputs</text>
+
+  <!-- ON-CHAIN: Groth16 Verifier -->
+  <g class="node" data-tip="sui::groth16 native BN254. prepare_verifying_key + verify_groth16_proof. ~1200 gas units. Dual verification for Tier 3.">
+    <rect x="560" y="290" width="150" height="45" rx="2" fill="#111" stroke="#00ff88" stroke-width="1"/>
+    <text x="635" y="310" text-anchor="middle" font-size="8.5" fill="#00ff88" font-family="monospace">sui::groth16</text>
+    <text x="635" y="322" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">BN254 native verifier</text>
+    <text x="635" y="332" text-anchor="middle" font-size="6" fill="#444" font-family="monospace">~1200 gas / dual for Tier 3</text>
+  </g>
+  <line x1="790" y1="292" x2="710" y2="305" stroke="#00ff88" stroke-width="1" stroke-dasharray="4 2"/>
+
+  <!-- Nullifier Check -->
+  <g class="node" data-tip="Dynamic field lookup: df::exists_(&pool.id, nullifier). O(1) access. No Table contention on shared object.">
+    <rect x="560" y="350" width="150" height="40" rx="2" fill="#111" stroke="#ffaa00" stroke-width="1"/>
+    <text x="635" y="368" text-anchor="middle" font-size="8" fill="#ffaa00" font-family="monospace">Nullifier Check</text>
+    <text x="635" y="379" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">dynamic field exists? abort if spent</text>
+  </g>
+  <line x1="635" y1="335" x2="635" y2="350" stroke="#00ff88" stroke-width="1"/>
+
+  <!-- UTXO Swap -->
+  <g class="node" data-tip="Remove old commitment dynamic field. Add new commitment dynamic field. Atomic state transition. E_COMMITMENT_CHAIN_BROKEN=9 if old not found.">
+    <rect x="560" y="405" width="150" height="40" rx="2" fill="#111" stroke="#00ff88" stroke-width="1"/>
+    <text x="635" y="422" text-anchor="middle" font-size="8" fill="#00ff88" font-family="monospace">UTXO Commit Swap</text>
+    <text x="635" y="434" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">consume old / create new</text>
+  </g>
+  <line x1="635" y1="390" x2="635" y2="405" stroke="#00ff88" stroke-width="1"/>
+
+  <!-- Compliance on-chain (right side) -->
+  <g class="node" data-tip="Tier 3 only: verify compliance proof, check credential_root matches pool, store credential nullifier, emit ComplianceVerifiedEvent with auditor ciphertext.">
+    <rect x="780" y="340" width="160" height="50" rx="2" fill="#111" stroke="#00aaff" stroke-width="1"/>
+    <text x="860" y="358" text-anchor="middle" font-size="8" fill="#00aaff" font-family="monospace">Compliance Verify</text>
+    <text x="860" y="370" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">credential_root match</text>
+    <text x="860" y="381" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">cred nullifier stored</text>
+  </g>
+  <line x1="790" y1="292" x2="860" y2="340" stroke="#00aaff" stroke-width="1" stroke-dasharray="4 2"/>
+
+  <!-- Event emission -->
+  <g class="node" data-tip="TransferEvent: no sender, no recipient, no amount. ComplianceVerifiedEvent (Tier 3): auditor ciphertext only. Full privacy preservation.">
+    <rect x="380" y="350" width="130" height="40" rx="2" fill="#111" stroke="#555" stroke-width="1"/>
+    <text x="445" y="368" text-anchor="middle" font-size="8" fill="#888" font-family="monospace">Event Emission</text>
+    <text x="445" y="379" text-anchor="middle" font-size="6.5" fill="#555" font-family="monospace">no amounts, no identity</text>
+  </g>
+  <line x1="560" y1="425" x2="510" y2="380" stroke="#555" stroke-width="0.5" stroke-dasharray="2 2"/>
+
+  <!-- Frozen gate -->
+  <g class="node" data-tip="Pool frozen by admin (AdminCap holder). All transfers abort with E_FROZEN=1. Freeze/unfreeze via governance.">
+    <rect x="380" y="295" width="100" height="35" rx="2" fill="#1a0808" stroke="#ff4444" stroke-width="1"/>
+    <text x="430" y="313" text-anchor="middle" font-size="8" fill="#ff4444" font-family="monospace">FROZEN?</text>
+    <text x="430" y="324" text-anchor="middle" font-size="6.5" fill="#ff4444" font-family="monospace">abort E_FROZEN=1</text>
+  </g>
+
+  <!-- STATE section -->
+  <!-- Old commitment -->
+  <g class="node" data-tip="Old commitment: Poseidon(1, cumOld, randOld, userSecret). Consumed (deleted from dynamic fields) on successful transfer.">
+    <rect x="200" y="510" width="160" height="50" rx="2" fill="#0f0f0f" stroke="#ff4444" stroke-width="1" stroke-dasharray="4 2"/>
+    <text x="280" y="530" text-anchor="middle" font-size="8" fill="#ff4444" font-family="monospace">Old Commitment</text>
+    <text x="280" y="542" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">H(1, cumOld, rOld, secret)</text>
+    <text x="280" y="553" text-anchor="middle" font-size="6.5" fill="#ff4444" font-family="monospace">CONSUMED</text>
+  </g>
+
+  <!-- New commitment -->
+  <g class="node" data-tip="New commitment: Poseidon(1, cumNew, randNew, userSecret). Created as new dynamic field. Becomes 'old' on next transfer.">
+    <rect x="420" y="510" width="160" height="50" rx="2" fill="#0f0f0f" stroke="#00ff88" stroke-width="1"/>
+    <text x="500" y="530" text-anchor="middle" font-size="8" fill="#00ff88" font-family="monospace">New Commitment</text>
+    <text x="500" y="542" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">H(1, cumNew, rNew, secret)</text>
+    <text x="500" y="553" text-anchor="middle" font-size="6.5" fill="#00ff88" font-family="monospace">CREATED</text>
+  </g>
+
+  <!-- Nullifier stored -->
+  <g class="node" data-tip="Nullifier: Poseidon(2, userSecret, epochId, randOld). Stored as dynamic field. Prevents double-spend of same note.">
+    <rect x="640" y="510" width="160" height="50" rx="2" fill="#0f0f0f" stroke="#ffaa00" stroke-width="1"/>
+    <text x="720" y="530" text-anchor="middle" font-size="8" fill="#ffaa00" font-family="monospace">Nullifier Stored</text>
+    <text x="720" y="542" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">H(2, secret, epoch, rOld)</text>
+    <text x="720" y="553" text-anchor="middle" font-size="6.5" fill="#ffaa00" font-family="monospace">PERMANENT</text>
+  </g>
+
+  <!-- Arrows from UTXO swap to state -->
+  <line x1="600" y1="445" x2="280" y2="510" stroke="#ff4444" stroke-width="0.8" stroke-dasharray="3 2"/>
+  <line x1="635" y1="445" x2="500" y2="510" stroke="#00ff88" stroke-width="0.8" stroke-dasharray="3 2"/>
+  <line x1="670" y1="445" x2="720" y2="510" stroke="#ffaa00" stroke-width="0.8" stroke-dasharray="3 2"/>
+
+  <!-- Timelock note -->
+  <g class="node" data-tip="Admin VK updates require 1-epoch delay (propose_vk_update → execute after epoch passes). Prevents rug-pull by admin. E_VK_UPDATE_PENDING=17.">
+    <rect x="60" y="310" width="140" height="40" rx="2" fill="#111" stroke="#555" stroke-width="0.5"/>
+    <text x="130" y="328" text-anchor="middle" font-size="7.5" fill="#888" font-family="monospace">Timelock Governance</text>
+    <text x="130" y="339" text-anchor="middle" font-size="6" fill="#555" font-family="monospace">VK update: 1-epoch delay</text>
+  </g>
+
+  <!-- Denominations -->
+  <g class="node" data-tip="Standard deposit denominations: 100, 500, 1000 TOKEN only (E_NON_STANDARD_AMOUNT=14). Resists amount correlation analysis.">
+    <rect x="60" y="380" width="140" height="35" rx="2" fill="#111" stroke="#555" stroke-width="0.5"/>
+    <text x="130" y="397" text-anchor="middle" font-size="7.5" fill="#888" font-family="monospace">Deposits: 100|500|1000</text>
+    <text x="130" y="408" text-anchor="middle" font-size="6" fill="#555" font-family="monospace">correlation resistance</text>
+  </g>
+
+  <!-- Public inputs box -->
+  <g class="node" data-tip="6 public inputs (32 bytes each, BN254 field): [oldCommitment, newCommitment, nullifier, epochId, threshold, txAmountHash]. Upper 24 bytes zero-checked for u64 values.">
+    <rect x="780" y="420" width="180" height="55" rx="2" fill="#0f0f0f" stroke="#555" stroke-width="0.5"/>
+    <text x="870" y="438" text-anchor="middle" font-size="7.5" fill="#888" font-family="monospace">6 Public Inputs (32B each)</text>
+    <text x="870" y="450" text-anchor="middle" font-size="6" fill="#555" font-family="monospace">oldCommit | newCommit | nullifier</text>
+    <text x="870" y="460" text-anchor="middle" font-size="6" fill="#555" font-family="monospace">epochId | threshold | txAmountHash</text>
+    <text x="870" y="472" text-anchor="middle" font-size="6" fill="#444" font-family="monospace">upper 24B zero-check (overflow prot.)</text>
+  </g>
+
+  <!-- Epoch info -->
+  <g class="node" data-tip="Epoch resets cumulative spending. On-chain Clock provides epoch_id. Threshold validated against pool config. E_EPOCH_MISMATCH=8 if wrong epoch.">
+    <rect x="60" y="510" width="120" height="45" rx="2" fill="#0f0f0f" stroke="#555" stroke-width="0.5"/>
+    <text x="120" y="528" text-anchor="middle" font-size="7.5" fill="#888" font-family="monospace">Epoch Reset</text>
+    <text x="120" y="540" text-anchor="middle" font-size="6" fill="#555" font-family="monospace">cum spending → 0</text>
+    <text x="120" y="550" text-anchor="middle" font-size="6" fill="#555" font-family="monospace">each epoch boundary</text>
+  </g>
+</svg>
+
+<div class="overlay" id="overlay"></div>
+<div class="expand-panel" id="transfer-panel">
+  <span class="close-btn" onclick="closePanel()">&times;</span>
+  <h3>Transfer Circuit -- 11 Constraints</h3>
+  <table>
+    <tr><th>#</th><th>Constraint</th><th>Component</th></tr>
+    <tr><td>C1</td><td>oldCommit == Poseidon(1, cumOld, rOld, secret)</td><td>Poseidon(4)</td></tr>
+    <tr><td>C2</td><td>newCommit == Poseidon(1, cumNew, rNew, secret)</td><td>Poseidon(4)</td></tr>
+    <tr><td>C3</td><td>cumNew == cumOld + txAmount</td><td>Addition</td></tr>
+    <tr><td>C4</td><td>txAmount &gt; 0</td><td>GreaterThan(64)</td></tr>
+    <tr><td>C5</td><td>cumOld in [0, 2^64)</td><td>Num2Bits(64)</td></tr>
+    <tr><td>C6</td><td>txAmount in [0, 2^64)</td><td>Num2Bits(64)</td></tr>
+    <tr><td>C7</td><td>cumNew in [0, 2^64)</td><td>Num2Bits(64)</td></tr>
+    <tr><td>C8</td><td>threshold in [0, 2^64)</td><td>Num2Bits(64)</td></tr>
+    <tr><td>C9</td><td>cumNew &lt;= threshold</td><td>LessEqThan(64)</td></tr>
+    <tr><td>C10</td><td>nullifier == Poseidon(2, secret, epoch, rOld)</td><td>Poseidon(4)</td></tr>
+    <tr><td>C11</td><td>txAmountHash == Poseidon(3, txAmount, salt)</td><td>Poseidon(3)</td></tr>
+  </table>
+  <p style="margin-top:12px;font-size:0.6rem;color:#666">6 public inputs: oldCommitment, newCommitment, nullifier, epochId, threshold, txAmountHash</p>
+</div>
+
+<div class="expand-panel" id="compliance-panel">
+  <span class="close-btn" onclick="closePanel()">&times;</span>
+  <h3>Compliance Circuit -- Credential Verification</h3>
+  <table>
+    <tr><th>Check</th><th>Detail</th></tr>
+    <tr><td>Merkle membership</td><td>credLeaf exists in credential tree (depth 20)</td></tr>
+    <tr><td>KYC level</td><td>credential.kycLevel &gt;= pool.requiredLevel</td></tr>
+    <tr><td>Not expired</td><td>credential.expiry &gt; currentEpoch</td></tr>
+    <tr><td>Credential nullifier</td><td>Poseidon(5, credSecret, epoch, contextId) -- unique per transfer</td></tr>
+    <tr><td>Root binding</td><td>Computed root matches on-chain credential_root</td></tr>
+  </table>
+  <p style="margin-top:12px;font-size:0.6rem;color:#666">Context-bound nullifiers prevent double-use within epoch without cross-epoch linking.</p>
+  <h3 style="margin-top:16px;">Auditor Encryption</h3>
+  <table>
+    <tr><th>Step</th><th>Detail</th></tr>
+    <tr><td>Key agreement</td><td>ECDH P-256: ephemeral * auditorPubKey</td></tr>
+    <tr><td>Encryption</td><td>AES-128-GCM(sharedSecret, txAmount)</td></tr>
+    <tr><td>Binding</td><td>Ciphertext bound to txAmountHash (C11)</td></tr>
+    <tr><td>Storage</td><td>Emitted in ComplianceVerifiedEvent (off-chain indexing)</td></tr>
+  </table>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const tooltip = document.getElementById('tooltip');
+const overlay = document.getElementById('overlay');
+const nodes = document.querySelectorAll('.node');
+
+nodes.forEach(node => {
+  node.addEventListener('mouseenter', e => {
+    const tip = node.getAttribute('data-tip');
+    if (!tip) return;
+    tooltip.textContent = tip;
+    tooltip.classList.add('visible');
+  });
+  node.addEventListener('mousemove', e => {
+    tooltip.style.left = Math.min(e.clientX + 12, window.innerWidth - 340) + 'px';
+    tooltip.style.top = (e.clientY + 12) + 'px';
+  });
+  node.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+});
+
+document.getElementById('transfer-proof-node').addEventListener('click', () => openPanel('transfer-panel'));
+document.getElementById('compliance-proof-node').addEventListener('click', () => openPanel('compliance-panel'));
+
+function openPanel(id) {
+  overlay.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+function closePanel() {
+  overlay.classList.remove('active');
+  document.querySelectorAll('.expand-panel').forEach(p => p.classList.remove('active'));
+}
+overlay.addEventListener('click', closePanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+</script>
+</body>
+</html>

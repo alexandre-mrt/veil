@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Credential } from "@/lib/types";
+import { DEMO_CREDENTIAL } from "@/lib/demoCredential";
 import styles from "./CredentialManager.module.css";
 
 // ---------------------------------------------------------------------------
@@ -54,6 +55,7 @@ function parseCredentialJson(raw: string): Credential | null {
       leaf: BigInt(String(obj.leaf)),
       kycLevel: Number(obj.kycLevel),
       expiry: Number(obj.expiry),
+      issuerId: obj.issuerId != null ? Number(obj.issuerId) : undefined,
       merkleProof: (obj.merkleProof as unknown[]).map((x) => BigInt(String(x))),
       merkleIndex: Number(obj.merkleIndex),
     };
@@ -175,20 +177,10 @@ export function CredentialManager({
           type="button"
           className={styles.demoBtn}
           onClick={() => {
-            const randomLeaf = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-              .map((b) => b.toString(16).padStart(2, "0"))
-              .join("");
-            const mockCred: Credential = {
-              leaf: BigInt(`0x${randomLeaf}`),
-              kycLevel: 1,
-              expiry: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-              merkleProof: [BigInt(`0x${"0".repeat(64)}`)],
-              merkleIndex: 0,
-            };
-            onImport(mockCred);
+            onImport(DEMO_CREDENTIAL);
           }}
         >
-          [Demo] Generate Test Credential
+          [Demo] Load Pre-computed Credential
         </button>
         <span className={styles.demoNote}>For testnet demo only</span>
       </div>

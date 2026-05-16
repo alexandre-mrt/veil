@@ -152,7 +152,7 @@ export function useCompliantTransfer(): UseCompliantTransferReturn {
           userSecret: privateState.userSecret,
           kycLevel: BigInt(credential.kycLevel),
           expiryEpoch: BigInt(credential.expiry),
-          issuerId: credential.leaf, // issuer encoded in leaf
+          issuerId: BigInt(credential.issuerId ?? 42),
           merkleRoot: BigInt(complianceConfig.credentialRoot),
           pathElements: credential.merkleProof,
           pathIndices: Array.from(

@@ -10,6 +10,7 @@ export interface Credential {
   leaf: bigint;
   kycLevel: number;
   expiry: number;
+  issuerId?: number;
   merkleProof: bigint[];
   merkleIndex: number;
 }
