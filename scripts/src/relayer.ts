@@ -48,6 +48,36 @@ const DEFAULT_PORT = 3001;
 const GAS_BUDGET = 50_000_000; // 0.05 SUI
 
 // ---------------------------------------------------------------------------
+// Security: CORS, Rate Limiting, Payload Limits
+// ---------------------------------------------------------------------------
+
+const ALLOWED_ORIGIN = process.env.RELAYER_CORS_ORIGIN || "https://frontend-sepia-nine-30.vercel.app";
+const LOCAL_DEV_ORIGIN = "http://localhost:3000";
+const MAX_PAYLOAD_BYTES = 50_000; // 50KB
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 10; // requests per window
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
+function resolveAllowedOrigin(requestOrigin: string | null): string {
+  if (requestOrigin === LOCAL_DEV_ORIGIN) return LOCAL_DEV_ORIGIN;
+  if (requestOrigin === ALLOWED_ORIGIN) return ALLOWED_ORIGIN;
+  return ALLOWED_ORIGIN; // Default: production origin (browser will block mismatched)
+}
+
+// ---------------------------------------------------------------------------
 // Keypair Loader (reuses active Sui CLI address)
 // ---------------------------------------------------------------------------
 
@@ -305,16 +335,32 @@ async function serve(port: number): Promise<void> {
     async fetch(req) {
       const url = new URL(req.url);
       const method = req.method;
+      const requestOrigin = req.headers.get("origin");
+      const origin = resolveAllowedOrigin(requestOrigin);
 
-      // CORS headers for frontend
-      const corsHeaders = {
-        "Access-Control-Allow-Origin": "*",
+      // CORS headers — restricted to known origins
+      const corsHeaders: Record<string, string> = {
+        "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
       };
 
       if (method === "OPTIONS") {
         return new Response(null, { status: 204, headers: corsHeaders });
+      }
+
+      // Rate limiting — extract IP from headers or fallback
+      const clientIp =
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        req.headers.get("x-real-ip") ||
+        "unknown";
+
+      if (!checkRateLimit(clientIp)) {
+        console.warn(`[rate-limit] Blocked ${clientIp}`);
+        return Response.json(
+          { error: "Too many requests" },
+          { status: 429, headers: corsHeaders },
+        );
       }
 
       // Health check
@@ -328,7 +374,16 @@ async function serve(port: number): Promise<void> {
       // Sponsor endpoint
       if (url.pathname === "/sponsor" && method === "POST") {
         try {
-          const body = (await req.json()) as SponsorRequest;
+          // Payload size limit
+          const rawBody = await req.text();
+          if (rawBody.length > MAX_PAYLOAD_BYTES) {
+            return Response.json(
+              { error: "Payload too large" },
+              { status: 413, headers: corsHeaders },
+            );
+          }
+          const body = JSON.parse(rawBody) as SponsorRequest;
+
           if (!body.kindBytes || !body.sender) {
             return Response.json(
               { error: "Missing kindBytes or sender" },
@@ -340,10 +395,9 @@ async function serve(port: number): Promise<void> {
           console.log(`[sponsor] Sponsored tx for ${body.sender}`);
           return Response.json(result, { headers: corsHeaders });
         } catch (e) {
-          const message = e instanceof Error ? e.message : "Sponsor failed";
-          console.error(`[sponsor] Error: ${message}`);
+          console.error("[/sponsor] Error:", e);
           return Response.json(
-            { error: message },
+            { error: "Sponsorship failed" },
             { status: 500, headers: corsHeaders },
           );
         }
@@ -352,7 +406,16 @@ async function serve(port: number): Promise<void> {
       // Submit endpoint
       if (url.pathname === "/submit" && method === "POST") {
         try {
-          const body = (await req.json()) as SubmitRequest;
+          // Payload size limit
+          const rawBody = await req.text();
+          if (rawBody.length > MAX_PAYLOAD_BYTES) {
+            return Response.json(
+              { error: "Payload too large" },
+              { status: 413, headers: corsHeaders },
+            );
+          }
+          const body = JSON.parse(rawBody) as SubmitRequest;
+
           if (!body.txBytes || !body.userSignature) {
             return Response.json(
               { error: "Missing txBytes or userSignature" },
@@ -364,10 +427,9 @@ async function serve(port: number): Promise<void> {
           console.log(`[submit] ${result.success ? "OK" : "FAIL"} — digest: ${result.digest}`);
           return Response.json(result, { headers: corsHeaders });
         } catch (e) {
-          const message = e instanceof Error ? e.message : "Submit failed";
-          console.error(`[submit] Error: ${message}`);
+          console.error("[/submit] Error:", e);
           return Response.json(
-            { error: message },
+            { error: "Submission failed" },
             { status: 500, headers: corsHeaders },
           );
         }
