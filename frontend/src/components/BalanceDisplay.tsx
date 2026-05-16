@@ -119,7 +119,7 @@ export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
   const [veilLoading, setVeilLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
 
-  const { balance: poolBalance, isLoading: poolLoading } =
+  const { balance: poolBalance, nextLeafIndex: anonymitySet, isLoading: poolLoading } =
     useVeilPool(POOL_ID);
 
   // Fetch SUI and VEIL balances
@@ -200,6 +200,12 @@ export function BalanceDisplay({ privateState }: BalanceDisplayProps = {}) {
         label="Pool Total"
         value={poolFormatted}
         unit="VEIL"
+        isLoading={poolLoading}
+      />
+      <BalanceCard
+        label="Anonymity Set"
+        value={anonymitySet.toString()}
+        unit={anonymitySet === 1 ? "commitment" : "commitments"}
         isLoading={poolLoading}
       />
       <EpochSpendingCard privateState={privateState} hasWallet={!!address} />
