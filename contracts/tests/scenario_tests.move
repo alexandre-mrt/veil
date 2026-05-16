@@ -80,7 +80,7 @@ fun story_pool_lifecycle() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DENOM_MEDIUM, scenario.ctx());
-        pool::deposit(&mut pool, deposit_coin, scenario.ctx());
+        pool::deposit(&mut pool, deposit_coin);
         assert!(pool.pool_balance() == DENOM_MEDIUM, 4);
         test_scenario::return_shared(pool);
     };
@@ -261,7 +261,7 @@ fun story_multi_user_standard_deposits() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin_a = coin::mint_for_testing<TOKEN>(DENOM_SMALL, scenario.ctx());
-        pool::deposit(&mut pool, coin_a, scenario.ctx());
+        pool::deposit(&mut pool, coin_a);
         assert!(pool.pool_balance() == DENOM_SMALL, 0);
         test_scenario::return_shared(pool);
     };
@@ -271,7 +271,7 @@ fun story_multi_user_standard_deposits() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin_b = coin::mint_for_testing<TOKEN>(DENOM_MEDIUM, scenario.ctx());
-        pool::deposit(&mut pool, coin_b, scenario.ctx());
+        pool::deposit(&mut pool, coin_b);
         assert!(pool.pool_balance() == DENOM_SMALL + DENOM_MEDIUM, 1);
         test_scenario::return_shared(pool);
     };
@@ -281,7 +281,7 @@ fun story_multi_user_standard_deposits() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin_c = coin::mint_for_testing<TOKEN>(DENOM_LARGE, scenario.ctx());
-        pool::deposit(&mut pool, coin_c, scenario.ctx());
+        pool::deposit(&mut pool, coin_c);
         assert!(pool.pool_balance() == DENOM_SMALL + DENOM_MEDIUM + DENOM_LARGE, 2);
         test_scenario::return_shared(pool);
     };
@@ -400,7 +400,7 @@ fun story_multi_pool_isolation() {
     {
         let mut pool1 = scenario.take_shared_by_id<Pool>(pool1_id);
         let coin_b = coin::mint_for_testing<TOKEN>(DENOM_MEDIUM, scenario.ctx());
-        pool::deposit(&mut pool1, coin_b, scenario.ctx());
+        pool::deposit(&mut pool1, coin_b);
         assert!(pool1.pool_balance() == DENOM_MEDIUM, 0);
         test_scenario::return_shared(pool1);
     };
@@ -580,7 +580,7 @@ fun threat_nonstandard_deposit_rejected() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let bad_coin = coin::mint_for_testing<TOKEN>(123_456_000, scenario.ctx());
-        pool::deposit(&mut pool, bad_coin, scenario.ctx());
+        pool::deposit(&mut pool, bad_coin);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -601,7 +601,7 @@ fun threat_dust_deposit_rejected() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let dust_coin = coin::mint_for_testing<TOKEN>(999, scenario.ctx());
-        pool::deposit(&mut pool, dust_coin, scenario.ctx());
+        pool::deposit(&mut pool, dust_coin);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -671,7 +671,7 @@ fun threat_deposit_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin_a = coin::mint_for_testing<TOKEN>(DENOM_SMALL, scenario.ctx());
-        pool::deposit(&mut pool, coin_a, scenario.ctx());
+        pool::deposit(&mut pool, coin_a);
         test_scenario::return_shared(pool);
     };
     scenario.end();
@@ -905,7 +905,7 @@ fun threat_emergency_withdraw_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin_a = coin::mint_for_testing<TOKEN>(DENOM_LARGE, scenario.ctx());
-        pool::deposit(&mut pool, coin_a, scenario.ctx());
+        pool::deposit(&mut pool, coin_a);
         test_scenario::return_shared(pool);
     };
 
