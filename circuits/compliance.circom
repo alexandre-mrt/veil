@@ -18,6 +18,14 @@ include "templates/merkle_proof.circom";
 //
 // Tags 1-3 are reserved by the transfer circuit (transfer.circom).
 //
+// Constraints (11):
+//   C1  credential leaf hash       C2  Merkle membership
+//   C3  nullifier derivation       C_BIND context binding
+//   C4  expiry check               C5  KYC level check
+//   C6  validCredential output     C7-C8 epoch range proofs
+//   C9  kycLevel range proof       C10 requiredKycLevel range proof (M-01 fix)
+//   C11 issuerId range proof
+//
 // Public inputs (6):
 //   merkleRoot, currentEpoch, contextId, requiredKycLevel, nullifier, validCredential
 //
@@ -104,11 +112,16 @@ template Compliance(merkleDepth) {
     component expiryBits = Num2Bits(64);
     expiryBits.in <== expiryEpoch;
 
-    // --- C9-C10: Range proofs for credential fields (SKILL-002 fix) ---
+    // --- C9: Range proof for kycLevel (SKILL-002 fix) ---
     // Prevents large field elements from wrapping in GreaterEqThan(8) comparator
     component kycBits = Num2Bits(8);
     kycBits.in <== kycLevel;
 
+    // --- C10: Range proof for requiredKycLevel (prevents 8-bit wraparound in GreaterEqThan) ---
+    component reqKycBits = Num2Bits(8);
+    reqKycBits.in <== requiredKycLevel;
+
+    // --- C11: Range proof for issuerId ---
     component issuerBits = Num2Bits(64);
     issuerBits.in <== issuerId;
 }
