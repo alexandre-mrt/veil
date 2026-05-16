@@ -67,6 +67,9 @@ public struct Pool has key {
     pending_withdrawal: Option<u64>,
     pending_withdrawal_recipient: Option<address>,
     pending_withdrawal_epoch: u64,
+    // Withdraw VK timelock
+    pending_withdraw_vk: vector<u8>,
+    withdraw_vk_update_epoch: u64,
 }
 
 public struct AdminCap has key {
@@ -116,6 +119,8 @@ public fun create_pool(transfer_vk: vector<u8>, threshold: u64, epoch_duration_m
         pending_withdrawal: option::none(),
         pending_withdrawal_recipient: option::none(),
         pending_withdrawal_epoch: 0,
+        pending_withdraw_vk: vector[],
+        withdraw_vk_update_epoch: 0,
     };
     let cap = AdminCap { id: object::new(ctx), pool_id };
     transfer::share_object(pool);
@@ -421,11 +426,33 @@ public fun pool_compliance_config(pool: &Pool): Option<ID> { pool.compliance_con
 // ZK-proven withdrawal (Tier 2.2 — fixes PRIV-011: admin-gated withdrawal)
 // ---------------------------------------------------------------------------
 
-/// Admin sets the withdraw verification key (direct setter, no timelock for initial setup).
-public fun set_withdraw_vk(pool: &mut Pool, cap: &AdminCap, new_vk: vector<u8>) {
+public fun propose_withdraw_vk(
+    pool: &mut Pool,
+    cap: &AdminCap,
+    new_vk: vector<u8>,
+    clock: &sui::clock::Clock,
+) {
     assert_pool_admin(cap, pool);
     assert!(new_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
-    pool.withdraw_vk = new_vk;
+    assert!(pool.pending_withdraw_vk.length() == 0, E_VK_UPDATE_PENDING);
+    let effective = pool_epoch(pool, clock) + 1;
+    pool.pending_withdraw_vk = new_vk;
+    pool.withdraw_vk_update_epoch = effective;
+    event::emit(VKUpdateProposedEvent { pool_id: pool.id.to_inner(), effective_epoch: effective });
+}
+
+public fun cancel_withdraw_vk(pool: &mut Pool, cap: &AdminCap) {
+    assert_pool_admin(cap, pool);
+    pool.pending_withdraw_vk = vector[];
+    pool.withdraw_vk_update_epoch = 0;
+}
+
+fun apply_pending_withdraw_vk(pool: &mut Pool, clock: &sui::clock::Clock) {
+    if (pool.pending_withdraw_vk.length() > 0 && pool_epoch(pool, clock) >= pool.withdraw_vk_update_epoch) {
+        pool.withdraw_vk = pool.pending_withdraw_vk;
+        pool.pending_withdraw_vk = vector[];
+        pool.withdraw_vk_update_epoch = 0;
+    };
 }
 
 /// ZK-proven withdrawal: user proves ownership of a commitment and withdraws tokens.
@@ -443,6 +470,7 @@ public fun zk_withdraw(
     ctx: &mut TxContext,
 ) {
     assert!(!pool.frozen, E_FROZEN);
+    apply_pending_withdraw_vk(pool, clock);
     assert!(pool.withdraw_vk.length() >= MIN_VK_LENGTH, E_NO_WITHDRAW_VK);
     assert!(public_inputs_bytes.length() == 128, E_INVALID_INPUTS_LENGTH);
 

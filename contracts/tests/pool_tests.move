@@ -1252,9 +1252,9 @@ fun test_cancel_compliance_toggle() {
 // ZK WITHDRAW TESTS
 // ===========================================================================
 
-// 45. set_withdraw_vk — admin can set withdraw VK
+// 45. propose_withdraw_vk — admin proposes, applied after 1 epoch
 #[test]
-fun test_set_withdraw_vk() {
+fun test_propose_withdraw_vk() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
@@ -1263,19 +1263,22 @@ fun test_set_withdraw_vk() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
         assert!(!pool.withdraw_vk_set(), 0);
-        pool::set_withdraw_vk(&mut pool, &cap, DUMMY_VK);
-        assert!(pool.withdraw_vk_set(), 1);
+        pool::propose_withdraw_vk(&mut pool, &cap, DUMMY_VK, &clock);
+        // Not yet applied (timelock)
+        assert!(!pool.withdraw_vk_set(), 1);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
     scenario.end();
 }
 
-// 46. set_withdraw_vk with wrong admin cap — must fail E_NOT_POOL_ADMIN
+// 46. propose_withdraw_vk with wrong admin cap — must fail E_NOT_POOL_ADMIN
 #[test]
 #[expected_failure(abort_code = 4, location = veil::pool)]
-fun test_set_withdraw_vk_wrong_admin() {
+fun test_propose_withdraw_vk_wrong_admin() {
     let mut scenario = test_scenario::begin(ADMIN);
     pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
@@ -1285,7 +1288,9 @@ fun test_set_withdraw_vk_wrong_admin() {
     {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::set_withdraw_vk(&mut pool, &cap, DUMMY_VK);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdraw_vk(&mut pool, &cap, DUMMY_VK, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -1326,8 +1331,9 @@ fun test_zk_withdraw_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::set_withdraw_vk(&mut pool, &cap, DUMMY_VK);
-        let clock = clock::create_for_testing(scenario.ctx());
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdraw_vk(&mut pool, &cap, DUMMY_VK, &clock);
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS);
         pool::freeze_pool(&mut pool, &cap, &clock);
         let proof = vector[0u8];
         let inputs = make_n_zero_bytes(128);
@@ -1351,8 +1357,9 @@ fun test_zk_withdraw_short_inputs() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::set_withdraw_vk(&mut pool, &cap, DUMMY_VK);
-        let clock = clock::create_for_testing(scenario.ctx());
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdraw_vk(&mut pool, &cap, DUMMY_VK, &clock);
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS);
         let proof = vector[0u8];
         let short_inputs = make_n_zero_bytes(100);
         pool::zk_withdraw(&mut pool, proof, short_inputs, USER, &clock, scenario.ctx());
