@@ -4,9 +4,10 @@
   flex-direction: column;
   align-items: center;
   padding: var(--spacing-16) var(--spacing-4);
-  gap: var(--spacing-12);
+  gap: var(--spacing-16);
 }
 
+/* === Hero === */
 .hero {
   display: flex;
   flex-direction: column;
@@ -31,14 +32,14 @@
   letter-spacing: 0.05em;
 }
 
-.description {
+.oneliner {
   font-size: 0.9rem;
   color: var(--text-secondary);
   line-height: 1.8;
   max-width: 480px;
 }
 
-.connectButton {
+.launchButton {
   display: inline-block;
   margin-top: var(--spacing-4);
   padding: var(--spacing-3) var(--spacing-8);
@@ -54,20 +55,59 @@
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.connectButton:hover {
+.launchButton:hover {
   background-color: var(--accent);
   color: var(--bg);
 }
 
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--spacing-4);
-  width: 100%;
-  max-width: 900px;
+.badges {
+  display: flex;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: var(--spacing-2);
 }
 
-.card {
+.badge {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-1) var(--spacing-3);
+  letter-spacing: 0.04em;
+}
+
+/* === Section shared === */
+.section {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.sectionTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* === Problem / Solution === */
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-6);
+}
+
+@media (max-width: 640px) {
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+}
+
+.colCard {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -75,11 +115,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
 }
 
-.cardAccentLine {
+.colCardAccent {
   position: absolute;
   top: 0;
   left: 0;
@@ -88,39 +128,33 @@
   background-color: var(--accent);
 }
 
-.cardTitle {
-  font-size: 0.95rem;
+.colCardAccentDanger {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--danger);
+}
+
+.colLabel {
+  font-size: 0.7rem;
   font-weight: 700;
-  color: var(--text);
-  letter-spacing: 0.04em;
-}
-
-.cardDescription {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  line-height: 1.7;
-}
-
-/* === How It Works === */
-.howItWorks {
-  width: 100%;
-  max-width: 900px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-}
-
-.howItWorksTitle {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--text-secondary);
 }
 
+.colText {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+/* === Steps === */
 .stepsGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--spacing-4);
 }
 
@@ -148,11 +182,19 @@
   overflow: hidden;
 }
 
+.stepAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent);
+}
+
 .stepNumber {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--accent);
-  letter-spacing: 0.04em;
   line-height: 1;
 }
 
@@ -164,19 +206,241 @@
   text-transform: uppercase;
 }
 
-.stepDescription {
+.stepDesc {
   font-size: 0.75rem;
   color: var(--text-secondary);
   line-height: 1.7;
 }
 
-.howItWorksNote {
-  font-size: 0.8rem;
+/* === Architecture === */
+.codeBlock {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-6);
+  overflow-x: auto;
+}
+
+.codeBlock pre {
+  font-size: 0.75rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  white-space: pre;
+}
+
+.codeAccent {
   color: var(--accent);
-  letter-spacing: 0.02em;
+}
+
+/* === Table shared === */
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.table th {
+  text-align: left;
+  color: var(--text-secondary);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.cellAccent {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.cellMuted {
+  color: var(--text-secondary);
+}
+
+.cellWarn {
+  color: var(--warning);
+}
+
+/* === Audit Score === */
+.scoreHeader {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.scoreValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.scoreLabel {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.auditStats {
+  display: flex;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+}
+
+.auditStat {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-1) var(--spacing-3);
+}
+
+.scoreGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-2);
+}
+
+.scoreRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-size: 0.75rem;
+}
+
+.scoreRowLabel {
+  width: 180px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.scoreBar {
+  flex: 1;
+  height: 4px;
+  background-color: var(--border);
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.scoreBarFill {
+  height: 100%;
+  background-color: var(--accent);
+}
+
+.scoreRowValue {
+  width: 50px;
+  text-align: right;
+  color: var(--text);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.secFeatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-2);
+}
+
+@media (max-width: 640px) {
+  .secFeatures {
+    grid-template-columns: 1fr;
+  }
+}
+
+.secFeature {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.secFeature::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+/* === Novel Contributions === */
+.novelList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.novelItem {
+  display: flex;
+  gap: var(--spacing-4);
+  align-items: flex-start;
+}
+
+.novelNumber {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.4;
+  flex-shrink: 0;
+  width: 24px;
+}
+
+.novelContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.novelTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.novelDesc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* === Tech Stack === */
+.techGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-4);
+}
+
+@media (max-width: 640px) {
+  .techGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.techItem {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-4);
+  font-size: 0.8rem;
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+/* === Footer === */
 .footer {
   margin-top: auto;
   padding: var(--spacing-6) 0;
@@ -187,4 +451,25 @@
   width: 100%;
   max-width: 900px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.footerLinks {
+  display: flex;
+  gap: var(--spacing-6);
+  justify-content: center;
+}
+
+.footerLinks a {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  transition: color 0.15s ease;
+}
+
+.footerLinks a:hover {
+  color: var(--accent);
+  text-decoration: none;
 }
