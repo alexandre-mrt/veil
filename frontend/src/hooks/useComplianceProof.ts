@@ -193,7 +193,10 @@ export function useComplianceProof(): UseComplianceProofReturn {
         setIsMock(!hasArtifacts);
 
         if (!hasArtifacts) {
-          // Mock mode: simulate proof generation with staged progress
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("Compliance circuit artifacts unavailable — cannot generate proof in production");
+          }
+          // Mock mode: simulate proof generation with staged progress (dev only)
           setStep("computing-witness");
           setProgress(30);
           await delay(800);
