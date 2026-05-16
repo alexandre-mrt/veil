@@ -6,6 +6,7 @@ use sui::clock;
 use sui::coin;
 use veil::pool::{Self, Pool, AdminCap};
 use veil::compliance::{Self, ComplianceConfig};
+use veil::test_helpers;
 use veil::token::TOKEN;
 
 // ---------------------------------------------------------------------------
@@ -184,7 +185,7 @@ fun story_compliance_lifecycle_shielded_blocked() {
         let mut clk = clock::create_for_testing(scenario.ctx());
         clock::set_for_testing(&mut clk, EPOCH_DURATION_MS); // epoch 1
         let proof = vector[0u8];
-        let inputs = make_n_zero_bytes(192);
+        let inputs = test_helpers::make_n_zero_bytes(224);
         pool::shielded_transfer(&mut pool, proof, inputs, &clk, scenario.ctx());
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
@@ -354,7 +355,7 @@ fun story_commitment_stores_deposit_epoch() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin_a = coin::mint_for_testing<TOKEN>(DENOM_SMALL, scenario.ctx());
-        let commitment = valid_commitment(1);
+        let commitment = test_helpers::valid_commitment(1);
         let clk = clock::create_for_testing(scenario.ctx()); // epoch 0
         pool::deposit_and_register(&mut pool, coin_a, commitment, &clk, scenario.ctx());
         assert!(pool.pool_balance() == DENOM_SMALL, 0);
@@ -367,7 +368,7 @@ fun story_commitment_stores_deposit_epoch() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin_b = coin::mint_for_testing<TOKEN>(DENOM_MEDIUM, scenario.ctx());
-        let commitment = valid_commitment(2);
+        let commitment = test_helpers::valid_commitment(2);
         let mut clk = clock::create_for_testing(scenario.ctx());
         clock::set_for_testing(&mut clk, EPOCH_DURATION_MS); // epoch 1
         pool::deposit_and_register(&mut pool, coin_b, commitment, &clk, scenario.ctx());
@@ -476,7 +477,7 @@ fun threat_bypass_compliance_direct_transfer() {
         let mut clk = clock::create_for_testing(scenario.ctx());
         clock::set_for_testing(&mut clk, EPOCH_DURATION_MS); // epoch 1
         let proof = vector[0u8];
-        let inputs = make_n_zero_bytes(192);
+        let inputs = test_helpers::make_n_zero_bytes(224);
         pool::shielded_transfer(&mut pool, proof, inputs, &clk, scenario.ctx());
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
@@ -702,7 +703,7 @@ fun threat_deposit_and_register_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let coin_a = coin::mint_for_testing<TOKEN>(DENOM_SMALL, scenario.ctx());
-        let commitment = valid_commitment(1);
+        let commitment = test_helpers::valid_commitment(1);
         let clk = clock::create_for_testing(scenario.ctx());
         pool::deposit_and_register(&mut pool, coin_a, commitment, &clk, scenario.ctx());
         clock::destroy_for_testing(clk);
@@ -715,7 +716,7 @@ fun threat_deposit_and_register_when_frozen() {
 // ATTACKER THREAT 8: Compliance config for mismatched pool
 // ===========================================================================
 #[test]
-#[expected_failure(abort_code = 26, location = veil::compliance)]
+#[expected_failure(abort_code = 106, location = veil::compliance)]
 fun threat_compliance_config_pool_mismatch() {
     let mut scenario = test_scenario::begin(ADMIN);
     // Create pool 1
@@ -773,7 +774,7 @@ fun threat_nonstandard_deposit_and_register_rejected() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let bad_coin = coin::mint_for_testing<TOKEN>(250_000_000, scenario.ctx());
-        let commitment = valid_commitment(1);
+        let commitment = test_helpers::valid_commitment(1);
         let clk = clock::create_for_testing(scenario.ctx());
         pool::deposit_and_register(&mut pool, bad_coin, commitment, &clk, scenario.ctx());
         clock::destroy_for_testing(clk);
@@ -855,7 +856,7 @@ fun threat_epoch_commitment_tracking() {
         let mut pool = scenario.take_shared<Pool>();
         let coin_a = coin::mint_for_testing<TOKEN>(DENOM_SMALL, scenario.ctx());
         let clk = clock::create_for_testing(scenario.ctx()); // timestamp 0 => epoch 0
-        pool::deposit_and_register(&mut pool, coin_a, valid_commitment(1), &clk, scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin_a, test_helpers::valid_commitment(1), &clk, scenario.ctx());
         assert!(pool.pool_balance() == DENOM_SMALL, 0);
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
@@ -868,7 +869,7 @@ fun threat_epoch_commitment_tracking() {
         let coin_b = coin::mint_for_testing<TOKEN>(DENOM_MEDIUM, scenario.ctx());
         let mut clk = clock::create_for_testing(scenario.ctx());
         clock::set_for_testing(&mut clk, EPOCH_DURATION_MS); // epoch 1
-        pool::deposit_and_register(&mut pool, coin_b, valid_commitment(2), &clk, scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin_b, test_helpers::valid_commitment(2), &clk, scenario.ctx());
         assert!(pool.pool_balance() == DENOM_SMALL + DENOM_MEDIUM, 1);
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
@@ -881,7 +882,7 @@ fun threat_epoch_commitment_tracking() {
         let coin_c = coin::mint_for_testing<TOKEN>(DENOM_LARGE, scenario.ctx());
         let mut clk = clock::create_for_testing(scenario.ctx());
         clock::set_for_testing(&mut clk, EPOCH_DURATION_MS * 5); // epoch 5
-        pool::deposit_and_register(&mut pool, coin_c, valid_commitment(3), &clk, scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin_c, test_helpers::valid_commitment(3), &clk, scenario.ctx());
         assert!(pool.pool_balance() == DENOM_SMALL + DENOM_MEDIUM + DENOM_LARGE, 2);
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
@@ -1018,7 +1019,7 @@ fun threat_credential_root_timelock_enforcement() {
 fun threat_vk_too_short_rejected() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        let short_vk = make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
+        let short_vk = test_helpers::make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
         pool::create_pool(short_vk, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.end();
@@ -1040,7 +1041,7 @@ fun threat_vk_update_too_short_rejected() {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         let clk = clock::create_for_testing(scenario.ctx());
-        let short_vk = make_n_zero_bytes(100);
+        let short_vk = test_helpers::make_n_zero_bytes(100);
         pool::propose_vk_update(&mut pool, &cap, short_vk, &clk);
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
@@ -1066,7 +1067,7 @@ fun threat_duplicate_commitment_rejected() {
         let mut pool = scenario.take_shared<Pool>();
         let coin_a = coin::mint_for_testing<TOKEN>(DENOM_SMALL, scenario.ctx());
         let clk = clock::create_for_testing(scenario.ctx());
-        pool::deposit_and_register(&mut pool, coin_a, valid_commitment(42), &clk, scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin_a, test_helpers::valid_commitment(42), &clk, scenario.ctx());
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
     };
@@ -1077,7 +1078,7 @@ fun threat_duplicate_commitment_rejected() {
         let mut pool = scenario.take_shared<Pool>();
         let coin_b = coin::mint_for_testing<TOKEN>(DENOM_SMALL, scenario.ctx());
         let clk = clock::create_for_testing(scenario.ctx());
-        pool::deposit_and_register(&mut pool, coin_b, valid_commitment(42), &clk, scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin_b, test_helpers::valid_commitment(42), &clk, scenario.ctx());
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(pool);
     };
@@ -1088,7 +1089,7 @@ fun threat_duplicate_commitment_rejected() {
 // ATTACKER THREAT 18: Credential root double-proposal blocked
 // ===========================================================================
 #[test]
-#[expected_failure(abort_code = 28, location = veil::compliance)]
+#[expected_failure(abort_code = 108, location = veil::compliance)]
 fun threat_credential_root_double_proposal_blocked() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
@@ -1195,26 +1196,3 @@ fun threat_attacker_cannot_cancel_credential_root_update() {
     scenario.end();
 }
 
-// ===========================================================================
-// HELPERS
-// ===========================================================================
-
-fun valid_commitment(seed: u8): vector<u8> {
-    let mut commitment = vector[];
-    let mut i: u8 = 0;
-    while (i < 32) {
-        commitment.push_back(seed + i);
-        i = i + 1;
-    };
-    commitment
-}
-
-fun make_n_zero_bytes(n: u64): vector<u8> {
-    let mut result = vector[];
-    let mut i: u64 = 0;
-    while (i < n) {
-        result.push_back(0u8);
-        i = i + 1;
-    };
-    result
-}

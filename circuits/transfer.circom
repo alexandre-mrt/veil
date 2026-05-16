@@ -3,6 +3,7 @@ pragma circom 2.1.0;
 include "node_modules/circomlib/circuits/poseidon.circom";
 include "node_modules/circomlib/circuits/comparators.circom";
 include "node_modules/circomlib/circuits/bitify.circom";
+include "templates/merkle_proof.circom";
 
 // Transfer circuit for Veil privacy protocol (v2 — audit fixes).
 //
@@ -28,15 +29,16 @@ include "node_modules/circomlib/circuits/bitify.circom";
 // Compiled with circom 2.1.x, proven with snarkjs 0.7.x
 
 template Transfer() {
-    // ─── PUBLIC INPUTS (6 total — order matters for Sui on-chain verification) ───
+    // ─── PUBLIC INPUTS (7 total — order matters for Sui on-chain verification) ───
     signal input oldCommitment;    // Poseidon(1, cumulativeOld, randomnessOld, userSecret)
     signal input newCommitment;    // Poseidon(1, cumulativeNew, randomnessNew, userSecret)
     signal input threshold;        // KYC-free epoch limit
     signal input epochId;          // Current epoch identifier (from on-chain Clock)
     signal input nullifier;        // Poseidon(2, userSecret, epochId, randomnessOld)
     signal input txAmountHash;     // Poseidon(3, txAmount, salt) — domain-separated
+    signal input merkleRoot;       // Commitment Merkle tree root (anonymity set = all commitments)
 
-    // ─── PRIVATE INPUTS (7) ──────────────────────────────────────────────────
+    // ─── PRIVATE INPUTS (7 + Merkle path) ───────────────────────────────────
     signal input cumulativeOld;    // Previous cumulative spending this epoch
     signal input cumulativeNew;    // cumulativeOld + txAmount
     signal input txAmount;         // This transaction's amount
@@ -44,6 +46,19 @@ template Transfer() {
     signal input randomnessNew;    // Blinding factor for newCommitment
     signal input userSecret;       // User's master secret (never revealed)
     signal input salt;             // Salt for txAmountHash
+    signal input pathElements[20]; // Merkle sibling hashes (depth 20)
+    signal input pathIndices[20];  // Left/right flags (0 or 1)
+
+    // ─── C0: Old commitment is in the Merkle tree (anonymity set proof) ─────
+    // Proves membership without revealing which leaf — observer sees root update
+    // but NOT which commitment was consumed. Same template as compliance.circom.
+    component membershipProof = MerkleProof(20);
+    membershipProof.leaf <== oldCommitment;
+    for (var i = 0; i < 20; i++) {
+        membershipProof.pathElements[i] <== pathElements[i];
+        membershipProof.pathIndices[i] <== pathIndices[i];
+    }
+    merkleRoot === membershipProof.root;
 
     // ─── C1: Old commitment is well-formed ───────────────────────────────────
     // oldCommitment = Poseidon(1, cumulativeOld, randomnessOld, userSecret)
@@ -114,4 +129,4 @@ template Transfer() {
     txAmountHash === txHash.out;
 }
 
-component main {public [oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash]} = Transfer();
+component main {public [oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash, merkleRoot]} = Transfer();

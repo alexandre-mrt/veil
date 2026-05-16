@@ -40,6 +40,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - VEIL token: 6 decimals, TreasuryCap + faucet
 
 ## Key Architecture Decisions
+- **Merkle accumulator**: commitments inserted into off-chain Poseidon Merkle tree (depth 20), root stored on-chain with admin timelock updates. Transfer circuit proves membership (anonymity set = all commitments ever inserted)
 - **UTXO model**: old commitment consumed, new commitment created per transfer
 - **Note-based nullifiers**: Poseidon(2, secret, epoch, randOld) -- unique per transfer, not per epoch
 - **Identity-bound commitments**: Poseidon(1, cum, rand, userSecret) -- prevents commitment theft
@@ -68,7 +69,9 @@ E_COMPLIANCE_TOGGLE_PENDING=19, E_POOL_NOT_FROZEN=20, E_WITHDRAWAL_PENDING=21,
 E_WITHDRAWAL_NOT_READY=22, E_NO_PENDING_WITHDRAWAL=23, E_NO_PENDING_COMPLIANCE_TOGGLE=24,
 E_COMPLIANCE_CONFIG_ALREADY_SET=25, E_EMERGENCY_WITHDRAW_NOT_READY=26,
 E_NO_COMPLIANCE_CONFIG=27, E_INVALID_WITHDRAW_PROOF=28, E_NO_WITHDRAW_VK=29,
-E_INVALID_RECIPIENT=30, E_INVALID_EPOCH_DURATION=31
+E_INVALID_RECIPIENT=30, E_INVALID_EPOCH_DURATION=31,
+E_MERKLE_ROOT_MISMATCH=32, E_INVALID_COMMITMENT_ROOT_LENGTH=33,
+E_COMMITMENT_ROOT_UPDATE_PENDING=34
 ```
 
 ## Testnet Deployment
