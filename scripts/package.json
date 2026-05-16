@@ -9,7 +9,8 @@
     "fuzz": "bun run src/fuzz-tests.ts",
     "relayer": "bun run src/relayer.ts serve",
     "relayer:demo": "bun run src/relayer.ts demo",
-    "manage-upgrade-cap": "bun run src/manage-upgrade-cap.ts"
+    "manage-upgrade-cap": "bun run src/manage-upgrade-cap.ts",
+    "auditor": "bun run src/auditor-tool.ts"
   },
   "dependencies": {
     "@mysten/sui": "^2.16.2",
