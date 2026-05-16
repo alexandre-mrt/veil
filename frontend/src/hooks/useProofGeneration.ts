@@ -220,7 +220,11 @@ export function useProofGeneration(): UseProofGenerationReturn {
         setIsMock(!hasArtifacts);
 
         if (!hasArtifacts) {
-          // Mock mode: simulate proof generation with staged progress
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("Circuit artifacts unavailable — cannot generate proof");
+          }
+
+          // Mock mode (dev only): simulate proof generation with staged progress
           setStep("computing-witness");
           setProgress(30);
           await delay(800);
