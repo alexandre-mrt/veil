@@ -205,7 +205,6 @@ Veil leads on compliance (cumulative spending proofs, dual-proof KYC, context-bo
 3. **Relayer**: restrict CORS, add rate limiting, validate TransactionKind
 4. **EPOCH_DURATION_MS**: change to `2_592_000_000` (30 days) before mainnet deploy
 5. **Faucet function**: remove `token::faucet()` from production bytecode
-6. **`requiredKycLevel`**: add `Num2Bits(8)` range proof in compliance circuit
 
 ### Privacy Red Team (15 findings)
 

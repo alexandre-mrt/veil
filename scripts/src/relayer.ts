@@ -51,6 +51,8 @@ const GAS_BUDGET = 50_000_000; // 0.05 SUI
 // Security: Auth, CORS, Rate Limiting, Payload Limits
 // ---------------------------------------------------------------------------
 
+const PACKAGE_ID = process.env.PACKAGE_ID || process.env.NEXT_PUBLIC_PACKAGE_ID;
+
 const RELAYER_API_KEY = process.env.RELAYER_API_KEY;
 
 if (!RELAYER_API_KEY) {
@@ -101,6 +103,25 @@ function getClientIP(request: Request, server: { requestIP?: (req: Request) => {
   if (xri) return xri;
 
   return "unknown";
+}
+
+/**
+ * Validates that a TransactionKind targets the Veil package.
+ * Decodes base64 kindBytes and checks if the package ID hex appears in the serialized bytes.
+ * Skips validation if no PACKAGE_ID is configured (dev mode).
+ */
+function validateTransactionKind(kindBytes: string): boolean {
+  if (!PACKAGE_ID) return true; // skip validation if no package ID configured
+  const decoded = Buffer.from(kindBytes, "base64").toString("hex");
+  const packageHex = PACKAGE_ID.replace("0x", "").toLowerCase();
+  return decoded.includes(packageHex);
+}
+
+/**
+ * Validates a Sui address format: 0x followed by exactly 64 hex characters.
+ */
+function isValidSuiAddress(addr: string): boolean {
+  return typeof addr === "string" && /^0x[a-fA-F0-9]{64}$/.test(addr);
 }
 
 function resolveAllowedOrigin(requestOrigin: string | null): string {
@@ -425,6 +446,20 @@ async function serve(port: number): Promise<void> {
             return Response.json(
               { error: "Missing kindBytes or sender" },
               { status: 400, headers: corsHeaders },
+            );
+          }
+
+          if (!isValidSuiAddress(body.sender)) {
+            return Response.json(
+              { error: "Invalid sender address" },
+              { status: 400, headers: corsHeaders },
+            );
+          }
+
+          if (!validateTransactionKind(body.kindBytes)) {
+            return Response.json(
+              { error: "Transaction does not target Veil package" },
+              { status: 403, headers: corsHeaders },
             );
           }
 

@@ -21,19 +21,7 @@ const THRESHOLD: u64 = 1_000_000_000;
 const DEPOSIT_AMOUNT: u64 = 500_000_000;
 const WITHDRAW_AMOUNT: u64 = 200_000_000;
 const EPOCH_DURATION_MS: u64 = 3_600_000;
-const DUMMY_ROOT: vector<u8> = vector[
-    1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
-    9u8, 10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8,
-    17u8, 18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8,
-    25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8,
-];
-const DUMMY_AUDITOR_KEY: vector<u8> = vector[
-    0xABu8, 0xCDu8, 0xEFu8, 0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8,
-    0x06u8, 0x07u8, 0x08u8, 0x09u8, 0x0Au8, 0x0Bu8, 0x0Cu8, 0x0Du8,
-    0x0Eu8, 0x0Fu8, 0x10u8, 0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8,
-    0x16u8, 0x17u8, 0x18u8, 0x19u8, 0x1Au8, 0x1Bu8, 0x1Cu8, 0x1Du8,
-    0x1Eu8,
-];
+// Shared test constants: dummy_root() and dummy_auditor_key() from test_helpers
 
 // ===========================================================================
 // EDGE CASE TESTS (continued from pool_tests.move)
@@ -243,7 +231,7 @@ fun test_propose_compliance_toggle_double() {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
-            &cap, &mut pool, test_helpers::dummy_vk(), DUMMY_ROOT, 1, DUMMY_AUDITOR_KEY, scenario.ctx(),
+            &cap, &mut pool, test_helpers::dummy_vk(), test_helpers::dummy_root(), 1, test_helpers::dummy_auditor_key(), scenario.ctx(),
         );
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -276,7 +264,7 @@ fun test_cancel_compliance_toggle() {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
-            &cap, &mut pool, test_helpers::dummy_vk(), DUMMY_ROOT, 1, DUMMY_AUDITOR_KEY, scenario.ctx(),
+            &cap, &mut pool, test_helpers::dummy_vk(), test_helpers::dummy_root(), 1, test_helpers::dummy_auditor_key(), scenario.ctx(),
         );
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -413,6 +401,87 @@ fun test_zk_withdraw_short_inputs() {
         let proof = vector[0u8];
         let short_inputs = test_helpers::make_n_zero_bytes(100);
         pool::zk_withdraw(&mut pool, proof, short_inputs, USER, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// 50. Propose withdrawal for full balance, then emergency_withdraw reduces
+// balance between propose and execute — execute should fail E_INSUFFICIENT_BALANCE
+// ===========================================================================
+#[test]
+#[expected_failure(abort_code = 6, location = veil::pool)]
+fun test_execute_withdrawal_balance_decreased() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    // Create pool
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    // Deposit 500 TOKEN
+    scenario.next_tx(USER);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
+        pool::deposit(&mut pool, deposit_coin);
+        assert!(pool.pool_balance() == DEPOSIT_AMOUNT, 0);
+        test_scenario::return_shared(pool);
+    };
+    // Propose withdrawal for full balance (500 TOKEN) at epoch 0
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::propose_withdrawal(&mut pool, &cap, DEPOSIT_AMOUNT, RECIPIENT, &clock);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Freeze pool at epoch 0
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // At epoch 1: emergency_withdraw 100 TOKEN (reduces balance to 400)
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS); // epoch 1
+        pool::emergency_withdraw(&mut pool, &cap, 100_000_000, ADMIN, &clock, scenario.ctx());
+        assert!(pool.pool_balance() == DEPOSIT_AMOUNT - 100_000_000, 1);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Unfreeze pool
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        pool::unfreeze_pool(&mut pool, &cap);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // At epoch 2: try execute_pending_withdrawal for 500 TOKEN — only 400 left
+    // Should fail with E_INSUFFICIENT_BALANCE (6)
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS * 2); // epoch 2
+        pool::execute_pending_withdrawal(&mut pool, &cap, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);

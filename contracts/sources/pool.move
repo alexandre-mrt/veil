@@ -272,6 +272,8 @@ public fun deposit_and_register(
     balance::join(&mut pool.balance, coin.into_balance());
     let epoch_now = pool_epoch(pool, clock);
     dynamic_field::add(&mut pool.id, comm_key, epoch_now);
+    // Safe from overflow: u64::MAX = 1.8e19 deposits. At 1 deposit per second,
+    // overflow takes 584 billion years. Sui Move aborts on u64 overflow.
     pool.next_leaf_index = pool.next_leaf_index + 1;
     event::emit(DepositEvent { pool_id: pool.id.to_inner() });
 }

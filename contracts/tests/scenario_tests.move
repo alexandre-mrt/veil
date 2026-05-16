@@ -23,20 +23,7 @@ const DENOM_MEDIUM: u64 = 500_000_000;
 const DENOM_LARGE: u64 = 1_000_000_000;
 const EPOCH_DURATION_MS: u64 = 3_600_000;
 const REQUIRED_KYC_LEVEL: u64 = 1;
-const DUMMY_AUDITOR_KEY: vector<u8> = vector[
-    0xABu8, 0xCDu8, 0xEFu8, 0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8,
-    0x06u8, 0x07u8, 0x08u8, 0x09u8, 0x0Au8, 0x0Bu8, 0x0Cu8, 0x0Du8,
-    0x0Eu8, 0x0Fu8, 0x10u8, 0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8,
-    0x16u8, 0x17u8, 0x18u8, 0x19u8, 0x1Au8, 0x1Bu8, 0x1Cu8, 0x1Du8,
-    0x1Eu8,
-];
-
-const DUMMY_ROOT: vector<u8> = vector[
-    1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
-    9u8, 10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8,
-    17u8, 18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8,
-    25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8,
-];
+// Shared test constants: dummy_root() and dummy_auditor_key() from test_helpers
 
 const UPDATED_ROOT: vector<u8> = vector[
     2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8, 9u8,
@@ -149,7 +136,7 @@ fun story_compliance_lifecycle_shielded_blocked() {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
-            &cap, &mut pool, test_helpers::dummy_vk(), DUMMY_ROOT, REQUIRED_KYC_LEVEL, DUMMY_AUDITOR_KEY, scenario.ctx(),
+            &cap, &mut pool, test_helpers::dummy_vk(), test_helpers::dummy_root(), REQUIRED_KYC_LEVEL, test_helpers::dummy_auditor_key(), scenario.ctx(),
         );
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -198,9 +185,9 @@ fun story_compliance_config_and_root_timelock() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -217,7 +204,7 @@ fun story_compliance_config_and_root_timelock() {
 
         compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT, &clk);
         // Root should NOT have changed yet (timelock: effective at epoch 1)
-        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 0);
+        assert!(compliance::credential_root(&config) == test_helpers::dummy_root(), 0);
 
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(config);
@@ -229,7 +216,7 @@ fun story_compliance_config_and_root_timelock() {
     scenario.next_tx(ADMIN);
     {
         let config = scenario.take_shared<ComplianceConfig>();
-        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 1);
+        assert!(compliance::credential_root(&config) == test_helpers::dummy_root(), 1);
         test_scenario::return_shared(config);
     };
 
@@ -441,7 +428,7 @@ fun threat_bypass_compliance_direct_transfer() {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         compliance::create_compliance_config(
-            &cap, &mut pool, test_helpers::dummy_vk(), DUMMY_ROOT, REQUIRED_KYC_LEVEL, DUMMY_AUDITOR_KEY, scenario.ctx(),
+            &cap, &mut pool, test_helpers::dummy_vk(), test_helpers::dummy_root(), REQUIRED_KYC_LEVEL, test_helpers::dummy_auditor_key(), scenario.ctx(),
         );
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -498,9 +485,9 @@ fun threat_wrong_admincap_create_compliance_config() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -527,9 +514,9 @@ fun threat_wrong_admincap_update_credential_root() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -720,9 +707,9 @@ fun threat_compliance_config_pool_mismatch() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -948,16 +935,16 @@ fun threat_credential_root_timelock_enforcement() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
 
-    // Propose root update at epoch 0 -- root stays at DUMMY_ROOT
+    // Propose root update at epoch 0 -- root stays at test_helpers::dummy_root()
     scenario.next_tx(ADMIN);
     {
         let mut config = scenario.take_shared<ComplianceConfig>();
@@ -965,18 +952,18 @@ fun threat_credential_root_timelock_enforcement() {
         let cap = scenario.take_from_sender<AdminCap>();
         let clk = clock::create_for_testing(scenario.ctx()); // epoch 0
         compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT, &clk);
-        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 0);
+        assert!(compliance::credential_root(&config) == test_helpers::dummy_root(), 0);
         clock::destroy_for_testing(clk);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
 
-    // At epoch 0 still, root should still be DUMMY_ROOT
+    // At epoch 0 still, root should still be test_helpers::dummy_root()
     scenario.next_tx(ADMIN);
     {
         let config = scenario.take_shared<ComplianceConfig>();
-        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 1);
+        assert!(compliance::credential_root(&config) == test_helpers::dummy_root(), 1);
         test_scenario::return_shared(config);
     };
 
@@ -989,9 +976,9 @@ fun threat_credential_root_timelock_enforcement() {
         let mut config = scenario.take_shared<ComplianceConfig>();
         let pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        // Cancel the pending update -- root remains DUMMY_ROOT (timelock never applied)
+        // Cancel the pending update -- root remains test_helpers::dummy_root() (timelock never applied)
         compliance::cancel_credential_root_update(&mut config, &cap, &pool);
-        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 2);
+        assert!(compliance::credential_root(&config) == test_helpers::dummy_root(), 2);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -1093,9 +1080,9 @@ fun threat_credential_root_double_proposal_blocked() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -1146,9 +1133,9 @@ fun threat_attacker_cannot_cancel_credential_root_update() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);

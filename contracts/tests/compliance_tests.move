@@ -11,16 +11,9 @@ use veil::test_helpers;
 // Constants
 // ---------------------------------------------------------------------------
 const ADMIN: address = @0xA;
+#[allow(unused_const)]
 const USER: address = @0xB;
 const ATTACKER: address = @0xC;
-
-/// A valid 32-byte credential Merkle root.
-const DUMMY_ROOT: vector<u8> = vector[
-    1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
-    9u8, 10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8,
-    17u8, 18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8,
-    25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8,
-];
 
 /// An updated 32-byte root (all bytes incremented by 1 for uniqueness).
 const UPDATED_ROOT: vector<u8> = vector[
@@ -28,14 +21,6 @@ const UPDATED_ROOT: vector<u8> = vector[
     10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8, 17u8,
     18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8, 25u8,
     26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8, 33u8,
-];
-
-const DUMMY_AUDITOR_KEY: vector<u8> = vector[
-    0xABu8, 0xCDu8, 0xEFu8, 0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8,
-    0x06u8, 0x07u8, 0x08u8, 0x09u8, 0x0Au8, 0x0Bu8, 0x0Cu8, 0x0Du8,
-    0x0Eu8, 0x0Fu8, 0x10u8, 0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8,
-    0x16u8, 0x17u8, 0x18u8, 0x19u8, 0x1Au8, 0x1Bu8, 0x1Cu8, 0x1Du8,
-    0x1Eu8,
 ];
 const UPDATED_AUDITOR_KEY: vector<u8> = vector[
     0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8, 0x06u8, 0x07u8, 0x08u8,
@@ -70,9 +55,9 @@ fun test_create_compliance_config() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -82,8 +67,8 @@ fun test_create_compliance_config() {
     {
         let config = scenario.take_shared<ComplianceConfig>();
         assert!(compliance::required_kyc_level(&config) == REQUIRED_KYC_LEVEL, 0);
-        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 1);
-        assert!(compliance::auditor_key(&config) == DUMMY_AUDITOR_KEY, 2);
+        assert!(compliance::credential_root(&config) == test_helpers::dummy_root(), 1);
+        assert!(compliance::auditor_key(&config) == test_helpers::dummy_auditor_key(), 2);
         test_scenario::return_shared(config);
     };
     scenario.end();
@@ -104,9 +89,9 @@ fun test_update_credential_root() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -120,7 +105,7 @@ fun test_update_credential_root() {
         let test_clock = clock::create_for_testing(scenario.ctx());
         // Propose update — root should NOT change immediately (timelock)
         compliance::update_credential_root(&mut config, &cap, &pool, UPDATED_ROOT, &test_clock);
-        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 0);
+        assert!(compliance::credential_root(&config) == test_helpers::dummy_root(), 0);
         clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
@@ -145,9 +130,9 @@ fun test_update_credential_root_double_proposal_blocked() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -191,9 +176,9 @@ fun test_cancel_credential_root_update() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -209,7 +194,7 @@ fun test_cancel_credential_root_update() {
         // Cancel the pending update
         compliance::cancel_credential_root_update(&mut config, &cap, &pool);
         // Root should still be the original
-        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 0);
+        assert!(compliance::credential_root(&config) == test_helpers::dummy_root(), 0);
         clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
@@ -233,9 +218,9 @@ fun test_propose_auditor_key_update() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -249,7 +234,7 @@ fun test_propose_auditor_key_update() {
         let test_clock = clock::create_for_testing(scenario.ctx());
         compliance::propose_auditor_key_update(&mut config, &cap, &pool, UPDATED_AUDITOR_KEY, &test_clock);
         // Key should NOT change immediately (timelock)
-        assert!(compliance::auditor_key(&config) == DUMMY_AUDITOR_KEY, 0);
+        assert!(compliance::auditor_key(&config) == test_helpers::dummy_auditor_key(), 0);
         clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
@@ -273,9 +258,9 @@ fun test_propose_kyc_level_update() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -314,9 +299,9 @@ fun test_propose_kyc_level_update_double_proposal_blocked() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -354,9 +339,9 @@ fun test_cancel_kyc_level_update() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -396,9 +381,9 @@ fun test_accessors() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -409,8 +394,8 @@ fun test_accessors() {
         let pool = scenario.take_shared<Pool>();
         let config = scenario.take_shared<ComplianceConfig>();
         assert!(compliance::required_kyc_level(&config) == REQUIRED_KYC_LEVEL, 0);
-        assert!(compliance::credential_root(&config) == DUMMY_ROOT, 1);
-        assert!(compliance::auditor_key(&config) == DUMMY_AUDITOR_KEY, 2);
+        assert!(compliance::credential_root(&config) == test_helpers::dummy_root(), 1);
+        assert!(compliance::auditor_key(&config) == test_helpers::dummy_auditor_key(), 2);
         assert!(compliance::config_pool_id(&config) == object::id(&pool), 3);
         test_scenario::return_shared(pool);
         test_scenario::return_shared(config);
@@ -437,9 +422,9 @@ fun test_replace_compliance_config() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -502,9 +487,9 @@ fun test_replace_compliance_config_not_frozen() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -545,9 +530,9 @@ fun test_replace_compliance_config_wrong_admin() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         let test_clock = clock::create_for_testing(scenario.ctx());
@@ -599,9 +584,9 @@ fun test_create_compliance_config_short_vk() {
             &cap,
             &mut pool,
             short_vk,
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -627,7 +612,7 @@ fun test_create_compliance_config_short_auditor_key() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
             short_key,
             scenario.ctx(),
@@ -654,9 +639,9 @@ fun test_propose_auditor_key_short() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -694,9 +679,9 @@ fun test_propose_compliance_vk_short() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -740,7 +725,7 @@ fun test_create_config_invalid_root_length() {
             test_helpers::dummy_vk(),
             short_root,
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -767,7 +752,7 @@ fun test_create_config_empty_root_fails() {
             test_helpers::dummy_vk(),
             vector[],
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -792,9 +777,9 @@ fun test_update_root_invalid_length() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -841,9 +826,9 @@ fun test_attacker_cannot_create_config() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -867,9 +852,9 @@ fun test_attacker_cannot_update_root() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -907,9 +892,9 @@ fun test_attacker_cannot_update_key() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -947,9 +932,9 @@ fun test_attacker_cannot_update_kyc_level() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -992,9 +977,9 @@ fun test_update_root_pool_mismatch() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -1039,9 +1024,9 @@ fun test_create_second_compliance_config() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -1056,9 +1041,9 @@ fun test_create_second_compliance_config() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -1083,9 +1068,9 @@ fun test_propose_compliance_vk_double() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -1124,9 +1109,9 @@ fun test_propose_auditor_key_double() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
@@ -1173,9 +1158,9 @@ fun test_stale_config_after_replacement() {
             &cap,
             &mut pool,
             test_helpers::dummy_vk(),
-            DUMMY_ROOT,
+            test_helpers::dummy_root(),
             REQUIRED_KYC_LEVEL,
-            DUMMY_AUDITOR_KEY,
+            test_helpers::dummy_auditor_key(),
             scenario.ctx(),
         );
         test_scenario::return_shared(pool);
