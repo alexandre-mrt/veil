@@ -3,8 +3,10 @@ module veil::multisig_tests;
 
 use sui::clock;
 use sui::test_scenario;
+use veil::compliance::{Self, ComplianceConfig};
 use veil::multisig::{Self, MultisigConfig};
 use veil::pool::{Self, Pool, AdminCap};
+use veil::test_helpers;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -15,18 +17,28 @@ const SIGNER2: address = @0xC;
 const SIGNER3: address = @0xD;
 const NON_SIGNER: address = @0xE;
 
-const DUMMY_VK: vector<u8> = vector[
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0
-];
 const THRESHOLD: u64 = 1_000_000_000;
 const EPOCH_DURATION_MS: u64 = 3_600_000;
+
+const DUMMY_ROOT: vector<u8> = vector[
+    1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
+    9u8, 10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8,
+    17u8, 18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8,
+    25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8,
+];
+const UPDATED_ROOT: vector<u8> = vector[
+    2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8, 9u8,
+    10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8, 17u8,
+    18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8, 25u8,
+    26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8, 33u8,
+];
+const DUMMY_AUDITOR_KEY: vector<u8> = vector[
+    0xABu8, 0xCDu8, 0xEFu8, 0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8,
+    0x06u8, 0x07u8, 0x08u8, 0x09u8, 0x0Au8, 0x0Bu8, 0x0Cu8, 0x0Du8,
+    0x0Eu8, 0x0Fu8, 0x10u8, 0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8,
+    0x16u8, 0x17u8, 0x18u8, 0x19u8, 0x1Au8, 0x1Bu8, 0x1Cu8, 0x1Du8,
+    0x1Eu8,
+];
 const REQUIRED_APPROVALS: u64 = 2;
 
 const ACTION_FREEZE: vector<u8> = vector[1u8, 0u8, 0u8, 0u8];
@@ -38,7 +50,7 @@ const ACTION_FREEZE: vector<u8> = vector[1u8, 0u8, 0u8, 0u8];
 fun test_create_multisig_config() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -66,7 +78,7 @@ fun test_create_multisig_config() {
 fun test_two_approvals_succeed() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -94,12 +106,11 @@ fun test_two_approvals_succeed() {
         assert!(multisig::approval_count(&config, ACTION_FREEZE) == 2, 1);
         test_scenario::return_shared(config);
     };
-    // Verify and consume — should succeed with 2 approvals
+    // Verify and consume — should succeed with 2 approvals (aborts internally if insufficient)
     scenario.next_tx(ADMIN);
     {
         let mut config = scenario.take_shared<MultisigConfig>();
-        let approved = multisig::verify_and_consume_approval(&mut config, ACTION_FREEZE);
-        assert!(approved, 2);
+        multisig::verify_and_consume_approval(&mut config, ACTION_FREEZE);
         // After consumption, approval count should be 0 (record removed)
         assert!(multisig::approval_count(&config, ACTION_FREEZE) == 0, 3);
         test_scenario::return_shared(config);
@@ -108,13 +119,14 @@ fun test_two_approvals_succeed() {
 }
 
 // ===========================================================================
-// 3. Approve action by 1 signer -> verify fails (insufficient approvals)
+// 3. Approve action by 1 signer -> verify aborts (insufficient approvals)
 // ===========================================================================
 #[test]
+#[expected_failure(abort_code = 202, location = veil::multisig)]
 fun test_one_approval_insufficient() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -133,12 +145,11 @@ fun test_one_approval_insufficient() {
         multisig::approve_action(&mut config, ACTION_FREEZE, scenario.ctx());
         test_scenario::return_shared(config);
     };
-    // Verify — returns false (1 < 2 required)
+    // Verify — aborts with E_INSUFFICIENT_APPROVALS (1 < 2 required)
     scenario.next_tx(ADMIN);
     {
         let mut config = scenario.take_shared<MultisigConfig>();
-        let approved = multisig::verify_and_consume_approval(&mut config, ACTION_FREEZE);
-        assert!(!approved, 0);
+        multisig::verify_and_consume_approval(&mut config, ACTION_FREEZE);
         test_scenario::return_shared(config);
     };
     scenario.end();
@@ -152,7 +163,7 @@ fun test_one_approval_insufficient() {
 fun test_non_signer_cannot_approve() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -182,7 +193,7 @@ fun test_non_signer_cannot_approve() {
 fun test_double_approve_fails() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -218,7 +229,7 @@ fun test_double_approve_fails() {
 fun test_multisig_freeze_end_to_end() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -270,7 +281,7 @@ fun test_multisig_freeze_end_to_end() {
 fun test_multisig_freeze_insufficient_approvals() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -313,7 +324,7 @@ fun test_multisig_freeze_insufficient_approvals() {
 fun test_verify_no_proposal_fails() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -329,7 +340,7 @@ fun test_verify_no_proposal_fails() {
     scenario.next_tx(ADMIN);
     {
         let mut config = scenario.take_shared<MultisigConfig>();
-        let _approved = multisig::verify_and_consume_approval(&mut config, ACTION_FREEZE);
+        multisig::verify_and_consume_approval(&mut config, ACTION_FREEZE);
         test_scenario::return_shared(config);
     };
     scenario.end();
@@ -344,7 +355,7 @@ fun test_pool_mismatch() {
     let mut scenario = test_scenario::begin(ADMIN);
     // Create pool A (by ADMIN)
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -359,7 +370,7 @@ fun test_pool_mismatch() {
     // Create pool B (by NON_SIGNER — different address owns its AdminCap)
     scenario.next_tx(NON_SIGNER);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     // Approve the action on config (which is for pool A)
     scenario.next_tx(SIGNER1);
@@ -399,7 +410,7 @@ fun test_pool_mismatch() {
 fun test_multisig_unfreeze_end_to_end() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -449,6 +460,123 @@ fun test_multisig_unfreeze_end_to_end() {
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// 11. verify_and_consume_approval is now public(package) — cannot be called
+//     externally. This test verifies the function aborts on insufficient
+//     approvals rather than silently returning false (the old behavior).
+// ===========================================================================
+#[test]
+#[expected_failure(abort_code = 202, location = veil::multisig)]
+fun test_consume_insufficient_approvals_aborts() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        // 3-of-3 required — very strict
+        multisig::create_multisig(
+            &pool, &cap, vector[SIGNER1, SIGNER2, SIGNER3], 3, scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Only 2 signers approve (need 3)
+    scenario.next_tx(SIGNER1);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        multisig::approve_action(&mut config, ACTION_FREEZE, scenario.ctx());
+        test_scenario::return_shared(config);
+    };
+    scenario.next_tx(SIGNER2);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        multisig::approve_action(&mut config, ACTION_FREEZE, scenario.ctx());
+        test_scenario::return_shared(config);
+    };
+    // Attempt to consume — must abort with E_INSUFFICIENT_APPROVALS (not return false)
+    scenario.next_tx(ADMIN);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        multisig::verify_and_consume_approval(&mut config, ACTION_FREEZE);
+        test_scenario::return_shared(config);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// 12. Stale ComplianceConfig after replacement — create config A, replace it,
+//     try to use old config A via multisig operations on the pool.
+//     Since multisig_freeze only checks pool_id match (not compliance_config),
+//     this test verifies that the pool's compliance_config reference is updated.
+// ===========================================================================
+#[test]
+fun test_stale_compliance_config_pool_reference_updated() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    // Create compliance config A
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            test_helpers::dummy_vk(),
+            DUMMY_ROOT,
+            1,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Capture config A's ID
+    scenario.next_tx(ADMIN);
+    let config_a_id;
+    {
+        let config = scenario.take_shared<ComplianceConfig>();
+        config_a_id = object::id(&config);
+        test_scenario::return_shared(config);
+    };
+    // Freeze pool and replace compliance config
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        compliance::replace_compliance_config(
+            &cap,
+            &mut pool,
+            test_helpers::dummy_vk(),
+            UPDATED_ROOT,
+            2,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        pool::unfreeze_pool(&mut pool, &cap);
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Verify: pool's compliance_config now points to config B (not A)
+    scenario.next_tx(ADMIN);
+    {
+        let pool = scenario.take_shared<Pool>();
+        let pool_config_id = pool::pool_compliance_config(&pool);
+        assert!(pool_config_id.is_some(), 0);
+        // Config A's ID should NOT match the pool's current compliance config
+        assert!(*pool_config_id.borrow() != config_a_id, 1);
+        test_scenario::return_shared(pool);
     };
     scenario.end();
 }

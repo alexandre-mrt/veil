@@ -127,17 +127,16 @@ public fun approve_action(
 }
 
 /// Check if an action has enough approvals, then consume (remove) the approval record.
-/// Returns true if the threshold was met.
-public fun verify_and_consume_approval(
+/// Aborts if the action has not been approved or has insufficient approvals.
+public(package) fun verify_and_consume_approval(
     config: &mut MultisigConfig,
     action_hash: vector<u8>,
-): bool {
+) {
     let key = ApprovalKey { action_hash };
     assert!(dynamic_field::exists_with_type<ApprovalKey, ApprovalRecord>(&config.id, key), E_ACTION_NOT_APPROVED);
     let record = dynamic_field::remove<ApprovalKey, ApprovalRecord>(&mut config.id, key);
-    let approved = record.approvals.length() >= config.required_approvals;
+    assert!(record.approvals.length() >= config.required_approvals, E_INSUFFICIENT_APPROVALS);
     let ApprovalRecord { approvals: _ } = record;
-    approved
 }
 
 // ---------------------------------------------------------------------------
@@ -154,8 +153,7 @@ public fun multisig_freeze(
 ) {
     pool::assert_pool_admin(cap, pool);
     assert!(config.pool_id == object::id(pool), E_POOL_MISMATCH);
-    let approved = verify_and_consume_approval(config, action_hash);
-    assert!(approved, E_INSUFFICIENT_APPROVALS);
+    verify_and_consume_approval(config, action_hash);
     pool::freeze_pool(pool, cap, clock);
     event::emit(ActionExecutedEvent {
         config_id: config.id.to_inner(),
@@ -172,8 +170,7 @@ public fun multisig_unfreeze(
 ) {
     pool::assert_pool_admin(cap, pool);
     assert!(config.pool_id == object::id(pool), E_POOL_MISMATCH);
-    let approved = verify_and_consume_approval(config, action_hash);
-    assert!(approved, E_INSUFFICIENT_APPROVALS);
+    verify_and_consume_approval(config, action_hash);
     pool::unfreeze_pool(pool, cap);
     event::emit(ActionExecutedEvent {
         config_id: config.id.to_inner(),

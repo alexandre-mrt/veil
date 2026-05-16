@@ -14,18 +14,6 @@ const ADMIN: address = @0xA;
 const USER: address = @0xB;
 const ATTACKER: address = @0xC;
 
-/// A minimal dummy VK — real Groth16 VKs are not needed for config tests.
-const DUMMY_VK: vector<u8> = vector[
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0
-];
-
 /// A valid 32-byte credential Merkle root.
 const DUMMY_ROOT: vector<u8> = vector[
     1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
@@ -72,7 +60,7 @@ const EPOCH_DURATION_MS: u64 = 3_600_000;
 fun test_create_compliance_config() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -81,7 +69,7 @@ fun test_create_compliance_config() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -106,7 +94,7 @@ fun test_create_compliance_config() {
 fun test_update_credential_root() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -115,7 +103,7 @@ fun test_update_credential_root() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -147,7 +135,7 @@ fun test_update_credential_root() {
 fun test_update_credential_root_double_proposal_blocked() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -156,7 +144,7 @@ fun test_update_credential_root_double_proposal_blocked() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -193,7 +181,7 @@ fun test_update_credential_root_double_proposal_blocked() {
 fun test_cancel_credential_root_update() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -202,7 +190,7 @@ fun test_cancel_credential_root_update() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -235,7 +223,7 @@ fun test_cancel_credential_root_update() {
 fun test_propose_auditor_key_update() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -244,7 +232,7 @@ fun test_propose_auditor_key_update() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -275,7 +263,7 @@ fun test_propose_auditor_key_update() {
 fun test_propose_kyc_level_update() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -284,7 +272,7 @@ fun test_propose_kyc_level_update() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -316,7 +304,7 @@ fun test_propose_kyc_level_update() {
 fun test_propose_kyc_level_update_double_proposal_blocked() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -325,7 +313,7 @@ fun test_propose_kyc_level_update_double_proposal_blocked() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -356,7 +344,7 @@ fun test_propose_kyc_level_update_double_proposal_blocked() {
 fun test_cancel_kyc_level_update() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -365,7 +353,7 @@ fun test_cancel_kyc_level_update() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -398,7 +386,7 @@ fun test_cancel_kyc_level_update() {
 fun test_accessors() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -407,7 +395,7 @@ fun test_accessors() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -439,7 +427,7 @@ fun test_accessors() {
 fun test_replace_compliance_config() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -448,7 +436,7 @@ fun test_replace_compliance_config() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -469,7 +457,7 @@ fun test_replace_compliance_config() {
         compliance::replace_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             UPDATED_ROOT,
             UPDATED_KYC_LEVEL,
             UPDATED_AUDITOR_KEY,
@@ -504,7 +492,7 @@ fun test_replace_compliance_config() {
 fun test_replace_compliance_config_not_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -513,7 +501,7 @@ fun test_replace_compliance_config_not_frozen() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -530,7 +518,7 @@ fun test_replace_compliance_config_not_frozen() {
         compliance::replace_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             UPDATED_ROOT,
             UPDATED_KYC_LEVEL,
             UPDATED_AUDITOR_KEY,
@@ -547,7 +535,7 @@ fun test_replace_compliance_config_not_frozen() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_replace_compliance_config_wrong_admin() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -556,7 +544,7 @@ fun test_replace_compliance_config_wrong_admin() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -570,7 +558,7 @@ fun test_replace_compliance_config_wrong_admin() {
     };
     // Attacker creates their own pool to get an AdminCap
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
@@ -578,7 +566,7 @@ fun test_replace_compliance_config_wrong_admin() {
         compliance::replace_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             UPDATED_ROOT,
             UPDATED_KYC_LEVEL,
             UPDATED_AUDITOR_KEY,
@@ -600,7 +588,7 @@ fun test_replace_compliance_config_wrong_admin() {
 fun test_create_compliance_config_short_vk() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -628,7 +616,7 @@ fun test_create_compliance_config_short_vk() {
 fun test_create_compliance_config_short_auditor_key() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -638,7 +626,7 @@ fun test_create_compliance_config_short_auditor_key() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             short_key,
@@ -656,7 +644,7 @@ fun test_create_compliance_config_short_auditor_key() {
 fun test_propose_auditor_key_short() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -665,7 +653,7 @@ fun test_propose_auditor_key_short() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -696,7 +684,7 @@ fun test_propose_auditor_key_short() {
 fun test_propose_compliance_vk_short() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -705,7 +693,7 @@ fun test_propose_compliance_vk_short() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -736,7 +724,7 @@ fun test_propose_compliance_vk_short() {
 fun test_create_config_invalid_root_length() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -749,7 +737,7 @@ fun test_create_config_invalid_root_length() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             short_root,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -767,7 +755,7 @@ fun test_create_config_invalid_root_length() {
 fun test_create_config_empty_root_fails() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -776,7 +764,7 @@ fun test_create_config_empty_root_fails() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             vector[],
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -794,7 +782,7 @@ fun test_create_config_empty_root_fails() {
 fun test_update_root_invalid_length() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -803,7 +791,7 @@ fun test_update_root_invalid_length() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -839,11 +827,11 @@ fun test_update_root_invalid_length() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_attacker_cannot_create_config() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         // Attacker's cap (from pool 2) used against pool 1
@@ -852,7 +840,7 @@ fun test_attacker_cannot_create_config() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -869,7 +857,7 @@ fun test_attacker_cannot_create_config() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_attacker_cannot_update_root() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -878,7 +866,7 @@ fun test_attacker_cannot_update_root() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -888,7 +876,7 @@ fun test_attacker_cannot_update_root() {
         scenario.return_to_sender(cap);
     };
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         let pool = scenario.take_shared_by_id<Pool>(pool1_id);
@@ -909,7 +897,7 @@ fun test_attacker_cannot_update_root() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_attacker_cannot_update_key() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -918,7 +906,7 @@ fun test_attacker_cannot_update_key() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -928,7 +916,7 @@ fun test_attacker_cannot_update_key() {
         scenario.return_to_sender(cap);
     };
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         let pool = scenario.take_shared_by_id<Pool>(pool1_id);
@@ -949,7 +937,7 @@ fun test_attacker_cannot_update_key() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_attacker_cannot_update_kyc_level() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -958,7 +946,7 @@ fun test_attacker_cannot_update_kyc_level() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -968,7 +956,7 @@ fun test_attacker_cannot_update_kyc_level() {
         scenario.return_to_sender(cap);
     };
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         let pool = scenario.take_shared_by_id<Pool>(pool1_id);
@@ -994,7 +982,7 @@ fun test_attacker_cannot_update_kyc_level() {
 fun test_update_root_pool_mismatch() {
     let mut scenario = test_scenario::begin(ADMIN);
     // Create pool 1 (ADMIN) + compliance config tied to it
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -1003,7 +991,7 @@ fun test_update_root_pool_mismatch() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -1014,7 +1002,7 @@ fun test_update_root_pool_mismatch() {
     };
     // Create pool 2 (still ADMIN) — same admin, different pool object
     scenario.next_tx(ADMIN);
-    pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     {
         let pool2 = scenario.take_shared<Pool>(); // pool 2 — different ID
@@ -1041,7 +1029,7 @@ fun test_update_root_pool_mismatch() {
 fun test_create_second_compliance_config() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -1050,7 +1038,7 @@ fun test_create_second_compliance_config() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -1067,7 +1055,7 @@ fun test_create_second_compliance_config() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -1085,7 +1073,7 @@ fun test_create_second_compliance_config() {
 fun test_propose_compliance_vk_double() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -1094,7 +1082,7 @@ fun test_propose_compliance_vk_double() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -1109,9 +1097,9 @@ fun test_propose_compliance_vk_double() {
         let pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
         let test_clock = clock::create_for_testing(scenario.ctx());
-        compliance::propose_compliance_vk_update(&mut config, &cap, &pool, DUMMY_VK, &test_clock);
+        compliance::propose_compliance_vk_update(&mut config, &cap, &pool, test_helpers::dummy_vk(), &test_clock);
         // Second proposal while first is pending — must abort
-        compliance::propose_compliance_vk_update(&mut config, &cap, &pool, DUMMY_VK, &test_clock);
+        compliance::propose_compliance_vk_update(&mut config, &cap, &pool, test_helpers::dummy_vk(), &test_clock);
         clock::destroy_for_testing(test_clock);
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
@@ -1126,7 +1114,7 @@ fun test_propose_compliance_vk_double() {
 fun test_propose_auditor_key_double() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -1135,7 +1123,7 @@ fun test_propose_auditor_key_double() {
         compliance::create_compliance_config(
             &cap,
             &mut pool,
-            DUMMY_VK,
+            test_helpers::dummy_vk(),
             DUMMY_ROOT,
             REQUIRED_KYC_LEVEL,
             DUMMY_AUDITOR_KEY,
@@ -1157,6 +1145,97 @@ fun test_propose_auditor_key_double() {
         test_scenario::return_shared(config);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
+    };
+    scenario.end();
+}
+
+// ===========================================================================
+// STALE CONFIG TESTS
+// ===========================================================================
+
+// 17. stale ComplianceConfig after replacement — compliant_transfer with old config fails
+// Steps: create config A, freeze pool, replace with config B, unfreeze, try compliant_transfer
+// with config A — should fail E_CONFIG_POOL_MISMATCH since pool now points to config B.
+#[test]
+#[expected_failure(abort_code = 106, location = veil::compliance)]
+fun test_stale_config_after_replacement() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    // Create ComplianceConfig A
+    scenario.next_tx(ADMIN);
+    let config_a_id;
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            test_helpers::dummy_vk(),
+            DUMMY_ROOT,
+            REQUIRED_KYC_LEVEL,
+            DUMMY_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Capture config A's object ID
+    scenario.next_tx(ADMIN);
+    {
+        let config = scenario.take_shared<ComplianceConfig>();
+        config_a_id = object::id(&config);
+        test_scenario::return_shared(config);
+    };
+    // Freeze pool + replace with ComplianceConfig B
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &test_clock);
+        compliance::replace_compliance_config(
+            &cap,
+            &mut pool,
+            test_helpers::dummy_vk(),
+            UPDATED_ROOT,
+            UPDATED_KYC_LEVEL,
+            UPDATED_AUDITOR_KEY,
+            scenario.ctx(),
+        );
+        // Unfreeze pool
+        pool::unfreeze_pool(&mut pool, &cap);
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    // Try compliant_transfer with stale config A — should fail E_CONFIG_POOL_MISMATCH (106)
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let mut config_a = scenario.take_shared_by_id<ComplianceConfig>(config_a_id);
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        let dummy_proof = test_helpers::make_n_zero_bytes(128);
+        let dummy_inputs = test_helpers::make_n_zero_bytes(224);
+        let dummy_compliance_proof = test_helpers::make_n_zero_bytes(128);
+        let dummy_compliance_inputs = test_helpers::make_n_zero_bytes(192);
+        let dummy_encrypted = test_helpers::make_n_zero_bytes(93);
+        // This should abort at config mismatch before any proof verification
+        compliance::compliant_transfer(
+            &mut pool,
+            &mut config_a,
+            dummy_proof,
+            dummy_inputs,
+            dummy_compliance_proof,
+            dummy_compliance_inputs,
+            dummy_encrypted,
+            &test_clock,
+            scenario.ctx(),
+        );
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(pool);
+        test_scenario::return_shared(config_a);
     };
     scenario.end();
 }
