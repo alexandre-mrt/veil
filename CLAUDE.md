@@ -3,13 +3,14 @@
 ## Overview
 ZK privacy payments with cumulative spending proofs and UTXO-style commitments on Sui.
 Circuit v2: Poseidon(4) identity-bound commitments, note-based nullifiers, domain-separated txAmountHash.
-5-loop security audit (4 contract loops + 1 comprehensive 11-agent audit). Final grade: 142/165 (86%). 100 Move tests, 409+ total tests, 0 failures.
+5-loop security audit (4 contract loops + 1 comprehensive 11-agent audit). Final grade: 142/165 (86%). 110 Move tests, 438+ total tests, 0 failures.
 Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), context-bound credential nullifiers (unique per transfer), ECDH P-256 + AES-GCM auditor encryption.
+Merkle accumulator (depth-20 Poseidon tree) for commitment privacy. Multi-sig governance (multisig.move). Partial ZK withdrawal.
 Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-end.
 
 ## Structure
-- `contracts/` -- Sui Move (pool, verifier, token)
-- `circuits/` -- Circom ZK circuits (transfer.circom 11c, compliance.circom ~7200c, withdraw.circom 10c)
+- `contracts/` -- Sui Move (pool, compliance, verifier, token, multisig + token_faucet)
+- `circuits/` -- Circom ZK circuits (transfer.circom 11c, compliance.circom ~7200c, withdraw.circom 9c)
 - `frontend/` -- Next.js 14 + @mysten/dapp-kit + snarkjs WASM
 - `scripts/` -- deployment, proof conversion, E2E pipeline, relayer
 - `docs/` -- architecture, C4 diagrams, HTML report
@@ -23,9 +24,10 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - Install all: `bash scripts/init.sh`
 
 ### Test
-- Move tests (100): `cd contracts && sui move test`
+- Move tests (110): `cd contracts && sui move test`
 - Circuit tests (100): `cd circuits && npm test`
 - Converter tests (109): `cd scripts && bun run src/test-converter.ts`
+- Frontend tests (14): `cd frontend && bun run test`
 - E2E pipeline: `cd scripts && bun run src/e2e-test.ts`
 
 ### Relayer (Sender Privacy)

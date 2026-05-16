@@ -84,9 +84,9 @@ User: send 100 VEIL to a Tier 3 pool
 
 The credential nullifier (`Poseidon(5, userSecret, contextId)` where `contextId = Poseidon(6, transferNullifier, userSecret)`) is unique per transfer, preventing compliance proof replay without linking uses across transfers. The auditor ciphertext is emitted via `ComplianceVerifiedEvent`; no identity data is stored in contract state.
 
-### Withdraw Circuit (8 constraints)
+### Withdraw Circuit (9 constraints)
 
-Users can exit the pool without admin involvement via a ZK withdrawal proof.
+Users can exit the pool without admin involvement via a ZK withdrawal proof. Partial withdrawal creates a change commitment for the remaining balance.
 
 | # | Constraint | Component |
 |---|-----------|-----------|
@@ -95,8 +95,10 @@ Users can exit the pool without admin involvement via a ZK withdrawal proof.
 | C3 | `withdrawAmount > 0` | GreaterThan(64) |
 | C4 | `cumulativeOld in [0, 2^64)` | Num2Bits(64) |
 | C5 | `withdrawAmount <= cumulativeOld` | LessEqThan(64) |
-| C6 | `nullifier == Poseidon(7, userSecret, randomnessOld, cumulativeOld)` | Poseidon(4) |
-| C7 | `recipientHash == Poseidon(8, recipient)` | Poseidon(2) |
+| C6 | `newCommitment == Poseidon(1, remainingBalance, randomnessNew, userSecret)` | Poseidon(4) |
+| C7 | `remainingBalance in [0, 2^64)` | Num2Bits(64) |
+| C8 | `nullifier == Poseidon(7, userSecret, randomnessOld, cumulativeOld)` | Poseidon(4) |
+| C9 | `recipientHash == Poseidon(8, recipient)` | Poseidon(2) |
 
 Domain tags 7 (withdrawal nullifier) and 8 (recipient binding) prevent front-running and redirect attacks. The recipient hash ties the withdrawal to a specific Sui address, verified on-chain.
 
@@ -135,13 +137,17 @@ Domain tags 7 (withdrawal nullifier) and 8 (recipient binding) prevent front-run
 │  │  native      │  │  fields      │  │  dynamic fields        │ │
 │  └──────────────┘  └──────────────┘  └───────────────────────┘ │
 │                                                                │
-│  Pool { balance, transfer_vk, threshold, frozen }              │
+│  Pool { balance, transfer_vk, threshold, frozen,               │
+│         commitment_root, next_leaf_index }                      │
 │  AdminCap { pool_id } — bound to specific pool                 │
+│  MultisigConfig { signers, required_approvals }                │
 │                                                                │
 │  Functions:                                                    │
 │    deposit_and_register | deposit | shielded_transfer           │
-│    withdraw (AdminCap) | freeze/unfreeze | propose_vk_update   │
+│    zk_withdraw | emergency_withdraw | freeze/unfreeze          │
+│    propose_vk_update | update_commitment_root                  │
 │                                                                │
+│  Merkle accumulator: depth-20 Poseidon tree, root on-chain    │
 │  Standard deposits: 100 | 500 | 1000 TOKEN                    │
 └────────────────────────────────────────────────────────────────┘
 ```
@@ -149,6 +155,10 @@ Domain tags 7 (withdrawal nullifier) and 8 (recipient binding) prevent front-run
 ## Security
 
 **Final Grade: 142/165 (86%) -- STRONG** (see `docs/final-grade-report.md`)
+
+**Formal threat model**: see `docs/threat-model.md` (STRIDE methodology, 7 spoofing + 7 tampering + 4 repudiation + 6 information disclosure + 6 DoS + 7 elevation of privilege threats analyzed).
+
+**Multi-sig governance**: opt-in N-of-M signer approval for admin operations (freeze/unfreeze). See `multisig.move`.
 
 ### 5-Loop Deep Audit
 
@@ -207,15 +217,16 @@ Veil leads on compliance (cumulative spending proofs, dual-proof KYC, context-bo
 
 | Layer | Tests | Coverage |
 |-------|-------|---------|
-| Move contract | 100 | Every function, every error code, 7 timelocks, 19 attacker threats, 10 negative-validation |
+| Move contract | 110 | Every function, every error code, 8 timelocks, 19 attacker threats, 10 negative-validation, multisig |
 | Circom circuit (transfer) | 40 | Every constraint (C1-C11), boundaries, domain separation |
 | Circom circuit (compliance) | 30 | Credential validity, Merkle proof, context binding, nullifier uniqueness, range proofs |
 | Circom circuit (withdraw) | 30 | Commitment ownership, overdraw, zero-amount, nullifier derivation, recipient binding |
 | Proof converter | 109 | bigintToLE32, G1/G2 compression, sign bits, VK layout |
 | Compliance utils | 67 | Credential leaf, nullifier, Merkle tree builder, depth-20 proofs |
 | E2E compliance (real Groth16) | 32 | Dual proofs, ECDH encryption, expired/low-KYC, no mocks |
-| Fuzz (fast-check) | 6×500 | Commitment determinism, nullifier uniqueness, overflow, Merkle soundness, domain separation, credential validity |
-| **Total** | **409+** | **0 failures** |
+| Frontend (vitest) | 14 | requireEnv logic, AES-GCM encrypt/decrypt roundtrip, key isolation, corruption detection |
+| Fuzz (fast-check) | 6x500 | Commitment determinism, nullifier uniqueness, overflow, Merkle soundness, domain separation, credential validity |
+| **Total** | **438+** | **0 failures** |
 
 ## Tech Stack
 
@@ -236,7 +247,7 @@ git clone https://github.com/alexandre-mrt/veil
 cd veil && bash scripts/init.sh
 
 # Build and test the Move contract
-cd contracts && sui move build && sui move test       # 100/100 pass
+cd contracts && sui move build && sui move test       # 110/110 pass
 
 # Compile the ZK circuit and run tests
 cd ../circuits && bash scripts/compile.sh && npm test  # 100/100 pass (transfer 40 + compliance 30 + withdraw 30)
@@ -306,7 +317,8 @@ Network: testnet (chain-id `4c78adac`), 1-hour epochs, compliance required
 veil/
 ├── circuits/
 │   ├── transfer.circom              # 11-constraint transfer circuit (v2)
-│   ├── compliance.circom            # 10-constraint KYC compliance circuit (Merkle depth 20)
+│   ├── compliance.circom            # ~7200-constraint KYC compliance circuit (Merkle depth 20)
+│   ├── withdraw.circom              # 9-constraint withdrawal circuit (partial withdraw, recipient-bound)
 │   ├── templates/merkle_proof.circom # Poseidon Merkle proof template
 │   ├── scripts/compile.sh           # Transfer circuit compilation + Groth16 trusted setup
 │   ├── scripts/compile-compliance.sh # Compliance circuit compilation + setup
@@ -316,11 +328,13 @@ veil/
 │       └── withdraw.test.mjs        # 30 withdraw circuit tests (ownership, overdraw, recipient)
 ├── contracts/
 │   ├── sources/
-│   │   ├── pool.move                # Core: deposit, transfer, withdraw, UTXO model
+│   │   ├── pool.move                # Core: deposit, transfer, withdraw, UTXO model, Merkle accumulator
 │   │   ├── compliance.move          # Tier 3: KYC compliance, credential root, auditor key
-│   │   ├── verifier.move            # sui::groth16 BN254 wrapper (transfer + compliance)
-│   │   └── token.move               # VEIL token (6 decimals, TreasuryCap + faucet)
-│   └── tests/                       # 100 tests (pool, compliance, scenario/threat tests)
+│   │   ├── verifier.move            # sui::groth16 BN254 wrapper (transfer + compliance + withdraw)
+│   │   ├── token.move               # VEIL token (6 decimals, TreasuryCap)
+│   │   ├── multisig.move            # N-of-M multi-sig governance for admin operations
+│   │   └── token_faucet.move        # Testnet-only faucet (remove before mainnet)
+│   └── tests/                       # 110 tests (pool, compliance, scenario/threat, multisig)
 ├── frontend/
 │   ├── src/app/                     # Next.js 14 App Router
 │   ├── src/components/              # UI: deposit, transfer, withdraw, privacy status
@@ -339,6 +353,7 @@ veil/
 │   └── src/deploy.ts                # Contract deployment helper
 └── docs/
     ├── architecture.md              # Full architecture description
+    ├── threat-model.md              # STRIDE threat model (37 threats, 30 controls)
     ├── FUTURE_IMPROVEMENTS.md       # Upgrade roadmap with implementation status
     ├── SPEC.md                      # Protocol specification
     ├── loop5-audit-report.md        # Loop 5: 11-agent comprehensive audit
@@ -361,7 +376,7 @@ veil/
 6. **5-loop iterative security audit** with 11 specialized agents (final loop)
 7. **Dual-proof compliant transfers** -- transfer proof + compliance proof verified atomically on-chain
 8. **Epoch-scoped credential nullifiers** -- prove KYC once per epoch without linking epochs
-9. **ZK withdrawal** -- users exit pool without admin via Groth16 proof (recipient-bound, front-run resistant)
+9. **ZK withdrawal with partial withdrawal** -- users exit pool without admin via Groth16 proof (recipient-bound, front-run resistant, change commitment for remaining balance)
 
 ## Sender Privacy (Relayer)
 
@@ -438,8 +453,8 @@ For production, the relayer should be run by multiple independent parties with n
 
 - ~~Sender address visible on Sui transactions~~ **Solved: relayer pattern implemented**
 - ~~KYC compliance requires identity disclosure~~ **Solved: ZK credential proof (Tier 3)**
-- UTXO chain traceable via transaction effects (needs Merkle accumulator -- Tier 2.3)
-- ~~No user-initiated withdrawal~~ **Solved: ZK withdrawal circuit (withdraw.circom, 8 constraints)**
+- ~~UTXO chain traceable via transaction effects~~ **Partially solved: Merkle accumulator (depth-20 Poseidon tree) provides anonymity set for transfers; deposits still visible on-chain**
+- ~~No user-initiated withdrawal~~ **Solved: ZK withdrawal circuit (withdraw.circom, 9 constraints) with partial withdrawal support (change commitment for remaining balance)**
 - ~~Trusted setup uses single contributor~~ **Solved: MPC ceremony script (3 contributors + beacon)**
 - Admin can drain pool via timelock withdrawal or instant emergency_withdraw when frozen
 - ~~`userSecret` stored in plaintext localStorage~~ **Solved: AES-GCM encrypted localStorage**
