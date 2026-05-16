@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "compile": "bash scripts/compile.sh",
-    "test": "node --experimental-vm-modules test/transfer.test.mjs"
+    "test": "node --experimental-vm-modules test/transfer.test.mjs && node --experimental-vm-modules test/compliance.test.mjs && node --experimental-vm-modules test/withdraw.test.mjs"
   },
   "dependencies": {
     "circomlib": "^2.0.5",

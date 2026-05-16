@@ -209,11 +209,13 @@ Veil leads on compliance (cumulative spending proofs, dual-proof KYC, context-bo
 |-------|-------|---------|
 | Move contract | 100 | Every function, every error code, 7 timelocks, 19 attacker threats, 10 negative-validation |
 | Circom circuit (transfer) | 40 | Every constraint (C1-C11), boundaries, domain separation |
+| Circom circuit (compliance) | 30 | Credential validity, Merkle proof, context binding, nullifier uniqueness, range proofs |
+| Circom circuit (withdraw) | 30 | Commitment ownership, overdraw, zero-amount, nullifier derivation, recipient binding |
 | Proof converter | 109 | bigintToLE32, G1/G2 compression, sign bits, VK layout |
 | Compliance utils | 67 | Credential leaf, nullifier, Merkle tree builder, depth-20 proofs |
 | E2E compliance (real Groth16) | 32 | Dual proofs, ECDH encryption, expired/low-KYC, no mocks |
 | Fuzz (fast-check) | 6×500 | Commitment determinism, nullifier uniqueness, overflow, Merkle soundness, domain separation, credential validity |
-| **Total** | **349+** | **0 failures** |
+| **Total** | **409+** | **0 failures** |
 
 ## Tech Stack
 
@@ -237,7 +239,7 @@ cd veil && bash scripts/init.sh
 cd contracts && sui move build && sui move test       # 100/100 pass
 
 # Compile the ZK circuit and run tests
-cd ../circuits && bash scripts/compile.sh && npm test  # 40/40 pass
+cd ../circuits && bash scripts/compile.sh && npm test  # 100/100 pass (transfer 40 + compliance 30 + withdraw 30)
 
 # Run proof converter tests
 cd ../scripts && bun run src/test-converter.ts         # 109/109 pass
@@ -308,14 +310,17 @@ veil/
 │   ├── templates/merkle_proof.circom # Poseidon Merkle proof template
 │   ├── scripts/compile.sh           # Transfer circuit compilation + Groth16 trusted setup
 │   ├── scripts/compile-compliance.sh # Compliance circuit compilation + setup
-│   └── test/transfer.test.mjs       # 40 constraint tests (happy + violation + edge)
+│   └── test/
+│       ├── transfer.test.mjs        # 40 constraint tests (happy + violation + edge)
+│       ├── compliance.test.mjs      # 30 compliance circuit tests (credential, Merkle, nullifier)
+│       └── withdraw.test.mjs        # 30 withdraw circuit tests (ownership, overdraw, recipient)
 ├── contracts/
 │   ├── sources/
 │   │   ├── pool.move                # Core: deposit, transfer, withdraw, UTXO model
 │   │   ├── compliance.move          # Tier 3: KYC compliance, credential root, auditor key
 │   │   ├── verifier.move            # sui::groth16 BN254 wrapper (transfer + compliance)
 │   │   └── token.move               # VEIL token (6 decimals, TreasuryCap + faucet)
-│   └── tests/                       # 85 tests (pool, compliance, scenario/threat tests)
+│   └── tests/                       # 100 tests (pool, compliance, scenario/threat tests)
 ├── frontend/
 │   ├── src/app/                     # Next.js 14 App Router
 │   ├── src/components/              # UI: deposit, transfer, withdraw, privacy status

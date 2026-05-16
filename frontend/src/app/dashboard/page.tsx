@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useCurrentAccount } from "@mysten/dapp-kit-react";
 import { POOL_ID, THRESHOLD } from "@/lib/constants";
 import type { Credential } from "@/lib/types";
 import { usePrivateState } from "@/hooks/usePrivateState";
 import { useVeilPool } from "@/hooks/useVeilPool";
+import { deriveKey, encryptData, decryptData } from "@/lib/crypto";
 import { Header } from "@/components/Header";
 import { BalanceDisplay } from "@/components/BalanceDisplay";
 import { DepositForm } from "@/components/DepositForm";
@@ -41,53 +43,128 @@ const TABS: readonly { id: Tab; label: string }[] = [
 // Page
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Credential serialization
+// ---------------------------------------------------------------------------
+
+const CREDENTIAL_STORAGE_KEY = "veil_credentials";
+
+interface SerializedCredential {
+  readonly leaf: string;
+  readonly kycLevel: number;
+  readonly expiry: number;
+  readonly merkleProof: readonly string[];
+  readonly merkleIndex: number;
+}
+
+function serializeCredentials(creds: readonly Credential[]): string {
+  const serialized: SerializedCredential[] = creds.map((c) => ({
+    leaf: c.leaf.toString(),
+    kycLevel: c.kycLevel,
+    expiry: c.expiry,
+    merkleProof: c.merkleProof.map((p) => p.toString()),
+    merkleIndex: c.merkleIndex,
+  }));
+  return JSON.stringify(serialized);
+}
+
+function deserializeCredentials(json: string): Credential[] {
+  const parsed = JSON.parse(json) as SerializedCredential[];
+  return parsed.map((c) => ({
+    leaf: BigInt(c.leaf),
+    kycLevel: c.kycLevel,
+    expiry: c.expiry,
+    merkleProof: c.merkleProof.map((p) => BigInt(p)),
+    merkleIndex: c.merkleIndex,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function DashboardPage() {
   const { state, isInitialized, updateAfterTransfer } = usePrivateState();
   const { frozen } = useVeilPool(POOL_ID);
+  const account = useCurrentAccount();
+  const walletAddress = account?.address;
 
   const [activeTab, setActiveTab] = useState<Tab>("deposit");
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
-  const [credentials, setCredentials] = useState<Credential[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = localStorage.getItem("veil_credentials");
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as Array<{
-        leaf: string;
-        kycLevel: number;
-        expiry: number;
-        merkleProof: string[];
-        merkleIndex: number;
-      }>;
-      return parsed.map((c) => ({
-        leaf: BigInt(c.leaf),
-        kycLevel: c.kycLevel,
-        expiry: c.expiry,
-        merkleProof: c.merkleProof.map((p) => BigInt(p)),
-        merkleIndex: c.merkleIndex,
-      }));
-    } catch {
-      return [];
-    }
-  });
+  const [credentials, setCredentials] = useState<Credential[]>([]);
+  const [credentialsLoaded, setCredentialsLoaded] = useState(false);
+  const credKeyRef = useRef<CryptoKey | null>(null);
 
   const spending = state?.cumulativeSpending ?? 0n;
 
-  // Persist credentials to localStorage
+  // Load encrypted credentials from localStorage when wallet connects
   useEffect(() => {
-    try {
-      const serialized = credentials.map((c) => ({
-        leaf: c.leaf.toString(),
-        kycLevel: c.kycLevel,
-        expiry: c.expiry,
-        merkleProof: c.merkleProof.map((p) => p.toString()),
-        merkleIndex: c.merkleIndex,
-      }));
-      localStorage.setItem("veil_credentials", JSON.stringify(serialized));
-    } catch {
-      // Storage quota exceeded — ignore
+    if (!walletAddress) {
+      setCredentials([]);
+      setCredentialsLoaded(false);
+      credKeyRef.current = null;
+      return;
     }
-  }, [credentials]);
+
+    let cancelled = false;
+
+    async function loadCredentials(address: string) {
+      try {
+        const key = await deriveKey(address);
+        if (cancelled) return;
+        credKeyRef.current = key;
+
+        const stored = localStorage.getItem(CREDENTIAL_STORAGE_KEY);
+        if (!stored) {
+          if (!cancelled) setCredentialsLoaded(true);
+          return;
+        }
+
+        try {
+          // Try encrypted decryption first
+          const json = await decryptData(stored, key);
+          if (!cancelled) setCredentials(deserializeCredentials(json));
+        } catch {
+          // Fallback: legacy plaintext JSON -- migrate by re-encrypting
+          try {
+            const legacy = deserializeCredentials(stored);
+            const encrypted = await encryptData(serializeCredentials(legacy), key);
+            localStorage.setItem(CREDENTIAL_STORAGE_KEY, encrypted);
+            if (!cancelled) setCredentials(legacy);
+          } catch {
+            // Corrupted data -- start fresh
+            localStorage.removeItem(CREDENTIAL_STORAGE_KEY);
+          }
+        }
+      } catch {
+        // Crypto unavailable -- credentials will remain empty
+      }
+      if (!cancelled) setCredentialsLoaded(true);
+    }
+
+    loadCredentials(walletAddress);
+    return () => { cancelled = true; };
+  }, [walletAddress]);
+
+  // Persist credentials to localStorage (encrypted)
+  useEffect(() => {
+    if (!credentialsLoaded) return;
+
+    const key = credKeyRef.current;
+    if (!key) return;
+
+    async function persistCredentials() {
+      try {
+        const json = serializeCredentials(credentials);
+        const encrypted = await encryptData(json, key as CryptoKey);
+        localStorage.setItem(CREDENTIAL_STORAGE_KEY, encrypted);
+      } catch {
+        // Encryption or storage quota failed -- ignore
+      }
+    }
+
+    persistCredentials();
+  }, [credentials, credentialsLoaded]);
 
   const handleStateUpdate = useCallback(
     (cumulativeNew: bigint, newRandomness: bigint) => {
