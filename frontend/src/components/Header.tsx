@@ -2,15 +2,22 @@
 
 import Link from "next/link";
 import { THRESHOLD } from "@/lib/constants";
-import { usePrivateState } from "@/hooks/usePrivateState";
 import { WalletButton } from "./WalletButton";
 import { PrivacyStatusBadge } from "./PrivacyStatus";
 import styles from "./components.module.css";
 
-export function Header() {
-  const { state, isInitialized } = usePrivateState();
+interface HeaderProps {
+  /** Current cumulative spending from private state. Omit if state not yet loaded. */
+  readonly cumulativeSpending?: bigint;
+  /** Whether the private state is initialized and ready to display. */
+  readonly isPrivateStateReady?: boolean;
+}
 
-  const spending = state?.cumulativeSpending ?? 0n;
+export function Header({
+  cumulativeSpending,
+  isPrivateStateReady = false,
+}: HeaderProps) {
+  const spending = cumulativeSpending ?? 0n;
 
   return (
     <header className={styles.header}>
@@ -18,7 +25,7 @@ export function Header() {
         <Link href="/" className={styles.headerLogo}>
           VEIL
         </Link>
-        {isInitialized && (
+        {isPrivateStateReady && (
           <PrivacyStatusBadge
             cumulativeSpending={spending}
             threshold={THRESHOLD}
