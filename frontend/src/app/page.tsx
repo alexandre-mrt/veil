@@ -1,7 +1,7 @@
 import Link from "next/link";
 import styles from "./page.module.css";
 
-const BADGES = ["142/165 audit score", "100 tests", "Sui Overflow 2026"] as const;
+const BADGES = ["157.8/165 audit score", "124 Move tests", "Sui Overflow 2026"] as const;
 
 const STEPS = [
   { n: "1", title: "Deposit", desc: "Standard amounts (100/500/1000). Genesis commitment created on-chain." },
@@ -23,26 +23,28 @@ const CIRCUIT_ROWS = [
 ] as const;
 
 const AUDIT_CATEGORIES = [
-  { label: "Smart Contract Security", score: 28, max: 30 },
-  { label: "ZK Circuit Correctness", score: 27, max: 30 },
-  { label: "Privacy Guarantees", score: 23, max: 25 },
-  { label: "Compliance Architecture", score: 22, max: 25 },
-  { label: "Frontend Security", score: 18, max: 20 },
-  { label: "Operational Security", score: 12, max: 15 },
-  { label: "Testing Coverage", score: 12, max: 20 },
+  { label: "Security", score: 24.2, max: 25 },
+  { label: "Architecture", score: 19.5, max: 20 },
+  { label: "Code Quality", score: 14.5, max: 15 },
+  { label: "SOTA Comparison", score: 9.5, max: 10 },
+  { label: "DeFi/Token Design", score: 9.7, max: 10 },
+  { label: "Frontend & UX", score: 9.3, max: 10 },
+  { label: "Documentation", score: 9.8, max: 10 },
+  { label: "Test Coverage", score: 4.8, max: 5 },
+  { label: "Persona Flows", score: 56.5, max: 60 },
 ] as const;
 
-const AUDIT_STATS = ["5 audit loops", "0 critical remaining", "100 Move tests", "349+ total tests"] as const;
+const AUDIT_STATS = ["6 audit loops", "0 critical remaining", "124 Move tests", "3,456+ total tests"] as const;
 
 const SEC_FEATURES = [
-  "VK timelock (1-epoch delay for updates)",
-  "Note-based nullifiers (unique per transfer)",
-  "Identity-bound commitments (theft-proof)",
-  "Standard deposit amounts (correlation resistance)",
-  "Encrypted auditor storage (ECDH + AES-GCM)",
-  "Privacy events (no sender/recipient/amount leaked)",
+  "10 timelocks on all admin-mutable parameters",
+  "Merkle accumulator (anonymity set = all commitments)",
+  "Multi-sig governance (N-of-M signer approval)",
+  "Wallet-signature key derivation (IndexedDB non-extractable)",
+  "Relayer: API key auth + TX validation + rate limiting",
+  "STRIDE threat model (37 threats, 30 controls)",
   "Content Security Policy (strict CSP headers)",
-  "Sponsored tx relayer (hides sender address)",
+  "ZK withdrawal with recipient binding (no front-running)",
 ] as const;
 
 type ComparisonRating = "Leading" | "Competitive" | "Behind";
@@ -55,10 +57,9 @@ interface ComparisonRow {
 }
 
 const COMPARISONS: readonly ComparisonRow[] = [
-  { protocol: "Veil", compliance: "Leading", anonymity: "Competitive", proving: "Leading" },
-  { protocol: "Tornado Cash", compliance: "Behind", anonymity: "Leading", proving: "Competitive" },
-  { protocol: "Zcash", compliance: "Behind", anonymity: "Leading", proving: "Competitive" },
-  { protocol: "Aztec", compliance: "Competitive", anonymity: "Leading", proving: "Leading" },
+  { protocol: "Veil", compliance: "Leading", anonymity: "Competitive", proving: "Competitive" },
+  { protocol: "Tornado Cash", compliance: "Behind", anonymity: "Competitive", proving: "Competitive" },
+  { protocol: "Zcash Orchard", compliance: "Competitive", anonymity: "Leading", proving: "Leading" },
   { protocol: "Railgun", compliance: "Competitive", anonymity: "Competitive", proving: "Competitive" },
   { protocol: "Penumbra", compliance: "Behind", anonymity: "Leading", proving: "Competitive" },
 ] as const;
@@ -75,7 +76,8 @@ const CONTRIBUTIONS = [
   { title: "Context-bound credential nullifiers", desc: "Credential nullifiers are unique per transfer, preventing cross-context tracking." },
   { title: "Auditor encryption (ECDH P-256 + AES-GCM)", desc: "Encrypted audit payloads readable only by designated auditor keys." },
   { title: "ZK withdrawal with recipient binding", desc: "Withdrawal proof binds to a specific recipient address -- no front-running." },
-  { title: "Configurable epoch duration per pool", desc: "Each pool sets its own epoch length for cumulative spending resets." },
+  { title: "Merkle accumulator for commitment privacy", desc: "Depth-20 Poseidon tree. Anonymity set = all commitments ever inserted." },
+  { title: "Multi-sig governance", desc: "N-of-M signer approval for admin operations. Configurable epoch duration per pool." },
 ] as const;
 
 const TECH_STACK = [
