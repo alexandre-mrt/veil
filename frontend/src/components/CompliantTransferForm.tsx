@@ -243,6 +243,12 @@ export function CompliantTransferForm({
         For above-threshold transfers. KYC verified, amount encrypted for auditor.
       </div>
 
+      {transfer.isMock && (
+        <div className={styles.proofMockBanner}>
+          [MOCK] Circuit artifacts unavailable — proofs are simulated
+        </div>
+      )}
+
       {frozen && (
         <div className={styles.transferFrozenBanner}>
           Pool is frozen. Transfers disabled.

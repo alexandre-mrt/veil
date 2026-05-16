@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { Credential } from "@/lib/types";
 import { DEMO_CREDENTIAL } from "@/lib/demoCredential";
+import { EPOCH_DURATION_MS } from "@/lib/constants";
+import { useEpoch } from "@/hooks/useEpoch";
 import styles from "./CredentialManager.module.css";
 
 // ---------------------------------------------------------------------------
@@ -14,6 +16,9 @@ const KYC_LEVEL_LABELS: Record<number, string> = {
   2: "Enhanced",
   3: "Institutional",
 };
+
+/** Number of epochs before expiry to show "expiring soon" warning */
+const EXPIRY_WARNING_EPOCHS = 2;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -34,6 +39,15 @@ function isExpired(epochSeconds: number): boolean {
 
 function kycLevelLabel(level: number): string {
   return KYC_LEVEL_LABELS[level] ?? `Level ${level}`;
+}
+
+type ExpiryStatus = "valid" | "expiring-soon" | "expired";
+
+function getExpiryStatus(expirySeconds: number, currentEpoch: number): ExpiryStatus {
+  const expiryEpoch = Math.floor((expirySeconds * 1000) / EPOCH_DURATION_MS);
+  if (expiryEpoch <= currentEpoch) return "expired";
+  if (expiryEpoch <= currentEpoch + EXPIRY_WARNING_EPOCHS) return "expiring-soon";
+  return "valid";
 }
 
 function parseCredentialJson(raw: string): Credential | null {
@@ -83,6 +97,7 @@ export function CredentialManager({
   onImport,
   onRemove,
 }: CredentialManagerProps) {
+  const epoch = useEpoch();
   const [jsonInput, setJsonInput] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState(false);
@@ -124,12 +139,24 @@ export function CredentialManager({
         <div className={styles.list}>
           {credentials.map((cred, idx) => {
             const expired = isExpired(cred.expiry);
+            const expiryStatus = getExpiryStatus(cred.expiry, epoch.currentEpoch);
             return (
               <div key={`${cred.merkleIndex}-${idx}`} className={`${styles.credRow} ${expired ? styles.credRowExpired : ""}`}>
                 <div className={styles.credInfo}>
-                  <span className={`${styles.credLevel} ${expired ? styles.credLevelExpired : styles.credLevelActive}`}>
-                    {kycLevelLabel(cred.kycLevel)}
-                  </span>
+                  <div className={styles.credLevelRow}>
+                    <span className={`${styles.credLevel} ${expired ? styles.credLevelExpired : styles.credLevelActive}`}>
+                      {kycLevelLabel(cred.kycLevel)}
+                    </span>
+                    {expiryStatus === "valid" && (
+                      <span className={styles.badgeValid}>Valid</span>
+                    )}
+                    {expiryStatus === "expiring-soon" && (
+                      <span className={styles.badgeExpiringSoon}>Expiring soon</span>
+                    )}
+                    {expiryStatus === "expired" && (
+                      <span className={styles.badgeExpired}>Expired</span>
+                    )}
+                  </div>
                   <span className={styles.credMeta}>
                     idx #{cred.merkleIndex} &middot; {expired ? "expired" : `expires ${formatExpiry(cred.expiry)}`}
                   </span>

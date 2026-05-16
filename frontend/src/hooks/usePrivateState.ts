@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { VeilPrivateState } from "@/lib/types";
 import { EPOCH_DURATION_MS } from "@/lib/constants";
+import { generateRandomBigInt } from "@/lib/random";
 
 function computeCurrentEpoch(): number {
   return Math.floor(Date.now() / EPOCH_DURATION_MS);
@@ -42,15 +43,6 @@ async function decryptState(encrypted: string, key: CryptoKey): Promise<string> 
 // ---------------------------------------------------------------------------
 // Serialization helpers (plain JSON, no encoding)
 // ---------------------------------------------------------------------------
-
-function generateRandomBigInt(): bigint {
-  const bytes = new Uint8Array(31);
-  crypto.getRandomValues(bytes);
-  return bytes.reduce(
-    (acc, byte, i) => acc | (BigInt(byte) << BigInt(i * 8)),
-    0n,
-  );
-}
 
 function serializeState(state: VeilPrivateState): string {
   return JSON.stringify({

@@ -8,12 +8,14 @@ interface PoolFields {
   readonly balance: bigint;
   readonly threshold: bigint;
   readonly frozen: boolean;
+  readonly nextLeafIndex: number;
 }
 
 interface UseVeilPoolReturn {
   readonly balance: bigint;
   readonly threshold: bigint;
   readonly frozen: boolean;
+  readonly nextLeafIndex: number;
   readonly isLoading: boolean;
   readonly error: Error | null;
 }
@@ -24,6 +26,7 @@ function parsePoolJson(json: Record<string, unknown> | null | undefined): PoolFi
     balance: BigInt((json.balance as string | number) ?? 0),
     threshold: BigInt((json.threshold as string | number) ?? 0),
     frozen: (json.frozen as boolean) ?? false,
+    nextLeafIndex: Number((json.next_leaf_index as string | number) ?? 0),
   };
 }
 
@@ -74,6 +77,7 @@ export function useVeilPool(poolId: string): UseVeilPoolReturn {
     balance: poolFields?.balance ?? 0n,
     threshold: poolFields?.threshold ?? 0n,
     frozen: poolFields?.frozen ?? false,
+    nextLeafIndex: poolFields?.nextLeafIndex ?? 0,
     isLoading,
     error,
   };

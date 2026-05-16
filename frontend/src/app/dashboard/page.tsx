@@ -22,6 +22,7 @@ import { CredentialManager } from "@/components/CredentialManager";
 import { CompliantTransferForm } from "@/components/CompliantTransferForm";
 import { AdminPanel } from "@/components/AdminPanel";
 import { AuditorEventBrowser } from "@/components/AuditorEventBrowser";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import componentStyles from "@/components/components.module.css";
 import styles from "./page.module.css";
 
@@ -272,6 +273,7 @@ export default function DashboardPage() {
       />
 
       <main className={styles.content}>
+        <ErrorBoundary>
         <BalanceDisplay privateState={state} />
 
         <div className={styles.layout}>
@@ -366,6 +368,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+        </ErrorBoundary>
       </main>
 
       <footer className={styles.footer}>

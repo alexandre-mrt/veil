@@ -4,6 +4,8 @@ import { useCallback, useState } from "react";
 import type { VeilPrivateState } from "@/lib/types";
 import type { SnarkjsProof } from "@/lib/proof-converter";
 import { dynamicRequire } from "@/lib/dynamicRequire";
+import { generateRandomBigInt } from "@/lib/random";
+import { MerkleTree } from "@/lib/merkle-tree";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -54,15 +56,6 @@ const MOCK_DELAY_MS = 3000;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function generateRandomBigInt(): bigint {
-  const bytes = new Uint8Array(31);
-  crypto.getRandomValues(bytes);
-  return bytes.reduce(
-    (acc, byte, i) => acc | (BigInt(byte) << BigInt(i * 8)),
-    0n,
-  );
-}
 
 async function circuitArtifactsExist(): Promise<boolean> {
   try {
@@ -118,7 +111,7 @@ async function generateRealProof(
   const snarkjs = (await dynamicRequire("snarkjs")) as {
     groth16: {
       fullProve: (
-        input: Record<string, string>,
+        input: Record<string, string | string[] | number[]>,
         wasmPath: string,
         zkeyPath: string,
       ) => Promise<{ proof: SnarkjsProof; publicSignals: string[] }>;
@@ -152,6 +145,18 @@ async function generateRealProof(
   );
   const txAmountHash = F.toString(poseidon([3n, txAmount, salt]));
 
+  // Build Merkle proof for old commitment inclusion
+  // NIGHT-SHIFT-REVIEW: Merkle tree is built with mock data — requires on-chain indexer to fetch real commitment leaves
+  const merkleTree = new MerkleTree();
+  await merkleTree.init();
+  // Insert old commitment as the only leaf (demo mode)
+  // In production, fetch all commitment events from the pool and insert them in order
+  merkleTree.insert(BigInt(oldCommitment));
+  const merkleProof = merkleTree.getProof(0);
+  const merkleRoot = merkleProof.root.toString();
+  const pathElements = merkleProof.pathElements.map((e) => e.toString());
+  const pathIndices = [...merkleProof.pathIndices];
+
   // Circuit input must match transfer.circom signal order
   const circuitInput = {
     oldCommitment,
@@ -160,6 +165,9 @@ async function generateRealProof(
     epochId: epochId.toString(),
     nullifier,
     txAmountHash,
+    merkleRoot,
+    pathElements,
+    pathIndices,
     cumulativeOld: privateState.cumulativeSpending.toString(),
     cumulativeNew: cumulativeNew.toString(),
     txAmount: txAmount.toString(),

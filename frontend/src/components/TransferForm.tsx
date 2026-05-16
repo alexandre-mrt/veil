@@ -111,6 +111,12 @@ export function TransferForm({ privateState, frozen, onStateUpdate, onTxAppended
       <div className={styles.transferFormAccent} />
       <span className={styles.transferTitle}>Shielded Transfer</span>
 
+      {transfer.isMock && (
+        <div className={styles.proofMockBanner}>
+          [MOCK] Circuit artifacts unavailable — proofs are simulated
+        </div>
+      )}
+
       {frozen && (
         <div className={styles.transferFrozenBanner}>
           Pool is frozen. Transfers disabled.
