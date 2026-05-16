@@ -19,6 +19,8 @@ Veil introduces **cumulative spending proofs** -- a novel ZK primitive that:
 
 ## How It Works
 
+> **[Interactive Protocol Flow Diagram](docs/protocol-flow.html)** -- visual architecture with animated flows, expandable circuit details, and compliance path breakdown.
+
 ```
 User: send 100 VEIL anonymously
   |

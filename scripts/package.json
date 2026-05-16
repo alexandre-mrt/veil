@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "test": "bun run src/test-converter.ts",
-    "e2e": "bun run src/e2e-test.ts"
+    "e2e": "bun run src/e2e-test.ts",
+    "fuzz": "bun run src/fuzz-tests.ts"
   },
   "dependencies": {
     "@mysten/sui": "^2.16.2",
     "circomlibjs": "^0.1.7",
+    "fast-check": "^4.8.0",
     "snarkjs": "^0.7.6"
   },
   "devDependencies": {
