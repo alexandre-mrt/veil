@@ -48,11 +48,26 @@ const DEFAULT_PORT = 3001;
 const GAS_BUDGET = 50_000_000; // 0.05 SUI
 
 // ---------------------------------------------------------------------------
-// Security: CORS, Rate Limiting, Payload Limits
+// Security: Auth, CORS, Rate Limiting, Payload Limits
 // ---------------------------------------------------------------------------
 
+const RELAYER_API_KEY = process.env.RELAYER_API_KEY;
+
+if (!RELAYER_API_KEY) {
+  console.warn(
+    "[security] WARNING: RELAYER_API_KEY not set — running in dev mode without authentication. " +
+      "Set RELAYER_API_KEY in production!",
+  );
+}
+
+function checkAuth(request: Request): boolean {
+  if (!RELAYER_API_KEY) return true; // dev mode: no auth required
+  const auth = request.headers.get("Authorization");
+  return auth === `Bearer ${RELAYER_API_KEY}`;
+}
+
 const ALLOWED_ORIGIN = process.env.RELAYER_CORS_ORIGIN || "https://frontend-sepia-nine-30.vercel.app";
-const LOCAL_DEV_ORIGIN = "http://localhost:3000";
+const LOCAL_DEV_ORIGIN = process.env.NODE_ENV !== "production" ? "http://localhost:3000" : null;
 const MAX_PAYLOAD_BYTES = 50_000; // 50KB
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -72,7 +87,7 @@ function checkRateLimit(ip: string): boolean {
 }
 
 function resolveAllowedOrigin(requestOrigin: string | null): string {
-  if (requestOrigin === LOCAL_DEV_ORIGIN) return LOCAL_DEV_ORIGIN;
+  if (LOCAL_DEV_ORIGIN && requestOrigin === LOCAL_DEV_ORIGIN) return LOCAL_DEV_ORIGIN;
   if (requestOrigin === ALLOWED_ORIGIN) return ALLOWED_ORIGIN;
   return ALLOWED_ORIGIN; // Default: production origin (browser will block mismatched)
 }
@@ -342,7 +357,7 @@ async function serve(port: number): Promise<void> {
       const corsHeaders: Record<string, string> = {
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
       };
 
       if (method === "OPTIONS") {
@@ -363,11 +378,19 @@ async function serve(port: number): Promise<void> {
         );
       }
 
-      // Health check
+      // Health check (public — no auth required)
       if (url.pathname === "/health" && method === "GET") {
         return Response.json(
           { status: "ok", relayer: relayerAddress, network: NETWORK },
           { headers: corsHeaders },
+        );
+      }
+
+      // Authentication — required for /sponsor and /submit
+      if (!checkAuth(req)) {
+        return Response.json(
+          { error: "Unauthorized" },
+          { status: 401, headers: corsHeaders },
         );
       }
 

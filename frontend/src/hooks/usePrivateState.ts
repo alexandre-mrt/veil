@@ -13,10 +13,71 @@ const STORAGE_KEY = "veil-state";
 const APP_SALT = new TextEncoder().encode("veil-privacy-protocol-v1");
 
 // ---------------------------------------------------------------------------
-// Crypto helpers — AES-GCM encryption keyed per wallet
+// IndexedDB keystore — non-extractable AES keys (primary)
 // ---------------------------------------------------------------------------
 
-async function deriveKey(walletAddress: string): Promise<CryptoKey> {
+const IDB_NAME = "veil-keystore";
+const IDB_STORE = "keys";
+
+function openKeystore(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(IDB_NAME, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(IDB_STORE);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function getStoredKey(db: IDBDatabase, walletAddress: string): Promise<CryptoKey | null> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readonly");
+    const store = tx.objectStore(IDB_STORE);
+    const request = store.get(walletAddress);
+    request.onsuccess = () => resolve(request.result ?? null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function putStoredKey(db: IDBDatabase, walletAddress: string, key: CryptoKey): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    const store = tx.objectStore(IDB_STORE);
+    const request = store.put(key, walletAddress);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/**
+ * Get or create a non-extractable AES-GCM key stored in IndexedDB.
+ * IndexedDB is origin-scoped, and the key is non-extractable, meaning
+ * even XSS cannot export the raw key material.
+ */
+async function getOrCreateIndexedDBKey(walletAddress: string): Promise<CryptoKey> {
+  const db = await openKeystore();
+  try {
+    const existing = await getStoredKey(db, walletAddress);
+    if (existing) return existing;
+
+    const key = await crypto.subtle.generateKey(
+      { name: "AES-GCM", length: 256 },
+      false, // non-extractable
+      ["encrypt", "decrypt"],
+    );
+    await putStoredKey(db, walletAddress, key);
+    return key;
+  } finally {
+    db.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PBKDF2 fallback — for incognito mode or browsers without IndexedDB
+// ---------------------------------------------------------------------------
+
+async function derivePBKDF2Key(walletAddress: string): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(walletAddress),
@@ -31,6 +92,23 @@ async function deriveKey(walletAddress: string): Promise<CryptoKey> {
     false,
     ["encrypt", "decrypt"],
   );
+}
+
+// ---------------------------------------------------------------------------
+// Crypto helpers — AES-GCM encryption keyed per wallet
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive encryption key: IndexedDB non-extractable key (primary),
+ * PBKDF2 fallback for environments where IndexedDB is unavailable.
+ */
+async function deriveKey(walletAddress: string): Promise<CryptoKey> {
+  try {
+    return await getOrCreateIndexedDBKey(walletAddress);
+  } catch {
+    // Fallback: incognito mode, SSR, or unsupported browser
+    return derivePBKDF2Key(walletAddress);
+  }
 }
 
 async function encryptState(state: string, key: CryptoKey): Promise<string> {
