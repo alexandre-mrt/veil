@@ -143,7 +143,7 @@ Domain tags 7 (withdrawal nullifier) and 8 (recipient binding) prevent front-run
 │  MultisigConfig { signers, required_approvals }                │
 │                                                                │
 │  Functions:                                                    │
-│    deposit_and_register | deposit | shielded_transfer           │
+│    deposit_and_register | shielded_transfer                     │
 │    zk_withdraw | emergency_withdraw | freeze/unfreeze          │
 │    propose_vk_update | update_commitment_root                  │
 │                                                                │
@@ -188,15 +188,15 @@ Domain tags 7 (withdrawal nullifier) and 8 (recipient binding) prevent front-run
 
 ### SOTA Comparison
 
-| Protocol | Compliance | Anonymity | Proving System |
-|----------|-----------|-----------|----------------|
-| Tornado Cash | LEADING | Behind | Same (Groth16) |
-| Zcash Orchard | LEADING | Behind | Behind (trusted setup) |
-| Aztec/Noir | LEADING | Behind | Behind |
-| Railgun | LEADING | Behind | Competitive |
-| Penumbra | LEADING | Behind | Behind |
+| Protocol | Compliance | Anonymity Set | Proving System |
+|----------|-----------|---------------|----------------|
+| Tornado Cash | None (sanctioned) | Merkle depth-20 | Groth16 BN254 |
+| Zcash Orchard | Viewing keys only | Global tree | Halo 2 (trustless) |
+| Railgun | Proof of Innocence (negative) | Merkle accumulator | Groth16 |
+| Penumbra | None | Multi-asset pool | Decaf377 |
+| **Veil** | **Dual-proof KYC + auditor encryption** | **Merkle depth-20** | **Groth16 BN254** |
 
-Veil leads on compliance (cumulative spending proofs, dual-proof KYC, context-bound credential nullifiers) while trading full anonymity for a regulatory-compatible design.
+Veil's compliance system is unique: dual Groth16 proofs (transfer + KYC credential) verified atomically, with ECDH-encrypted amounts for auditor access. No other protocol combines threshold-based anonymous transfers with positive KYC proofs.
 
 ### Pre-Mainnet Blockers (from Loop 5)
 
@@ -216,16 +216,16 @@ Veil leads on compliance (cumulative spending proofs, dual-proof KYC, context-bo
 
 | Layer | Tests | Coverage |
 |-------|-------|---------|
-| Move contract | 113 | Every function, every error code, 8 timelocks, 19 attacker threats, 10 negative-validation, multisig |
+| Move contract | 124 | Every function, every error code, 9 timelocks, 19 attacker threats, 10 negative-validation, multisig |
 | Circom circuit (transfer) | 40 | Every constraint (C1-C11), boundaries, domain separation |
 | Circom circuit (compliance) | 30 | Credential validity, Merkle proof, context binding, nullifier uniqueness, range proofs |
 | Circom circuit (withdraw) | 30 | Commitment ownership, overdraw, zero-amount, nullifier derivation, recipient binding |
 | Proof converter | 109 | bigintToLE32, G1/G2 compression, sign bits, VK layout |
 | Compliance utils | 67 | Credential leaf, nullifier, Merkle tree builder, depth-20 proofs |
 | E2E compliance (real Groth16) | 32 | Dual proofs, ECDH encryption, expired/low-KYC, no mocks |
-| Frontend (vitest) | 14 | requireEnv logic, AES-GCM encrypt/decrypt roundtrip, key isolation, corruption detection |
+| Frontend (vitest) | 19 | requireEnv logic, AES-GCM encrypt/decrypt roundtrip, key isolation, corruption detection, wallet key derivation |
 | Fuzz (fast-check) | 6x500 | Commitment determinism, nullifier uniqueness, overflow, Merkle soundness, domain separation, credential validity |
-| **Total** | **438+** | **0 failures** |
+| **Total** | **454+** | **0 failures** |
 
 ## Tech Stack
 
@@ -246,7 +246,7 @@ git clone https://github.com/alexandre-mrt/veil
 cd veil && bash scripts/init.sh
 
 # Build and test the Move contract
-cd contracts && sui move build && sui move test       # 113/113 pass
+cd contracts && sui move build && sui move test       # 124/124 pass
 
 # Compile the ZK circuit and run tests
 cd ../circuits && bash scripts/compile.sh && npm test  # 100/100 pass (transfer 40 + compliance 30 + withdraw 30)
@@ -333,7 +333,7 @@ veil/
 │   │   ├── token.move               # VEIL token (6 decimals, TreasuryCap)
 │   │   ├── multisig.move            # N-of-M multi-sig governance for admin operations
 │   │   └── token_faucet.move        # Testnet-only faucet (remove before mainnet)
-│   └── tests/                       # 113 tests (pool, compliance, scenario/threat, multisig)
+│   └── tests/                       # 124 tests (pool, compliance, scenario/threat, multisig)
 ├── frontend/
 │   ├── src/app/                     # Next.js 14 App Router
 │   ├── src/components/              # UI: deposit, transfer, withdraw, privacy status

@@ -47,6 +47,7 @@ const E_INVALID_EPOCH_DURATION: u64 = 31;
 const E_MERKLE_ROOT_MISMATCH: u64 = 32;
 const E_INVALID_COMMITMENT_ROOT_LENGTH: u64 = 33;
 const E_COMMITMENT_ROOT_UPDATE_PENDING: u64 = 34;
+const E_EPOCH_DURATION_UPDATE_PENDING: u64 = 35;
 const MIN_VK_LENGTH: u64 = 232;
 
 public struct Pool has key {
@@ -78,6 +79,9 @@ public struct Pool has key {
     next_leaf_index: u64,               // Next leaf position (increments on each insert)
     pending_commitment_root: vector<u8>, // Pending root update (timelock)
     commitment_root_update_epoch: u64,   // Epoch when pending root becomes active
+    // Epoch duration update timelock
+    pending_epoch_duration: Option<u64>,
+    pending_epoch_duration_epoch: u64,
 }
 
 public struct AdminCap has key {
@@ -137,6 +141,8 @@ public fun create_pool(transfer_vk: vector<u8>, threshold: u64, epoch_duration_m
         next_leaf_index: 0,
         pending_commitment_root: vector[],
         commitment_root_update_epoch: 0,
+        pending_epoch_duration: option::none(),
+        pending_epoch_duration_epoch: 0,
     };
     let cap = AdminCap { id: object::new(ctx), pool_id };
     transfer::share_object(pool);
@@ -145,15 +151,6 @@ public fun create_pool(transfer_vk: vector<u8>, threshold: u64, epoch_duration_m
 
 public(package) fun assert_pool_admin(cap: &AdminCap, pool: &Pool) {
     assert!(cap.pool_id == pool.id.to_inner(), E_NOT_POOL_ADMIN);
-}
-
-public(package) fun deposit(pool: &mut Pool, coin: Coin<TOKEN>) {
-    assert!(!pool.frozen, E_FROZEN);
-    let amount = coin.value();
-    assert!(amount >= MIN_DEPOSIT, E_DUST_DEPOSIT);
-    assert!(is_standard_amount(amount), E_NON_STANDARD_AMOUNT);
-    balance::join(&mut pool.balance, coin.into_balance());
-    event::emit(DepositEvent { pool_id: pool.id.to_inner() });
 }
 
 public fun shielded_transfer(
@@ -188,6 +185,9 @@ fun execute_transfer(
     clock: &sui::clock::Clock,
 ) {
     assert!(public_inputs_bytes.length() == 224, E_INVALID_INPUTS_LENGTH);
+
+    // Apply pending epoch duration update if epoch has passed
+    apply_pending_epoch_duration(pool, clock);
 
     // Apply pending VK update if epoch has passed
     apply_pending_vk(pool, clock);
@@ -416,6 +416,34 @@ public fun cancel_commitment_root_update(pool: &mut Pool, cap: &AdminCap) {
     pool.pending_commitment_root = vector[];
     pool.commitment_root_update_epoch = 0;
     event::emit(CommitmentRootCancelledEvent { pool_id: pool.id.to_inner() });
+}
+
+// Epoch duration update with 1-epoch timelock
+public fun propose_epoch_duration_update(
+    pool: &mut Pool,
+    cap: &AdminCap,
+    new_duration: u64,
+    clock: &sui::clock::Clock,
+) {
+    assert_pool_admin(cap, pool);
+    assert!(new_duration >= 60_000, E_INVALID_EPOCH_DURATION);
+    assert!(pool.pending_epoch_duration.is_none(), E_EPOCH_DURATION_UPDATE_PENDING);
+    let effective = pool_epoch(pool, clock) + 1;
+    pool.pending_epoch_duration = option::some(new_duration);
+    pool.pending_epoch_duration_epoch = effective;
+}
+
+public fun cancel_epoch_duration_update(pool: &mut Pool, cap: &AdminCap) {
+    assert_pool_admin(cap, pool);
+    pool.pending_epoch_duration = option::none();
+    pool.pending_epoch_duration_epoch = 0;
+}
+
+fun apply_pending_epoch_duration(pool: &mut Pool, clock: &sui::clock::Clock) {
+    if (pool.pending_epoch_duration.is_some() && pool_epoch(pool, clock) >= pool.pending_epoch_duration_epoch) {
+        pool.epoch_duration_ms = pool.pending_epoch_duration.extract();
+        pool.pending_epoch_duration_epoch = 0;
+    };
 }
 
 public fun freeze_pool(pool: &mut Pool, cap: &AdminCap, clock: &sui::clock::Clock) {
