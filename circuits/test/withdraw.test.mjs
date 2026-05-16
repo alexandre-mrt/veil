@@ -12,8 +12,10 @@
  *   C3  withdrawAmount > 0           GreaterThan(64)
  *   C4  cumulativeOld range proof    Num2Bits(64)
  *   C5  withdrawAmount <= cumulativeOld  LessEqThan(64)
- *   C6  nullifier derivation         Poseidon(4) with domain tag 7
- *   C7  recipient hash binding       Poseidon(2) with domain tag 8
+ *   C6  change commitment            Poseidon(4) with domain tag 1 (remaining balance)
+ *   C7  remaining balance range proof Num2Bits(64)
+ *   C8  nullifier derivation         Poseidon(4) with domain tag 7
+ *   C9  recipient hash binding       Poseidon(2) with domain tag 8
  *
  * Run: node --experimental-vm-modules test/withdraw.test.mjs
  *
@@ -71,27 +73,34 @@ function buildValidWitness(poseidon, {
   userSecret = 987654321n,
   withdrawAmount = 100n,
   recipient = 0xABCDEF123456n,
+  randomnessNew = 77777n,
 } = {}) {
   // C1: commitment = Poseidon(1, cumulativeOld, randomnessOld, userSecret)
   const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
 
-  // C6: nullifier = Poseidon(7, userSecret, randomnessOld, cumulativeOld)
+  // C6: newCommitment = Poseidon(1, remainingBalance, randomnessNew, userSecret)
+  const remainingBalance = cumulativeOld - withdrawAmount;
+  const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
+
+  // C8: nullifier = Poseidon(7, userSecret, randomnessOld, cumulativeOld)
   const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
 
-  // C7: recipientHash = Poseidon(8, recipient)
+  // C9: recipientHash = Poseidon(8, recipient)
   const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
 
   return {
-    // Public inputs (4)
+    // Public inputs (5)
     commitment,
     withdrawAmount,
     nullifier,
     recipientHash,
-    // Private inputs (4)
+    newCommitment,
+    // Private inputs (5)
     cumulativeOld,
     randomnessOld,
     userSecret,
     recipient,
+    randomnessNew,
   };
 }
 
@@ -132,8 +141,8 @@ function assertEqual(a, b, label) {
 
 function simulateWithdraw(poseidon, inputs) {
   const {
-    commitment, withdrawAmount, nullifier, recipientHash,
-    cumulativeOld, randomnessOld, userSecret, recipient,
+    commitment, withdrawAmount, nullifier, recipientHash, newCommitment,
+    cumulativeOld, randomnessOld, userSecret, recipient, randomnessNew,
   } = inputs;
 
   const errors = [];
@@ -164,16 +173,28 @@ function simulateWithdraw(poseidon, inputs) {
     errors.push(`C5: withdrawAmount (${withdrawAmount}) > cumulativeOld (${cumulativeOld})`);
   }
 
-  // C6: nullifier = Poseidon(7, userSecret, randomnessOld, cumulativeOld)
-  const expectedNullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
-  if (nullifier !== expectedNullifier) {
-    errors.push(`C6: nullifier mismatch (expected ${expectedNullifier}, got ${nullifier})`);
+  // C6: newCommitment = Poseidon(1, remainingBalance, randomnessNew, userSecret)
+  const remainingBalance = cumulativeOld - withdrawAmount;
+  const expectedNewCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
+  if (newCommitment !== expectedNewCommitment) {
+    errors.push(`C6: newCommitment mismatch (expected ${expectedNewCommitment}, got ${newCommitment})`);
   }
 
-  // C7: recipientHash = Poseidon(8, recipient)
+  // C7: remainingBalance in [0, 2^64)
+  if (remainingBalance < 0n || remainingBalance >= MAX_U64) {
+    errors.push(`C7: remainingBalance out of [0, 2^64): ${remainingBalance}`);
+  }
+
+  // C8: nullifier = Poseidon(7, userSecret, randomnessOld, cumulativeOld)
+  const expectedNullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
+  if (nullifier !== expectedNullifier) {
+    errors.push(`C8: nullifier mismatch (expected ${expectedNullifier}, got ${nullifier})`);
+  }
+
+  // C9: recipientHash = Poseidon(8, recipient)
   const expectedRecipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
   if (recipientHash !== expectedRecipientHash) {
-    errors.push(`C7: recipientHash mismatch (expected ${expectedRecipientHash}, got ${recipientHash})`);
+    errors.push(`C9: recipientHash mismatch (expected ${expectedRecipientHash}, got ${recipientHash})`);
   }
 
   return errors;
@@ -320,14 +341,18 @@ async function main() {
     const randomnessOld = 10n;
     const userSecret = 666n;
     const recipient = 0xABCn;
+    const randomnessNew = 50n;
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
     const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    // remainingBalance would be negative, but we compute the commitment anyway for the witness
+    const remainingBalance = cumulativeOld - withdrawAmount;
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
 
     const w = {
-      commitment, withdrawAmount, nullifier, recipientHash,
-      cumulativeOld, randomnessOld, userSecret, recipient,
+      commitment, withdrawAmount, nullifier, recipientHash, newCommitment,
+      cumulativeOld, randomnessOld, userSecret, recipient, randomnessNew,
     };
     await assertRejected(groth16, vk, poseidon, w, "C5:", "W6");
   });
@@ -339,14 +364,17 @@ async function main() {
     const randomnessOld = 20n;
     const userSecret = 777n;
     const recipient = 0xDEFn;
+    const randomnessNew = 60n;
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
     const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    const remainingBalance = cumulativeOld - withdrawAmount;
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
 
     const w = {
-      commitment, withdrawAmount, nullifier, recipientHash,
-      cumulativeOld, randomnessOld, userSecret, recipient,
+      commitment, withdrawAmount, nullifier, recipientHash, newCommitment,
+      cumulativeOld, randomnessOld, userSecret, recipient, randomnessNew,
     };
     await assertRejected(groth16, vk, poseidon, w, "C3:", "W7");
   });
@@ -391,8 +419,8 @@ async function main() {
     await assertRejected(groth16, vk, poseidon, tampered, "C1:", "W10");
   });
 
-  // W11: C6 -- wrong nullifier (tampered userSecret)
-  await test("W11: C6 -- wrong nullifier (nullifier computed with wrong secret)", async () => {
+  // W11: C8 -- wrong nullifier (tampered userSecret)
+  await test("W11: C8 -- wrong nullifier (nullifier computed with wrong secret)", async () => {
     const w = buildValidWitness(poseidon, {
       cumulativeOld: 500n,
       randomnessOld: 42n,
@@ -402,11 +430,11 @@ async function main() {
     });
     const wrongNullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, 9999n, w.randomnessOld, w.cumulativeOld]));
     const tampered = { ...w, nullifier: wrongNullifier };
-    await assertRejected(groth16, vk, poseidon, tampered, "C6:", "W11");
+    await assertRejected(groth16, vk, poseidon, tampered, "C8:", "W11");
   });
 
-  // W12: C7 -- wrong recipientHash
-  await test("W12: C7 -- wrong recipientHash (wrong recipient address)", async () => {
+  // W12: C9 -- wrong recipientHash
+  await test("W12: C9 -- wrong recipientHash (wrong recipient address)", async () => {
     const w = buildValidWitness(poseidon, {
       cumulativeOld: 500n,
       randomnessOld: 42n,
@@ -416,7 +444,7 @@ async function main() {
     });
     const wrongRecipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, 0xFFFn]));
     const tampered = { ...w, recipientHash: wrongRecipientHash };
-    await assertRejected(groth16, vk, poseidon, tampered, "C7:", "W12");
+    await assertRejected(groth16, vk, poseidon, tampered, "C9:", "W12");
   });
 
   // ===========================================================================
@@ -503,14 +531,14 @@ async function main() {
   });
 
   // W19: Recipient cannot be swapped (front-run protection)
-  await test("W19: Swapping recipient in witness but keeping recipientHash fails C7", async () => {
+  await test("W19: Swapping recipient in witness but keeping recipientHash fails C9", async () => {
     const w = buildValidWitness(poseidon, {
       cumulativeOld: 500n, randomnessOld: 42n, userSecret: 1919n,
       withdrawAmount: 100n, recipient: 0xA11CEn,
     });
     // Attacker tries to redirect to their address
     const tampered = { ...w, recipient: 0xA77AC8E2n };
-    await assertRejected(groth16, vk, poseidon, tampered, "C7:", "W19");
+    await assertRejected(groth16, vk, poseidon, tampered, "C9:", "W19");
   });
 
   // ===========================================================================
@@ -568,14 +596,17 @@ async function main() {
     const randomnessOld = 10n;
     const userSecret = 2323n;
     const recipient = 1n;
+    const randomnessNew = 70n;
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
     const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    const remainingBalance = cumulativeOld - withdrawAmount;
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
 
     const w = {
-      commitment, withdrawAmount, nullifier, recipientHash,
-      cumulativeOld, randomnessOld, userSecret, recipient,
+      commitment, withdrawAmount, nullifier, recipientHash, newCommitment,
+      cumulativeOld, randomnessOld, userSecret, recipient, randomnessNew,
     };
     await assertRejected(groth16, vk, poseidon, w, "C2:", "W23");
   });
@@ -587,14 +618,17 @@ async function main() {
     const randomnessOld = 10n;
     const userSecret = 2424n;
     const recipient = 1n;
+    const randomnessNew = 80n;
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
     const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    const remainingBalance = cumulativeOld - withdrawAmount;
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
 
     const w = {
-      commitment, withdrawAmount, nullifier, recipientHash,
-      cumulativeOld, randomnessOld, userSecret, recipient,
+      commitment, withdrawAmount, nullifier, recipientHash, newCommitment,
+      cumulativeOld, randomnessOld, userSecret, recipient, randomnessNew,
     };
     await assertRejected(groth16, vk, poseidon, w, "C4:", "W24");
   });
@@ -624,14 +658,17 @@ async function main() {
     const randomnessOld = 42n;
     const userSecret = 2626n;
     const recipient = 1n;
+    const randomnessNew = 90n;
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
     const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    const remainingBalance = cumulativeOld - withdrawAmount;
+    const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
 
     const w = {
-      commitment, withdrawAmount, nullifier, recipientHash,
-      cumulativeOld, randomnessOld, userSecret, recipient,
+      commitment, withdrawAmount, nullifier, recipientHash, newCommitment,
+      cumulativeOld, randomnessOld, userSecret, recipient, randomnessNew,
     };
     await assertRejected(groth16, vk, poseidon, w, "C5:", "W26");
   });
@@ -666,6 +703,7 @@ async function main() {
       { field: "randomnessOld", value: 43n },
       { field: "userSecret", value: 2829n },
       { field: "recipient", value: 0xDEFn },
+      { field: "randomnessNew", value: 99999n },
     ];
 
     for (const { field, value } of mutations) {
@@ -711,6 +749,7 @@ async function main() {
       { field: "commitment", value: w.commitment + 1n },
       { field: "nullifier", value: w.nullifier + 1n },
       { field: "recipientHash", value: w.recipientHash + 1n },
+      { field: "newCommitment", value: w.newCommitment + 1n },
     ];
 
     for (const { field, value } of mutations) {
@@ -721,6 +760,94 @@ async function main() {
         `Mutating ${field} must cause constraint violations`,
       );
     }
+  });
+
+  // ===========================================================================
+  // CHANGE COMMITMENT (partial withdrawal)
+  // ===========================================================================
+  console.log("\n--- Change commitment (partial withdrawal) ---");
+
+  // W31: Partial withdrawal creates valid change commitment
+  await test("W31: Partial withdrawal creates valid change commitment", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 1000n,
+      randomnessOld: 42n,
+      userSecret: 3131n,
+      withdrawAmount: 300n,
+      recipient: 0xABCn,
+      randomnessNew: 55555n,
+    });
+
+    // Verify the change commitment encodes the remaining balance (700)
+    const expectedRemaining = 1000n - 300n;
+    const expectedNewCommitment = toBI(poseidon([DOMAIN_COMMITMENT, expectedRemaining, 55555n, 3131n]));
+    assertEqual(w.newCommitment, expectedNewCommitment, "newCommitment should encode remaining balance");
+
+    await assertAccepted(groth16, vk, poseidon, w, "W31");
+  });
+
+  // W32: Full withdrawal (withdrawAmount == cumulativeOld) creates zero-balance commitment
+  await test("W32: Full withdrawal creates zero-balance change commitment", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 500n,
+      randomnessOld: 42n,
+      userSecret: 3232n,
+      withdrawAmount: 500n,
+      recipient: 0xDEFn,
+      randomnessNew: 66666n,
+    });
+
+    // Verify the change commitment encodes zero remaining balance
+    const expectedNewCommitment = toBI(poseidon([DOMAIN_COMMITMENT, 0n, 66666n, 3232n]));
+    assertEqual(w.newCommitment, expectedNewCommitment, "newCommitment should encode zero balance");
+
+    await assertAccepted(groth16, vk, poseidon, w, "W32");
+  });
+
+  // W33: Wrong randomnessNew fails change commitment verification (C6)
+  await test("W33: C6 -- wrong randomnessNew fails change commitment", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 500n,
+      randomnessOld: 42n,
+      userSecret: 3333n,
+      withdrawAmount: 100n,
+      recipient: 0xFEEDn,
+      randomnessNew: 11111n,
+    });
+
+    // Tamper: change randomnessNew but keep original newCommitment
+    const tampered = { ...w, randomnessNew: 22222n };
+    await assertRejected(groth16, vk, poseidon, tampered, "C6:", "W33");
+  });
+
+  // W34: Tampered newCommitment (wrong remaining balance) is rejected
+  await test("W34: C6 -- tampered newCommitment (wrong balance) rejected", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 1000n,
+      randomnessOld: 42n,
+      userSecret: 3434n,
+      withdrawAmount: 200n,
+      recipient: 0xCAFEn,
+      randomnessNew: 33333n,
+    });
+
+    // Compute a wrong newCommitment with inflated balance
+    const wrongNewCommitment = toBI(poseidon([DOMAIN_COMMITMENT, 900n, 33333n, 3434n]));
+    const tampered = { ...w, newCommitment: wrongNewCommitment };
+    await assertRejected(groth16, vk, poseidon, tampered, "C6:", "W34");
+  });
+
+  // W35: Different randomnessNew produces different change commitments
+  await test("W35: Different randomnessNew produces different change commitments", async () => {
+    const w1 = buildValidWitness(poseidon, {
+      cumulativeOld: 500n, randomnessOld: 42n, userSecret: 3535n,
+      withdrawAmount: 100n, recipient: 1n, randomnessNew: 111n,
+    });
+    const w2 = buildValidWitness(poseidon, {
+      cumulativeOld: 500n, randomnessOld: 42n, userSecret: 3535n,
+      withdrawAmount: 100n, recipient: 1n, randomnessNew: 222n,
+    });
+    assert(w1.newCommitment !== w2.newCommitment, "Different randomnessNew must produce different change commitments");
   });
 
   // -- Summary ----------------------------------------------------------------

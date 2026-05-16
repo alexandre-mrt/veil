@@ -9,7 +9,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 
 ## Structure
 - `contracts/` -- Sui Move (pool, verifier, token)
-- `circuits/` -- Circom ZK circuits (transfer.circom 11c, compliance.circom ~7200c, withdraw.circom 8c)
+- `circuits/` -- Circom ZK circuits (transfer.circom 11c, compliance.circom ~7200c, withdraw.circom 10c)
 - `frontend/` -- Next.js 14 + @mysten/dapp-kit + snarkjs WASM
 - `scripts/` -- deployment, proof conversion, E2E pipeline, relayer
 - `docs/` -- architecture, C4 diagrams, HTML report
