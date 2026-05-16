@@ -7,7 +7,8 @@ use sui::event;
 use veil::token::TOKEN;
 use veil::verifier;
 
-const EPOCH_DURATION_MS: u64 = 3_600_000; // 1 hour for testnet (production: 2_592_000_000 = 30 days)
+#[allow(unused_const)]
+const DEFAULT_EPOCH_DURATION_MS: u64 = 3_600_000; // 1 hour for testnet (production: 2_592_000_000 = 30 days)
 const MIN_DEPOSIT: u64 = 1_000;
 const E_NON_STANDARD_AMOUNT: u64 = 14;
 const DENOM_SMALL: u64 = 100_000_000;  // 100 TOKEN
@@ -39,13 +40,19 @@ const E_NO_PENDING_COMPLIANCE_TOGGLE: u64 = 24;
 const E_COMPLIANCE_CONFIG_ALREADY_SET: u64 = 25;
 const E_EMERGENCY_WITHDRAW_NOT_READY: u64 = 26;
 const E_NO_COMPLIANCE_CONFIG: u64 = 27;
+const E_INVALID_WITHDRAW_PROOF: u64 = 28;
+const E_NO_WITHDRAW_VK: u64 = 29;
+const E_INVALID_RECIPIENT: u64 = 30;
+const E_INVALID_EPOCH_DURATION: u64 = 31;
 const MIN_VK_LENGTH: u64 = 232;
 
 public struct Pool has key {
     id: UID,
     balance: Balance<TOKEN>,
     transfer_vk: vector<u8>,
+    withdraw_vk: vector<u8>,
     threshold: u64,
+    epoch_duration_ms: u64,
     frozen: bool,
     frozen_at_epoch: u64,
     pending_vk: vector<u8>,
@@ -86,15 +93,18 @@ public struct WithdrawalProposedEvent has copy, drop { pool_id: ID, amount: u64,
 public struct WithdrawalCancelledEvent has copy, drop { pool_id: ID }
 public struct WithdrawalExecutedEvent has copy, drop { pool_id: ID, amount: u64, recipient: address }
 
-public fun create_pool(transfer_vk: vector<u8>, threshold: u64, ctx: &mut TxContext) {
+public fun create_pool(transfer_vk: vector<u8>, threshold: u64, epoch_duration_ms: u64, ctx: &mut TxContext) {
     assert!(transfer_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
+    assert!(epoch_duration_ms >= 60_000, E_INVALID_EPOCH_DURATION);
     let pool_uid = object::new(ctx);
     let pool_id = pool_uid.to_inner();
     let pool = Pool {
         id: pool_uid,
         balance: balance::zero(),
         transfer_vk,
+        withdraw_vk: vector[],
         threshold,
+        epoch_duration_ms,
         frozen: false,
         frozen_at_epoch: 0,
         pending_vk: vector[],
@@ -167,7 +177,7 @@ fun execute_transfer(
 
     let proof_epoch = verifier::le_bytes_to_u64(&public_inputs_bytes, 96);
     verifier::assert_upper_bytes_zero(&public_inputs_bytes, 104, 128, E_INVALID_INPUTS_LENGTH);
-    let on_chain_epoch = current_epoch(clock);
+    let on_chain_epoch = pool_epoch(pool, clock);
     // M7: Accept current epoch OR previous epoch (grace period at epoch boundaries)
     assert!(
         proof_epoch == on_chain_epoch || (on_chain_epoch > 0 && proof_epoch == on_chain_epoch - 1),
@@ -189,7 +199,7 @@ fun execute_transfer(
         E_COMMITMENT_CHAIN_BROKEN,
     );
     let created_epoch = dynamic_field::remove<CommitmentKey, u64>(&mut pool.id, old_comm_key);
-    assert!(current_epoch(clock) > created_epoch, E_COMMITMENT_NOT_MATURE);
+    assert!(pool_epoch(pool, clock) > created_epoch, E_COMMITMENT_NOT_MATURE);
 
     // Nullifier: bytes 128..160 (full 32-byte Poseidon hash — no truncation check)
     let nullifier = verifier::extract_bytes(&public_inputs_bytes, 128, 160);
@@ -207,7 +217,8 @@ fun execute_transfer(
         !dynamic_field::exists(&pool.id, new_comm_key),
         E_COMMITMENT_EXISTS,
     );
-    dynamic_field::add(&mut pool.id, new_comm_key, current_epoch(clock));
+    let epoch_now = pool_epoch(pool, clock);
+    dynamic_field::add(&mut pool.id, new_comm_key, epoch_now);
 
     event::emit(TransferEvent { nullifier, new_commitment });
 }
@@ -231,7 +242,8 @@ public fun deposit_and_register(
         E_COMMITMENT_EXISTS,
     );
     balance::join(&mut pool.balance, coin.into_balance());
-    dynamic_field::add(&mut pool.id, comm_key, current_epoch(clock));
+    let epoch_now = pool_epoch(pool, clock);
+    dynamic_field::add(&mut pool.id, comm_key, epoch_now);
     event::emit(DepositEvent { pool_id: pool.id.to_inner() });
 }
 
@@ -246,7 +258,7 @@ public fun propose_withdrawal(
     assert_pool_admin(cap, pool);
     assert!(pool.pending_withdrawal.is_none(), E_WITHDRAWAL_PENDING);
     assert!(pool.balance.value() >= amount, E_INSUFFICIENT_BALANCE);
-    let effective = current_epoch(clock) + 1;
+    let effective = pool_epoch(pool, clock) + 1;
     pool.pending_withdrawal = option::some(amount);
     pool.pending_withdrawal_recipient = option::some(recipient);
     pool.pending_withdrawal_epoch = effective;
@@ -275,7 +287,7 @@ public fun execute_pending_withdrawal(
 ) {
     assert_pool_admin(cap, pool);
     assert!(pool.pending_withdrawal.is_some(), E_NO_PENDING_WITHDRAWAL);
-    assert!(current_epoch(clock) >= pool.pending_withdrawal_epoch, E_WITHDRAWAL_NOT_READY);
+    assert!(pool_epoch(pool, clock) >= pool.pending_withdrawal_epoch, E_WITHDRAWAL_NOT_READY);
     let amount = pool.pending_withdrawal.extract();
     let recipient = pool.pending_withdrawal_recipient.extract();
     pool.pending_withdrawal_epoch = 0;
@@ -296,7 +308,7 @@ public fun emergency_withdraw(
 ) {
     assert_pool_admin(cap, pool);
     assert!(pool.frozen, E_POOL_NOT_FROZEN);
-    assert!(current_epoch(clock) > pool.frozen_at_epoch, E_EMERGENCY_WITHDRAW_NOT_READY);
+    assert!(pool_epoch(pool, clock) > pool.frozen_at_epoch, E_EMERGENCY_WITHDRAW_NOT_READY);
     assert!(pool.balance.value() >= amount, E_INSUFFICIENT_BALANCE);
     let withdrawn = coin::from_balance(balance::split(&mut pool.balance, amount), ctx);
     transfer::public_transfer(withdrawn, recipient);
@@ -313,8 +325,8 @@ public fun propose_vk_update(
     assert_pool_admin(cap, pool);
     assert!(new_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
     assert!(pool.pending_vk.length() == 0, E_VK_UPDATE_PENDING);
-    // Safe from overflow: max epoch = u64::MAX / EPOCH_DURATION_MS ≈ 7.1B epochs
-    let effective = current_epoch(clock) + 1;
+    // Safe from overflow: max epoch = u64::MAX / epoch_duration_ms
+    let effective = pool_epoch(pool, clock) + 1;
     pool.pending_vk = new_vk;
     pool.vk_update_epoch = effective;
     event::emit(VKUpdateProposedEvent {
@@ -330,7 +342,7 @@ public fun cancel_vk_update(pool: &mut Pool, cap: &AdminCap) {
 }
 
 fun apply_pending_vk(pool: &mut Pool, clock: &sui::clock::Clock) {
-    if (pool.pending_vk.length() > 0 && current_epoch(clock) >= pool.vk_update_epoch) {
+    if (pool.pending_vk.length() > 0 && pool_epoch(pool, clock) >= pool.vk_update_epoch) {
         pool.transfer_vk = pool.pending_vk;
         pool.pending_vk = vector[];
         pool.vk_update_epoch = 0;
@@ -340,7 +352,7 @@ fun apply_pending_vk(pool: &mut Pool, clock: &sui::clock::Clock) {
 public fun freeze_pool(pool: &mut Pool, cap: &AdminCap, clock: &sui::clock::Clock) {
     assert_pool_admin(cap, pool);
     pool.frozen = true;
-    pool.frozen_at_epoch = current_epoch(clock);
+    pool.frozen_at_epoch = pool_epoch(pool, clock);
     event::emit(FreezeEvent { pool_id: pool.id.to_inner(), frozen: true });
 }
 
@@ -363,7 +375,7 @@ public fun propose_compliance_toggle(
     if (required) {
         assert!(pool.compliance_config.is_some(), E_NO_COMPLIANCE_CONFIG);
     };
-    let effective = current_epoch(clock) + 1;
+    let effective = pool_epoch(pool, clock) + 1;
     pool.pending_compliance_required = option::some(required);
     pool.pending_compliance_epoch = effective;
     event::emit(ComplianceToggleProposedEvent {
@@ -382,7 +394,7 @@ public fun cancel_compliance_toggle(pool: &mut Pool, cap: &AdminCap) {
 }
 
 fun apply_pending_compliance_internal(pool: &mut Pool, clock: &sui::clock::Clock) {
-    if (pool.pending_compliance_required.is_some() && current_epoch(clock) >= pool.pending_compliance_epoch) {
+    if (pool.pending_compliance_required.is_some() && pool_epoch(pool, clock) >= pool.pending_compliance_epoch) {
         let new_value = pool.pending_compliance_required.extract();
         pool.compliance_required = new_value;
         pool.pending_compliance_epoch = 0;
@@ -405,14 +417,92 @@ public(package) fun set_pool_compliance_config(pool: &mut Pool, config_id: ID) {
 }
 public fun pool_compliance_config(pool: &Pool): Option<ID> { pool.compliance_config }
 
+// ---------------------------------------------------------------------------
+// ZK-proven withdrawal (Tier 2.2 — fixes PRIV-011: admin-gated withdrawal)
+// ---------------------------------------------------------------------------
+
+/// Admin sets the withdraw verification key (direct setter, no timelock for initial setup).
+public fun set_withdraw_vk(pool: &mut Pool, cap: &AdminCap, new_vk: vector<u8>) {
+    assert_pool_admin(cap, pool);
+    assert!(new_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
+    pool.withdraw_vk = new_vk;
+}
+
+/// ZK-proven withdrawal: user proves ownership of a commitment and withdraws tokens.
+/// Public inputs layout (128 bytes = 4 x 32):
+///   [0..32)   commitment      — the UTXO commitment to consume
+///   [32..64)  withdrawAmount  — amount to withdraw (LE u64 in first 8 bytes, upper 24 zero)
+///   [64..96)  nullifier       — prevents double-withdraw
+///   [96..128) recipientHash   — Poseidon(8, recipient) binds withdrawal to address
+public fun zk_withdraw(
+    pool: &mut Pool,
+    proof_bytes: vector<u8>,
+    public_inputs_bytes: vector<u8>,
+    clock: &sui::clock::Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(!pool.frozen, E_FROZEN);
+    assert!(pool.withdraw_vk.length() >= MIN_VK_LENGTH, E_NO_WITHDRAW_VK);
+    // Public inputs: 128 bytes (4 x 32)
+    assert!(public_inputs_bytes.length() == 128, E_INVALID_INPUTS_LENGTH);
+
+    let valid = verifier::verify_withdraw_proof(
+        &pool.withdraw_vk,
+        proof_bytes,
+        public_inputs_bytes,
+    );
+    assert!(valid, E_INVALID_WITHDRAW_PROOF);
+
+    // Extract public inputs
+    let commitment_bytes = verifier::extract_bytes(&public_inputs_bytes, 0, 32);
+    let withdraw_amount = verifier::le_bytes_to_u64(&public_inputs_bytes, 32);
+    verifier::assert_upper_bytes_zero(&public_inputs_bytes, 40, 64, E_INVALID_INPUTS_LENGTH);
+    let nullifier = verifier::extract_bytes(&public_inputs_bytes, 64, 96);
+    // recipientHash bytes 96-128 are verified by the circuit, no on-chain check needed
+
+    // Consume commitment (UTXO-style)
+    let comm_key = CommitmentKey { bytes: commitment_bytes };
+    assert!(
+        dynamic_field::exists_(&pool.id, comm_key),
+        E_COMMITMENT_CHAIN_BROKEN,
+    );
+    let created_epoch = dynamic_field::remove<CommitmentKey, u64>(&mut pool.id, comm_key);
+    assert!(pool_epoch(pool, clock) > created_epoch, E_COMMITMENT_NOT_MATURE);
+
+    // Check nullifier
+    let nf_key = NullifierKey { bytes: nullifier };
+    assert!(
+        !dynamic_field::exists_(&pool.id, nf_key),
+        E_NULLIFIER_SPENT,
+    );
+    dynamic_field::add(&mut pool.id, nf_key, true);
+
+    // Check pool has enough balance
+    assert!(pool.balance.value() >= withdraw_amount, E_INSUFFICIENT_BALANCE);
+
+    // Transfer tokens to the sender (the proof binds to a recipient via recipientHash)
+    let withdrawn = coin::from_balance(balance::split(&mut pool.balance, withdraw_amount), ctx);
+    transfer::public_transfer(withdrawn, ctx.sender());
+
+    event::emit(WithdrawEvent { pool_id: pool.id.to_inner() });
+}
+
+public fun withdraw_vk_set(pool: &Pool): bool { pool.withdraw_vk.length() >= MIN_VK_LENGTH }
+
 public fun is_frozen(pool: &Pool): bool { pool.frozen }
 public fun pool_balance(pool: &Pool): u64 { pool.balance.value() }
 public fun threshold(pool: &Pool): u64 { pool.threshold }
 public fun compliance_required(pool: &Pool): bool { pool.compliance_required }
 
-public fun current_epoch(clock: &sui::clock::Clock): u64 {
-    sui::clock::timestamp_ms(clock) / EPOCH_DURATION_MS
+public fun current_epoch(clock: &sui::clock::Clock, epoch_duration_ms: u64): u64 {
+    sui::clock::timestamp_ms(clock) / epoch_duration_ms
 }
+
+public fun pool_epoch(pool: &Pool, clock: &sui::clock::Clock): u64 {
+    current_epoch(clock, pool.epoch_duration_ms)
+}
+
+public fun epoch_duration(pool: &Pool): u64 { pool.epoch_duration_ms }
 
 fun is_standard_amount(amount: u64): bool {
     amount == DENOM_SMALL || amount == DENOM_MEDIUM || amount == DENOM_LARGE

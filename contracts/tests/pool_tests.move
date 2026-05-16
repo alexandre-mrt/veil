@@ -57,7 +57,7 @@ const DUMMY_AUDITOR_KEY: vector<u8> = vector[
 fun test_create_pool() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -77,7 +77,7 @@ fun test_create_pool() {
 fun test_deposit() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -95,7 +95,7 @@ fun test_deposit() {
 fun test_deposit_and_register() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -116,7 +116,7 @@ fun test_deposit_and_register() {
 fun test_withdraw() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -157,7 +157,7 @@ fun test_withdraw() {
 fun test_freeze_and_unfreeze_pool() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -181,7 +181,7 @@ fun test_freeze_and_unfreeze_pool() {
 fun test_propose_vk_update() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -202,7 +202,7 @@ fun test_propose_vk_update() {
 fun test_shielded_transfer_invalid_proof_fails() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -229,7 +229,7 @@ fun test_shielded_transfer_invalid_proof_fails() {
 fun test_deposit_when_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -257,7 +257,7 @@ fun test_deposit_when_frozen() {
 fun test_shielded_transfer_when_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -287,7 +287,7 @@ fun test_shielded_transfer_when_frozen() {
 fun test_withdraw_when_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -329,7 +329,7 @@ fun test_withdraw_when_frozen() {
 fun test_deposit_and_register_when_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -365,7 +365,7 @@ fun test_deposit_and_register_when_frozen() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_withdraw_wrong_admin_cap() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(USER);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -375,7 +375,7 @@ fun test_withdraw_wrong_admin_cap() {
         test_scenario::return_shared(pool);
     };
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
@@ -394,10 +394,10 @@ fun test_withdraw_wrong_admin_cap() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_freeze_wrong_admin_cap() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
@@ -416,7 +416,7 @@ fun test_freeze_wrong_admin_cap() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_unfreeze_wrong_admin_cap() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -429,7 +429,7 @@ fun test_unfreeze_wrong_admin_cap() {
         scenario.return_to_sender(cap);
     };
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
@@ -446,10 +446,10 @@ fun test_unfreeze_wrong_admin_cap() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun test_propose_vk_update_wrong_admin_cap() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
@@ -473,7 +473,7 @@ fun test_propose_vk_update_wrong_admin_cap() {
 fun test_deposit_below_min_deposit() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -491,7 +491,7 @@ fun test_deposit_below_min_deposit() {
 fun test_deposit_and_register_below_min_deposit() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -512,7 +512,7 @@ fun test_deposit_and_register_below_min_deposit() {
 fun test_deposit_and_register_wrong_commitment_length_31() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -538,7 +538,7 @@ fun test_deposit_and_register_wrong_commitment_length_31() {
 fun test_deposit_and_register_duplicate_commitment() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -573,7 +573,7 @@ fun test_deposit_and_register_duplicate_commitment() {
 fun test_withdraw_insufficient_balance() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -605,7 +605,7 @@ fun test_withdraw_insufficient_balance() {
 fun test_shielded_transfer_short_public_inputs() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -626,7 +626,7 @@ fun test_shielded_transfer_short_public_inputs() {
 fun test_shielded_transfer_191_bytes_public_inputs() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -647,7 +647,7 @@ fun test_shielded_transfer_191_bytes_public_inputs() {
 fun test_shielded_transfer_bad_proof_with_valid_length_inputs() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -668,7 +668,7 @@ fun test_shielded_transfer_bad_proof_with_valid_length_inputs() {
 fun test_shielded_transfer_wrong_threshold() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -690,7 +690,7 @@ fun test_shielded_transfer_wrong_threshold() {
 fun test_shielded_transfer_nonzero_upper_bytes_threshold() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -715,7 +715,7 @@ fun test_shielded_transfer_nonzero_upper_bytes_threshold() {
 fun test_multiple_deposits_different_users() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -749,7 +749,7 @@ fun test_multiple_deposits_different_users() {
 fun test_withdraw_exact_balance_drain() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -788,11 +788,11 @@ fun test_withdraw_exact_balance_drain() {
 fun test_two_pools_admin_cap_isolation() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ATTACKER);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD * 2, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD * 2, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -813,7 +813,7 @@ fun test_two_pools_admin_cap_isolation() {
 fun test_deposit_zero_value_coin() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -830,7 +830,7 @@ fun test_deposit_zero_value_coin() {
 fun test_freeze_unfreeze_then_deposit() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -868,7 +868,7 @@ fun test_freeze_unfreeze_then_deposit() {
 fun test_deposit_exact_min_deposit() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -887,7 +887,7 @@ fun test_deposit_exact_min_deposit() {
 fun test_deposit_and_register_wrong_commitment_length_33() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -913,7 +913,7 @@ fun test_deposit_and_register_wrong_commitment_length_33() {
 fun test_multiple_deposit_and_register_unique_commitments() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -954,7 +954,7 @@ fun test_multiple_deposit_and_register_unique_commitments() {
 fun test_withdraw_from_empty_pool() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -974,7 +974,7 @@ fun test_withdraw_from_empty_pool() {
 fun test_deposit_and_register_exact_min_deposit() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -995,7 +995,7 @@ fun test_deposit_and_register_exact_min_deposit() {
 fun test_shielded_transfer_193_bytes_public_inputs() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -1016,7 +1016,7 @@ fun test_shielded_transfer_193_bytes_public_inputs() {
 fun test_deposit_and_register_empty_commitment() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -1041,7 +1041,7 @@ fun test_deposit_and_register_empty_commitment() {
 fun test_emergency_withdraw_not_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -1070,7 +1070,7 @@ fun test_emergency_withdraw_not_frozen() {
 fun test_propose_withdrawal_double() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -1100,7 +1100,7 @@ fun test_propose_withdrawal_double() {
 fun test_execute_withdrawal_too_early() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -1129,7 +1129,7 @@ fun test_execute_withdrawal_too_early() {
 fun test_cancel_withdrawal_success() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(USER);
     {
@@ -1161,7 +1161,7 @@ fun test_cancel_withdrawal_success() {
 fun test_cancel_withdrawal_no_pending() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -1185,7 +1185,7 @@ fun test_cancel_withdrawal_no_pending() {
 fun test_propose_compliance_toggle_double() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     // Create compliance config so toggle to true is allowed
     scenario.next_tx(ADMIN);
@@ -1218,7 +1218,7 @@ fun test_propose_compliance_toggle_double() {
 fun test_cancel_compliance_toggle() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     // Create compliance config so toggle to true is allowed
     scenario.next_tx(ADMIN);

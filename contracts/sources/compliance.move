@@ -164,8 +164,8 @@ public fun create_compliance_config(
 }
 
 /// Apply pending credential root if the timelock epoch has passed (mirrors VK timelock in pool.move).
-fun apply_pending_credential_root(config: &mut ComplianceConfig, clock: &sui::clock::Clock) {
-    if (config.pending_credential_root.length() > 0 && pool::current_epoch(clock) >= config.credential_root_update_epoch) {
+fun apply_pending_credential_root(config: &mut ComplianceConfig, clock: &sui::clock::Clock, epoch_duration_ms: u64) {
+    if (config.pending_credential_root.length() > 0 && pool::current_epoch(clock, epoch_duration_ms) >= config.credential_root_update_epoch) {
         config.credential_root = config.pending_credential_root;
         config.pending_credential_root = vector[];
         config.credential_root_update_epoch = 0;
@@ -173,8 +173,8 @@ fun apply_pending_credential_root(config: &mut ComplianceConfig, clock: &sui::cl
 }
 
 /// Apply pending auditor key if the timelock epoch has passed (mirrors credential root timelock).
-fun apply_pending_auditor_key(config: &mut ComplianceConfig, clock: &sui::clock::Clock) {
-    if (config.pending_auditor_key.is_some() && pool::current_epoch(clock) >= config.pending_auditor_key_epoch) {
+fun apply_pending_auditor_key(config: &mut ComplianceConfig, clock: &sui::clock::Clock, epoch_duration_ms: u64) {
+    if (config.pending_auditor_key.is_some() && pool::current_epoch(clock, epoch_duration_ms) >= config.pending_auditor_key_epoch) {
         config.auditor_key = config.pending_auditor_key.extract();
         config.pending_auditor_key_epoch = 0;
         event::emit(AuditorKeyAppliedEvent { config_id: config.id.to_inner() });
@@ -182,8 +182,8 @@ fun apply_pending_auditor_key(config: &mut ComplianceConfig, clock: &sui::clock:
 }
 
 /// Apply pending KYC level if the timelock epoch has passed (mirrors auditor key timelock).
-fun apply_pending_kyc_level(config: &mut ComplianceConfig, clock: &sui::clock::Clock) {
-    if (config.pending_kyc_level.is_some() && pool::current_epoch(clock) >= config.pending_kyc_level_epoch) {
+fun apply_pending_kyc_level(config: &mut ComplianceConfig, clock: &sui::clock::Clock, epoch_duration_ms: u64) {
+    if (config.pending_kyc_level.is_some() && pool::current_epoch(clock, epoch_duration_ms) >= config.pending_kyc_level_epoch) {
         let new_level = config.pending_kyc_level.extract();
         config.required_kyc_level = new_level;
         config.pending_kyc_level_epoch = 0;
@@ -192,8 +192,8 @@ fun apply_pending_kyc_level(config: &mut ComplianceConfig, clock: &sui::clock::C
 }
 
 /// Apply pending compliance VK if the timelock epoch has passed (mirrors auditor key timelock).
-fun apply_pending_compliance_vk(config: &mut ComplianceConfig, clock: &sui::clock::Clock) {
-    if (config.pending_compliance_vk.is_some() && pool::current_epoch(clock) >= config.pending_compliance_vk_epoch) {
+fun apply_pending_compliance_vk(config: &mut ComplianceConfig, clock: &sui::clock::Clock, epoch_duration_ms: u64) {
+    if (config.pending_compliance_vk.is_some() && pool::current_epoch(clock, epoch_duration_ms) >= config.pending_compliance_vk_epoch) {
         config.compliance_vk = config.pending_compliance_vk.extract();
         config.pending_compliance_vk_epoch = 0;
         event::emit(ComplianceVkAppliedEvent { config_id: config.id.to_inner() });
@@ -221,10 +221,11 @@ public fun compliant_transfer(
     pool::apply_pending_compliance(pool, clock);
 
     // Apply pending timelocked updates before checking state
-    apply_pending_credential_root(config, clock);
-    apply_pending_auditor_key(config, clock);
-    apply_pending_kyc_level(config, clock);
-    apply_pending_compliance_vk(config, clock);
+    let epoch_dur = pool::epoch_duration(pool);
+    apply_pending_credential_root(config, clock, epoch_dur);
+    apply_pending_auditor_key(config, clock, epoch_dur);
+    apply_pending_kyc_level(config, clock, epoch_dur);
+    apply_pending_compliance_vk(config, clock, epoch_dur);
 
     // [M3] All compliance validations BEFORE any pool state mutation
     assert!(compliance_inputs_bytes.length() == 192, E_INVALID_COMPLIANCE_INPUTS);
@@ -234,7 +235,7 @@ public fun compliant_transfer(
 
     let proof_epoch = verifier::le_bytes_to_u64(&compliance_inputs_bytes, 32);
     verifier::assert_upper_bytes_zero(&compliance_inputs_bytes, 40, 64, E_INVALID_COMPLIANCE_INPUTS);
-    let on_chain_epoch = pool::current_epoch(clock);
+    let on_chain_epoch = pool::pool_epoch(pool, clock);
     assert!(
         proof_epoch == on_chain_epoch || (on_chain_epoch > 0 && proof_epoch == on_chain_epoch - 1),
         E_EPOCH_MISMATCH,
@@ -287,7 +288,7 @@ public fun update_credential_root(
     assert!(new_root.length() == 32, E_INVALID_COMPLIANCE_INPUTS);
     assert!(config.pending_credential_root.length() == 0, E_CREDENTIAL_ROOT_UPDATE_PENDING);
     config.pending_credential_root = new_root;
-    config.credential_root_update_epoch = pool::current_epoch(clock) + 1;
+    config.credential_root_update_epoch = pool::pool_epoch(pool, clock) + 1;
     event::emit(CredentialRootUpdatedEvent { config_id: config.id.to_inner(), new_root });
 }
 
@@ -313,7 +314,7 @@ public fun propose_auditor_key_update(
     assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
     assert!(new_key.length() >= MIN_AUDITOR_KEY_LENGTH, E_INVALID_AUDITOR_KEY);
     assert!(config.pending_auditor_key.is_none(), E_AUDITOR_KEY_UPDATE_PENDING);
-    let effective = pool::current_epoch(clock) + 1;
+    let effective = pool::pool_epoch(pool, clock) + 1;
     config.pending_auditor_key = option::some(new_key);
     config.pending_auditor_key_epoch = effective;
     event::emit(AuditorKeyUpdateProposedEvent {
@@ -345,7 +346,7 @@ public fun propose_kyc_level_update(
     pool::assert_pool_admin(cap, pool);
     assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
     assert!(config.pending_kyc_level.is_none(), E_KYC_LEVEL_UPDATE_PENDING);
-    let effective = pool::current_epoch(clock) + 1;
+    let effective = pool::pool_epoch(pool, clock) + 1;
     config.pending_kyc_level = option::some(new_level);
     config.pending_kyc_level_epoch = effective;
     event::emit(KycLevelUpdateProposedEvent {
@@ -379,7 +380,7 @@ public fun propose_compliance_vk_update(
     assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
     assert!(new_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
     assert!(config.pending_compliance_vk.is_none(), E_COMPLIANCE_VK_UPDATE_PENDING);
-    let effective = pool::current_epoch(clock) + 1;
+    let effective = pool::pool_epoch(pool, clock) + 1;
     config.pending_compliance_vk = option::some(new_vk);
     config.pending_compliance_vk_epoch = effective;
     event::emit(ComplianceVkUpdateProposedEvent {
