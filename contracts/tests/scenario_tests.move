@@ -63,7 +63,7 @@ fun story_pool_lifecycle() {
     let mut scenario = test_scenario::begin(ADMIN);
     // Admin creates pool
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.next_tx(ADMIN);
     {
@@ -150,7 +150,7 @@ fun story_compliance_lifecycle_shielded_blocked() {
     // When compliance_required=true, shielded_transfer must fail with E_COMPLIANCE_REQUIRED
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Create compliance config (required before enabling compliance)
@@ -196,7 +196,7 @@ fun story_compliance_lifecycle_shielded_blocked() {
 fun story_compliance_config_and_root_timelock() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Create ComplianceConfig
@@ -253,7 +253,7 @@ fun story_compliance_config_and_root_timelock() {
 fun story_multi_user_standard_deposits() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Alice deposits DENOM_SMALL (100 TOKEN)
@@ -296,7 +296,7 @@ fun story_multi_user_standard_deposits() {
 fun story_vk_update_propose_cancel_repropose() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Propose VK update at epoch 0
@@ -346,7 +346,7 @@ fun story_commitment_stores_deposit_epoch() {
     // but we verify the commitment is registered and the pool state is correct.
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Deposit and register at epoch 0
@@ -386,13 +386,13 @@ fun story_commitment_stores_deposit_epoch() {
 fun story_multi_pool_isolation() {
     let mut scenario = test_scenario::begin(ADMIN);
     // Admin creates pool 1
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
 
     // Alice creates pool 2
     scenario.next_tx(ALICE);
-    pool::create_pool(DUMMY_VK, THRESHOLD * 2, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD * 2, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ALICE);
 
     // Deposit into pool 1
@@ -442,7 +442,7 @@ fun story_multi_pool_isolation() {
 fun threat_bypass_compliance_direct_transfer() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Create compliance config (required before enabling compliance)
@@ -492,13 +492,13 @@ fun threat_bypass_compliance_direct_transfer() {
 fun threat_wrong_admincap_create_compliance_config() {
     let mut scenario = test_scenario::begin(ADMIN);
     // Admin creates pool 1
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
 
     // Attacker creates pool 2
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         // Attacker uses their cap (pool 2) against admin's pool (pool 1)
@@ -526,7 +526,7 @@ fun threat_wrong_admincap_create_compliance_config() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun threat_wrong_admincap_update_credential_root() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -548,7 +548,7 @@ fun threat_wrong_admincap_update_credential_root() {
 
     // Attacker creates pool 2
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         // Attacker tries update_credential_root with their cap against admin's pool
@@ -573,7 +573,7 @@ fun threat_wrong_admincap_update_credential_root() {
 fun threat_nonstandard_deposit_rejected() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     scenario.next_tx(ATTACKER);
@@ -594,7 +594,7 @@ fun threat_nonstandard_deposit_rejected() {
 fun threat_dust_deposit_rejected() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     scenario.next_tx(ATTACKER);
@@ -614,7 +614,7 @@ fun threat_dust_deposit_rejected() {
 fun threat_double_freeze_idempotent() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     scenario.next_tx(ADMIN);
@@ -651,7 +651,7 @@ fun threat_double_freeze_idempotent() {
 fun threat_deposit_when_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Freeze
@@ -682,7 +682,7 @@ fun threat_deposit_when_frozen() {
 fun threat_deposit_and_register_when_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Freeze
@@ -719,7 +719,7 @@ fun threat_deposit_and_register_when_frozen() {
 fun threat_compliance_config_pool_mismatch() {
     let mut scenario = test_scenario::begin(ADMIN);
     // Create pool 1
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -741,7 +741,7 @@ fun threat_compliance_config_pool_mismatch() {
 
     // Create pool 2 (same admin)
     scenario.next_tx(ADMIN);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     {
         // Use config (tied to pool 1) with pool 2 -- must fail
@@ -766,7 +766,7 @@ fun threat_compliance_config_pool_mismatch() {
 fun threat_nonstandard_deposit_and_register_rejected() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     scenario.next_tx(ATTACKER);
@@ -790,7 +790,7 @@ fun threat_nonstandard_deposit_and_register_rejected() {
 fun threat_vk_overwrite_protection() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     scenario.next_tx(ADMIN);
@@ -820,7 +820,7 @@ fun threat_vk_overwrite_protection() {
 fun threat_invalid_commitment_length() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     scenario.next_tx(ATTACKER);
@@ -846,7 +846,7 @@ fun threat_invalid_commitment_length() {
 fun threat_epoch_commitment_tracking() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Deposit at epoch 0
@@ -897,7 +897,7 @@ fun threat_epoch_commitment_tracking() {
 fun threat_emergency_withdraw_when_frozen() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Alice deposits
@@ -946,7 +946,7 @@ fun threat_emergency_withdraw_when_frozen() {
 fun threat_credential_root_timelock_enforcement() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // Create config
@@ -1019,7 +1019,7 @@ fun threat_vk_too_short_rejected() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         let short_vk = make_n_zero_bytes(100); // < MIN_VK_LENGTH (232)
-        pool::create_pool(short_vk, THRESHOLD, scenario.ctx());
+        pool::create_pool(short_vk, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
     scenario.end();
 }
@@ -1032,7 +1032,7 @@ fun threat_vk_too_short_rejected() {
 fun threat_vk_update_too_short_rejected() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     scenario.next_tx(ADMIN);
@@ -1057,7 +1057,7 @@ fun threat_vk_update_too_short_rejected() {
 fun threat_duplicate_commitment_rejected() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     // First deposit+register succeeds
@@ -1092,7 +1092,7 @@ fun threat_duplicate_commitment_rejected() {
 fun threat_credential_root_double_proposal_blocked() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
-        pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+        pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     };
 
     scenario.next_tx(ADMIN);
@@ -1146,7 +1146,7 @@ fun threat_credential_root_double_proposal_blocked() {
 #[expected_failure(abort_code = 4, location = veil::pool)]
 fun threat_attacker_cannot_cancel_credential_root_update() {
     let mut scenario = test_scenario::begin(ADMIN);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ADMIN);
     let pool1_id = test_scenario::most_recent_id_shared<Pool>().destroy_some();
     {
@@ -1181,7 +1181,7 @@ fun threat_attacker_cannot_cancel_credential_root_update() {
 
     // Attacker creates pool 2, tries to cancel admin's pending root update
     scenario.next_tx(ATTACKER);
-    pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
     scenario.next_tx(ATTACKER);
     {
         let pool = scenario.take_shared_by_id<Pool>(pool1_id);
