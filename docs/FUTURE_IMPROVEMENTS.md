@@ -7,7 +7,7 @@ Veil is a **confidential compliance proof system** with tiered privacy:
 - **Tier 3**: dual Groth16 proofs (transfer + KYC compliance), ECDH auditor encryption
 - **Sender privacy**: sponsored transaction relayer hides sender address on-chain
 
-Reviewed iteratively. 85 Move tests, 40 circuit tests, 349+ total tests, 0 failures.
+Reviewed iteratively. 113 Move tests, 100 circuit tests (transfer 40 + compliance 30 + withdraw 30), 438+ total tests, 0 failures.
 
 ## Use Cases (Current)
 
@@ -116,46 +116,9 @@ const { digest } = await response.json();
 
 ---
 
-#### 2.3 Merkle Tree Accumulator
+#### 2.3 Merkle Tree Accumulator -- IMPLEMENTED
 **Fixes:** PRIV-005 (UTXO chain tracing via dynamic field changes)
-
-**Files to modify:**
-- `contracts/sources/pool.move` — replace dynamic field commitments with Merkle root
-- `circuits/transfer.circom` — add Merkle membership proof
-
-**Pool changes:**
-```move
-public struct Pool has key {
-    // ... existing fields ...
-    commitment_root: vector<u8>,  // 32-byte Poseidon Merkle root
-    next_leaf_index: u64,         // Next available leaf position
-}
-
-// Instead of dynamic_field::exists_ for oldCommitment,
-// verify Merkle membership proof in the circuit:
-// The circuit proves: oldCommitment ∈ MerkleTree(commitment_root)
-```
-
-**Circuit changes (add ~7,200 constraints for 20-level tree):**
-```circom
-// Add to Transfer template:
-signal input merkleRoot;          // Public: current tree root
-signal input pathElements[20];    // Private: sibling hashes
-signal input pathIndices[20];     // Private: left/right flags
-
-// Verify old commitment is in the tree
-component merkleProof = MerkleProof(20);
-merkleProof.leaf <== oldCommitment;
-merkleProof.root <== merkleRoot;
-for (var i = 0; i < 20; i++) {
-    merkleProof.pathElements[i] <== pathElements[i];
-    merkleProof.pathIndices[i] <== pathIndices[i];
-}
-```
-
-**On-chain:** Only the root changes. Observers see "root updated" but NOT which leaf was consumed. Nullifiers still prevent double-spend.
-
-**Anonymity set = all commitments ever inserted** (not just current epoch).
+**Status:** Done -- depth-20 Poseidon Merkle tree. `Pool` stores `commitment_root` (32-byte root) and `next_leaf_index`. Admin updates root via `update_commitment_root` with 1-epoch timelock (`propose_commitment_root_update`/`cancel_commitment_root_update`). Off-chain tree maintained by relayer/indexer. Anonymity set = all commitments ever inserted (not just current epoch). Observers see "root updated" but NOT which leaf was consumed. Nullifiers still prevent double-spend.
 
 ---
 
@@ -178,7 +141,7 @@ for (var i = 0; i < 20; i++) {
 | Client secrets encrypted | ✅ | usePrivateState.ts (IndexedDB non-extractable keys + PBKDF2 fallback) |
 | Deposit-transfer unlinkable | ✅ | pool.move (commitment maturity) |
 | Sender anonymous | ✅ | relayer.ts (sponsored transactions) |
-| UTXO chain hidden | ❌ | Open (Tier 2.3 — Merkle accumulator) |
+| UTXO chain hidden | ✅ | pool.move (depth-20 Poseidon Merkle accumulator, root on-chain) |
 | Self-serve withdrawal | ✅ | pool.move:zk_withdraw + withdraw.circom |
 | KYC without identity reveal | ✅ | compliance.circom + compliance.move |
 | Regulatory selective disclosure | ✅ | ECDH auditor encryption |
@@ -193,10 +156,10 @@ Full report: `docs/privacy-red-team-report.md`
 | PRIV-002 | CRITICAL | Sender visible in Sui tx metadata | ✅ Fixed (relayer) |
 | PRIV-003 | CRITICAL | userSecret plaintext in localStorage | ✅ Fixed (IndexedDB non-extractable keys + AES-GCM encryption) |
 | PRIV-004 | HIGH | Deposit amount visible on-chain | ✅ Fixed (standard denominations) |
-| PRIV-005 | HIGH | UTXO chain traceable via dynamic fields | Open (Tier 2.3 Merkle tree) |
+| PRIV-005 | HIGH | UTXO chain traceable via dynamic fields | ✅ Fixed (Merkle accumulator, depth-20 Poseidon tree) |
 | PRIV-006 | HIGH | Gas coin fingerprinting | ✅ Fixed (relayer) |
 | PRIV-007 | HIGH | PTB atomic deposit+transfer link | ✅ Fixed (commitment maturity) |
-| PRIV-008 | MEDIUM | Anonymity set likely = 1 | Open (Tier 2.3 Merkle tree) |
+| PRIV-008 | MEDIUM | Anonymity set likely = 1 | ✅ Fixed (Merkle accumulator, anonymity set = all commitments ever inserted) |
 | PRIV-009 | MEDIUM | txHistory plaintext in localStorage | ✅ Fixed (AES-GCM encrypted storage) |
 | PRIV-010 | MEDIUM | Timing correlation deposit→transfer | ✅ Fixed (commitment maturity) |
 | PRIV-011 | MEDIUM | Admin-gated withdrawal (censorship) | ✅ Fixed (ZK-proven withdrawal) |
