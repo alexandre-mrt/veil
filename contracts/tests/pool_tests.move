@@ -1307,7 +1307,7 @@ fun test_zk_withdraw_no_vk() {
         let proof = vector[0u8];
         let inputs = make_n_zero_bytes(128);
         // No withdraw VK set — must abort with E_NO_WITHDRAW_VK
-        pool::zk_withdraw(&mut pool, proof, inputs, &clock, scenario.ctx());
+        pool::zk_withdraw(&mut pool, proof, inputs, USER, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
     };
@@ -1329,10 +1329,9 @@ fun test_zk_withdraw_frozen() {
         pool::set_withdraw_vk(&mut pool, &cap, DUMMY_VK);
         let clock = clock::create_for_testing(scenario.ctx());
         pool::freeze_pool(&mut pool, &cap, &clock);
-        // Attempt zk_withdraw on frozen pool
         let proof = vector[0u8];
         let inputs = make_n_zero_bytes(128);
-        pool::zk_withdraw(&mut pool, proof, inputs, &clock, scenario.ctx());
+        pool::zk_withdraw(&mut pool, proof, inputs, USER, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
@@ -1356,7 +1355,7 @@ fun test_zk_withdraw_short_inputs() {
         let clock = clock::create_for_testing(scenario.ctx());
         let proof = vector[0u8];
         let short_inputs = make_n_zero_bytes(100);
-        pool::zk_withdraw(&mut pool, proof, short_inputs, &clock, scenario.ctx());
+        pool::zk_withdraw(&mut pool, proof, short_inputs, USER, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
