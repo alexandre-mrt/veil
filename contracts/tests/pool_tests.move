@@ -4,6 +4,7 @@ module veil::pool_tests;
 use sui::clock;
 use sui::coin;
 use sui::test_scenario;
+use veil::compliance;
 use veil::pool::{Self, Pool, AdminCap};
 use veil::token::TOKEN;
 
@@ -30,6 +31,19 @@ const DEPOSIT_AMOUNT: u64 = 500_000_000;
 const WITHDRAW_AMOUNT: u64 = 200_000_000;
 const MIN_DEPOSIT: u64 = 1_000;
 const EPOCH_DURATION_MS: u64 = 3_600_000;
+const DUMMY_ROOT: vector<u8> = vector[
+    1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8,
+    9u8, 10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8,
+    17u8, 18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8,
+    25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8, 32u8,
+];
+const DUMMY_AUDITOR_KEY: vector<u8> = vector[
+    0xABu8, 0xCDu8, 0xEFu8, 0x01u8, 0x02u8, 0x03u8, 0x04u8, 0x05u8,
+    0x06u8, 0x07u8, 0x08u8, 0x09u8, 0x0Au8, 0x0Bu8, 0x0Cu8, 0x0Du8,
+    0x0Eu8, 0x0Fu8, 0x10u8, 0x11u8, 0x12u8, 0x13u8, 0x14u8, 0x15u8,
+    0x16u8, 0x17u8, 0x18u8, 0x19u8, 0x1Au8, 0x1Bu8, 0x1Cu8, 0x1Du8,
+    0x1Eu8,
+];
 
 // Error codes referenced via pool::E_* in expected_failure annotations.
 // No local constants needed — Move 2024 resolves module-qualified constants.
@@ -149,11 +163,13 @@ fun test_freeze_and_unfreeze_pool() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
         assert!(!pool.is_frozen(), 0);
-        pool::freeze_pool(&mut pool, &cap);
+        pool::freeze_pool(&mut pool, &cap, &clock);
         assert!(pool.is_frozen(), 1);
         pool::unfreeze_pool(&mut pool, &cap);
         assert!(!pool.is_frozen(), 2);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -219,7 +235,9 @@ fun test_deposit_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -245,7 +263,9 @@ fun test_shielded_transfer_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -276,20 +296,27 @@ fun test_withdraw_when_frozen() {
         pool::deposit(&mut pool, deposit_coin, scenario.ctx());
         test_scenario::return_shared(pool);
     };
+    // Freeze at epoch 0
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
+    // Emergency withdraw at epoch 1 (must wait past frozen_at_epoch)
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::emergency_withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, scenario.ctx());
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS); // epoch 1
+        pool::emergency_withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT - WITHDRAW_AMOUNT, 0);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -308,7 +335,9 @@ fun test_deposit_and_register_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -373,7 +402,9 @@ fun test_freeze_wrong_admin_cap() {
     {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -391,7 +422,9 @@ fun test_unfreeze_wrong_admin_cap() {
     {
         let mut pool = scenario.take_shared_by_id<Pool>(pool1_id);
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -803,8 +836,10 @@ fun test_freeze_unfreeze_then_deposit() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
         assert!(pool.is_frozen(), 0);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -1019,8 +1054,10 @@ fun test_emergency_withdraw_not_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
+        let clock = clock::create_for_testing(scenario.ctx());
         // Pool is NOT frozen — emergency_withdraw must abort
-        pool::emergency_withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, scenario.ctx());
+        pool::emergency_withdraw(&mut pool, &cap, WITHDRAW_AMOUNT, RECIPIENT, &clock, scenario.ctx());
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -1150,6 +1187,17 @@ fun test_propose_compliance_toggle_double() {
     {
         pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
     };
+    // Create compliance config so toggle to true is allowed
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap, &mut pool, DUMMY_VK, DUMMY_ROOT, 1, DUMMY_AUDITOR_KEY, scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
@@ -1171,6 +1219,17 @@ fun test_cancel_compliance_toggle() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    };
+    // Create compliance config so toggle to true is allowed
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap, &mut pool, DUMMY_VK, DUMMY_ROOT, 1, DUMMY_AUDITOR_KEY, scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
     };
     scenario.next_tx(ADMIN);
     {

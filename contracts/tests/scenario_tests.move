@@ -90,8 +90,10 @@ fun story_pool_lifecycle() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
         assert!(pool.is_frozen(), 5);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -149,6 +151,18 @@ fun story_compliance_lifecycle_shielded_blocked() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
+    };
+
+    // Create compliance config (required before enabling compliance)
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap, &mut pool, DUMMY_VK, DUMMY_ROOT, REQUIRED_KYC_LEVEL, DUMMY_AUDITOR_KEY, scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
     };
 
     // Propose compliance_required=true at epoch 0
@@ -431,6 +445,18 @@ fun threat_bypass_compliance_direct_transfer() {
         pool::create_pool(DUMMY_VK, THRESHOLD, scenario.ctx());
     };
 
+    // Create compliance config (required before enabling compliance)
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap, &mut pool, DUMMY_VK, DUMMY_ROOT, REQUIRED_KYC_LEVEL, DUMMY_AUDITOR_KEY, scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+
     // Admin proposes compliance toggle at epoch 0
     scenario.next_tx(ADMIN);
     {
@@ -596,10 +622,12 @@ fun threat_double_freeze_idempotent() {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
 
+        let clock = clock::create_for_testing(scenario.ctx());
+
         // Freeze twice -- both should succeed (idempotent)
-        pool::freeze_pool(&mut pool, &cap);
+        pool::freeze_pool(&mut pool, &cap, &clock);
         assert!(pool.is_frozen(), 0);
-        pool::freeze_pool(&mut pool, &cap);
+        pool::freeze_pool(&mut pool, &cap, &clock);
         assert!(pool.is_frozen(), 1);
 
         // Unfreeze twice -- both should succeed (idempotent)
@@ -608,6 +636,7 @@ fun threat_double_freeze_idempotent() {
         pool::unfreeze_pool(&mut pool, &cap);
         assert!(!pool.is_frozen(), 3);
 
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -630,7 +659,9 @@ fun threat_deposit_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -659,7 +690,9 @@ fun threat_deposit_and_register_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };
@@ -876,15 +909,29 @@ fun threat_emergency_withdraw_when_frozen() {
         test_scenario::return_shared(pool);
     };
 
-    // Admin freezes then emergency_withdraws (emergency path)
+    // Admin freezes at epoch 0
     scenario.next_tx(ADMIN);
     {
         let mut pool = scenario.take_shared<Pool>();
         let cap = scenario.take_from_sender<AdminCap>();
-        pool::freeze_pool(&mut pool, &cap);
+        let clock = clock::create_for_testing(scenario.ctx());
+        pool::freeze_pool(&mut pool, &cap, &clock);
         assert!(pool.is_frozen(), 0);
-        pool::emergency_withdraw(&mut pool, &cap, DENOM_LARGE, ADMIN, scenario.ctx());
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+
+    // Admin emergency_withdraws at epoch 1 (must wait past frozen_at_epoch)
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        let mut clock = clock::create_for_testing(scenario.ctx());
+        clock::set_for_testing(&mut clock, EPOCH_DURATION_MS); // epoch 1
+        pool::emergency_withdraw(&mut pool, &cap, DENOM_LARGE, ADMIN, &clock, scenario.ctx());
         assert!(pool.pool_balance() == 0, 1);
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
         scenario.return_to_sender(cap);
     };

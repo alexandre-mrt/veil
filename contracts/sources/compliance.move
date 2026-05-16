@@ -211,7 +211,8 @@ public fun compliant_transfer(
     clock: &sui::clock::Clock,
     _ctx: &TxContext,
 ) {
-    assert!(config.pool_id == object::id(pool), E_CONFIG_POOL_MISMATCH);
+    let registered_config = pool::pool_compliance_config(pool);
+    assert!(registered_config.is_some() && *registered_config.borrow() == object::id(config), E_CONFIG_POOL_MISMATCH);
 
     // [M9] Validate encrypted_amount minimum length (ephemeral key + IV + GCM tag)
     assert!(encrypted_amount.length() >= MIN_ENCRYPTED_AMOUNT_LEN, E_INVALID_ENCRYPTED_AMOUNT);

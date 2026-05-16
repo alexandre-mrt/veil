@@ -37,6 +37,8 @@ const E_WITHDRAWAL_NOT_READY: u64 = 22;
 const E_NO_PENDING_WITHDRAWAL: u64 = 23;
 const E_NO_PENDING_COMPLIANCE_TOGGLE: u64 = 24;
 const E_COMPLIANCE_CONFIG_ALREADY_SET: u64 = 25;
+const E_EMERGENCY_WITHDRAW_NOT_READY: u64 = 26;
+const E_NO_COMPLIANCE_CONFIG: u64 = 27;
 const MIN_VK_LENGTH: u64 = 232;
 
 public struct Pool has key {
@@ -45,6 +47,7 @@ public struct Pool has key {
     transfer_vk: vector<u8>,
     threshold: u64,
     frozen: bool,
+    frozen_at_epoch: u64,
     pending_vk: vector<u8>,
     vk_update_epoch: u64,
     compliance_required: bool,
@@ -59,7 +62,7 @@ public struct Pool has key {
     pending_withdrawal_epoch: u64,
 }
 
-public struct AdminCap has key, store {
+public struct AdminCap has key {
     id: UID,
     pool_id: ID,
 }
@@ -93,6 +96,7 @@ public fun create_pool(transfer_vk: vector<u8>, threshold: u64, ctx: &mut TxCont
         transfer_vk,
         threshold,
         frozen: false,
+        frozen_at_epoch: 0,
         pending_vk: vector[],
         vk_update_epoch: 0,
         compliance_required: false,
@@ -287,10 +291,12 @@ public fun emergency_withdraw(
     cap: &AdminCap,
     amount: u64,
     recipient: address,
+    clock: &sui::clock::Clock,
     ctx: &mut TxContext,
 ) {
     assert_pool_admin(cap, pool);
     assert!(pool.frozen, E_POOL_NOT_FROZEN);
+    assert!(current_epoch(clock) > pool.frozen_at_epoch, E_EMERGENCY_WITHDRAW_NOT_READY);
     assert!(pool.balance.value() >= amount, E_INSUFFICIENT_BALANCE);
     let withdrawn = coin::from_balance(balance::split(&mut pool.balance, amount), ctx);
     transfer::public_transfer(withdrawn, recipient);
@@ -331,15 +337,17 @@ fun apply_pending_vk(pool: &mut Pool, clock: &sui::clock::Clock) {
     };
 }
 
-public fun freeze_pool(pool: &mut Pool, cap: &AdminCap) {
+public fun freeze_pool(pool: &mut Pool, cap: &AdminCap, clock: &sui::clock::Clock) {
     assert_pool_admin(cap, pool);
     pool.frozen = true;
+    pool.frozen_at_epoch = current_epoch(clock);
     event::emit(FreezeEvent { pool_id: pool.id.to_inner(), frozen: true });
 }
 
 public fun unfreeze_pool(pool: &mut Pool, cap: &AdminCap) {
     assert_pool_admin(cap, pool);
     pool.frozen = false;
+    pool.frozen_at_epoch = 0;
     event::emit(FreezeEvent { pool_id: pool.id.to_inner(), frozen: false });
 }
 
@@ -352,6 +360,9 @@ public fun propose_compliance_toggle(
 ) {
     assert_pool_admin(cap, pool);
     assert!(pool.pending_compliance_required.is_none(), E_COMPLIANCE_TOGGLE_PENDING);
+    if (required) {
+        assert!(pool.compliance_config.is_some(), E_NO_COMPLIANCE_CONFIG);
+    };
     let effective = current_epoch(clock) + 1;
     pool.pending_compliance_required = option::some(required);
     pool.pending_compliance_epoch = effective;
