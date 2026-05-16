@@ -24,22 +24,22 @@ export const NETWORK = requireEnv(
 
 export const PACKAGE_ID = requireEnv(
   "NEXT_PUBLIC_PACKAGE_ID",
-  isDev ? "0x5cd79f85f1adca022513d76c60d557f8b17afed91f741d14016c7a23cab6c228" : undefined,
+  "0x5cd79f85f1adca022513d76c60d557f8b17afed91f741d14016c7a23cab6c228",
 );
 
 export const POOL_ID = requireEnv(
   "NEXT_PUBLIC_POOL_ID",
-  isDev ? "0x6ba8019987c7c5d02d2c2b11e0eddd491428d0cc6bbed05ab79760e069ce913a" : undefined,
+  "0x6ba8019987c7c5d02d2c2b11e0eddd491428d0cc6bbed05ab79760e069ce913a",
 );
 
 export const TREASURY_CAP_ID = requireEnv(
   "NEXT_PUBLIC_TREASURY_CAP_ID",
-  isDev ? "0xdc0f16084cbd2d33d1fc3630e80bac565469550e93c5e147a7d9c04fa4a3058f" : undefined,
+  "0xdc0f16084cbd2d33d1fc3630e80bac565469550e93c5e147a7d9c04fa4a3058f",
 );
 
 export const ADMIN_CAP_ID = requireEnv(
   "NEXT_PUBLIC_ADMIN_CAP_ID",
-  isDev ? "0x038754ce782a7670884961335a7d7e50215a4793d2c44dde208c2527eeed28d4" : undefined,
+  "0x038754ce782a7670884961335a7d7e50215a4793d2c44dde208c2527eeed28d4",
 );
 
 export const TOKEN_TYPE = `${PACKAGE_ID}::token::TOKEN`;
@@ -68,7 +68,7 @@ export const EXPLORER_TX_URL = `https://suiscan.xyz/${NETWORK}/tx`;
 
 export const COMPLIANCE_CONFIG_ID = requireEnv(
   "NEXT_PUBLIC_COMPLIANCE_CONFIG_ID",
-  isDev ? "0xa6c92b963d9b67896416ae2eb23f0fadbbc62e90fba6ca18db5f96b6bc4f63c7" : undefined,
+  "0xa6c92b963d9b67896416ae2eb23f0fadbbc62e90fba6ca18db5f96b6bc4f63c7",
 );
 
 export const REQUIRED_KYC_LEVEL = 1;

@@ -1,11 +1,5 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import "./globals.css";
-
-const Providers = dynamic(
-  () => import("./providers").then((m) => m.Providers),
-  { ssr: false },
-);
 
 export const metadata: Metadata = {
   title: "Veil — Private Payments on Sui",
@@ -20,9 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <Providers>{children}</Providers>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
