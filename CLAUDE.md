@@ -11,7 +11,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - `contracts/` -- Sui Move (pool, verifier, token)
 - `circuits/` -- Circom ZK circuit (transfer.circom, 11 constraints)
 - `frontend/` -- Next.js 14 + @mysten/dapp-kit + snarkjs WASM
-- `scripts/` -- deployment, proof conversion, E2E pipeline
+- `scripts/` -- deployment, proof conversion, E2E pipeline, relayer
 - `docs/` -- architecture, C4 diagrams, HTML report
 
 ## Commands
@@ -28,6 +28,11 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - Converter tests (109): `cd scripts && bun run src/test-converter.ts`
 - E2E pipeline: `cd scripts && bun run src/e2e-test.ts`
 
+### Relayer (Sender Privacy)
+- Demo: `cd scripts && bun run relayer:demo`
+- Server: `cd scripts && bun run relayer` (port 3001)
+- Help: `cd scripts && bun run src/relayer.ts --help`
+
 ## Stack
 - Circom 2.1 + snarkjs 0.7 (BN254 Groth16)
 - Sui Move 2024 + `sui::groth16` native verifier
@@ -41,6 +46,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - **Standard deposits**: 100/500/1000 TOKEN denominations only (amount correlation resistance)
 - **VK timelock**: 1-epoch delay for verification key updates
 - **Privacy events**: no sender, recipient, or amount in any emitted event
+- **Sponsored tx relayer**: hides sender address on-chain via Sui gas sponsorship
 
 ## Security Audit Summary
 - Loop 1: 92 findings, 16 critical fixes

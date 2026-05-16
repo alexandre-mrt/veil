@@ -6,7 +6,9 @@
   "scripts": {
     "test": "bun run src/test-converter.ts",
     "e2e": "bun run src/e2e-test.ts",
-    "fuzz": "bun run src/fuzz-tests.ts"
+    "fuzz": "bun run src/fuzz-tests.ts",
+    "relayer": "bun run src/relayer.ts serve",
+    "relayer:demo": "bun run src/relayer.ts demo"
   },
   "dependencies": {
     "@mysten/sui": "^2.16.2",
