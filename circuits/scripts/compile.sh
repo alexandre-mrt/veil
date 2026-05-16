@@ -89,6 +89,10 @@ snarkjs zkey export verificationkey \
   "$BUILD_DIR/${CIRCUIT_NAME}_vk.json"
 
 echo ""
+echo "WARNING: DEV-ONLY single-contributor setup. For production, run: bash scripts/ceremony.sh"
+echo ""
+
+echo ""
 echo "=== Build complete ==="
 echo "Artifacts:"
 echo "  R1CS:             $BUILD_DIR/$CIRCUIT_NAME.r1cs"
