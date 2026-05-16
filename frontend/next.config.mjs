@@ -6,6 +6,29 @@ const nextConfig = {
     "@mysten/dapp-kit-core",
     "@mysten/sui",
   ],
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'wasm-unsafe-eval'",
+              "connect-src 'self' https://fullnode.testnet.sui.io https://sui-testnet.mystenlabs.com wss://sui-testnet.mystenlabs.com http://localhost:3001",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data:",
+              "font-src 'self'",
+            ].join("; "),
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // snarkjs relies on Node built-ins not available in browser bundles
