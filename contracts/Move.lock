@@ -19,5 +19,5 @@ deps = { MoveStdlib = "MoveStdlib" }
 [pinned.testnet.veil]
 source = { root = true }
 use_environment = "testnet"
-manifest_digest = "CC15E09306E902854F6BDD9B90D21287DB7EC557173965E5355493A2783E25B3"
+manifest_digest = "0ADBBEDD41FF1BCDBA2372DC73FB3A343401A4F65C57A61877B4E65581DE3651"
 deps = { Sui = "Sui" }
