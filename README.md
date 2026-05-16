@@ -224,10 +224,10 @@ cd ../frontend && bun run dev                          # localhost:3000
 
 | Object | ID |
 |--------|----|
-| Package | `0x468e707669e33ef8664fd0f25fb16ee86623feab98254cc9c22044e79a371737` |
-| Pool | `0x9b8e6bb7f09a483d8ec50c91f9e9f64a1d91bac64706afe56653c46a1ed720ba` |
-| ComplianceConfig | `0x5999ace2cfcc952dc66dce83b3314930e435f99ee49abc11972871b5ecf5ed29` |
-| TreasuryCap | `0xf2b51f2995dc8fdebb0342cabc3d162b7159a91cda2ecb1d1b46988129e366d2` |
+| Package | `0x5cd79f85f1adca022513d76c60d557f8b17afed91f741d14016c7a23cab6c228` |
+| Pool | `0x6ba8019987c7c5d02d2c2b11e0eddd491428d0cc6bbed05ab79760e069ce913a` |
+| ComplianceConfig | `0xa6c92b963d9b67896416ae2eb23f0fadbbc62e90fba6ca18db5f96b6bc4f63c7` |
+| TreasuryCap | `0xdc0f16084cbd2d33d1fc3630e80bac565469550e93c5e147a7d9c04fa4a3058f` |
 
 Network: testnet (chain-id `4c78adac`), 1-hour epochs, compliance required
 
