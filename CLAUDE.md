@@ -66,13 +66,14 @@ E_COMMITMENT_NOT_MATURE=16, E_VK_UPDATE_PENDING=17
 ```
 
 ## Testnet Deployment
-- Package: `0x468e707669e33ef8664fd0f25fb16ee86623feab98254cc9c22044e79a371737`
-- Pool: `0x9b8e6bb7f09a483d8ec50c91f9e9f64a1d91bac64706afe56653c46a1ed720ba`
-- ComplianceConfig: `0x5999ace2cfcc952dc66dce83b3314930e435f99ee49abc11972871b5ecf5ed29`
-- AdminCap: `0xd35a6feee94564c8a65d709a8f0968819f3cc2527db4f8dc0f98a4f8fad8e5d3`
-- TreasuryCap: `0xf2b51f2995dc8fdebb0342cabc3d162b7159a91cda2ecb1d1b46988129e366d2`
+- Package: `0x5cd79f85f1adca022513d76c60d557f8b17afed91f741d14016c7a23cab6c228`
+- Pool: `0x6ba8019987c7c5d02d2c2b11e0eddd491428d0cc6bbed05ab79760e069ce913a`
+- ComplianceConfig: `0xa6c92b963d9b67896416ae2eb23f0fadbbc62e90fba6ca18db5f96b6bc4f63c7`
+- AdminCap: `0x038754ce782a7670884961335a7d7e50215a4793d2c44dde208c2527eeed28d4`
+- TreasuryCap: `0xdc0f16084cbd2d33d1fc3630e80bac565469550e93c5e147a7d9c04fa4a3058f`
+- UpgradeCap: `0x81637da203607af529fc2652c49d709e48d2246bc6097963ffb358d6b28a018e`
 - Frontend: https://frontend-sepia-nine-30.vercel.app
-- Chain: testnet, Toolchain: sui 1.72.1, Move edition 2024
+- Chain: testnet, Epoch duration: 1h, Move edition 2024
 
 ## Skills
 - `/sui-move` -- Sui Move patterns
