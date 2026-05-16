@@ -64,7 +64,7 @@ export function AuditorInfo({ lastEncryptedDigest }: AuditorInfoProps) {
 
     client.core
       .getObject({ objectId: COMPLIANCE_CONFIG_ID, include: { json: true } })
-      .then((result) => {
+      .then((result: any) => {
         if (cancelled) return;
         const key = extractAuditorKey(result.object.json as Record<string, unknown> | null);
         setAuditorPublicKey(key);
