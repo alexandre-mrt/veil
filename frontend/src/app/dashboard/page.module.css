@@ -61,6 +61,46 @@
   width: 100%;
 }
 
+/* Unlock vault gate */
+.unlockPanel {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--spacing-8);
+  max-width: 420px;
+  margin: var(--spacing-8) auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.unlockPanelAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent);
+}
+
+.unlockTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.unlockDescription {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+}
+
 .footer {
   padding: var(--spacing-6);
   color: var(--text-secondary);

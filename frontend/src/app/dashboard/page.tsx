@@ -5,8 +5,9 @@ import { useCurrentAccount } from "@mysten/dapp-kit-react";
 import { POOL_ID, THRESHOLD } from "@/lib/constants";
 import type { Credential } from "@/lib/types";
 import { usePrivateState } from "@/hooks/usePrivateState";
+import { useWalletKey } from "@/hooks/useWalletKey";
 import { useVeilPool } from "@/hooks/useVeilPool";
-import { deriveKey, encryptData, decryptData } from "@/lib/crypto";
+import { encryptData, decryptData } from "@/lib/crypto";
 import { Header } from "@/components/Header";
 import { BalanceDisplay } from "@/components/BalanceDisplay";
 import { DepositForm } from "@/components/DepositForm";
@@ -38,10 +39,6 @@ const TABS: readonly { id: Tab; label: string }[] = [
   { id: "history", label: "History" },
   { id: "admin", label: "Admin" },
 ];
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // Credential serialization
@@ -84,10 +81,17 @@ function deserializeCredentials(json: string): Credential[] {
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
-  const { state, isInitialized, updateAfterTransfer } = usePrivateState();
-  const { frozen } = useVeilPool(POOL_ID);
   const account = useCurrentAccount();
   const walletAddress = account?.address;
+
+  // Wallet-signature-derived encryption key
+  const { unlock, key: walletKey, isUnlocked } = useWalletKey();
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
+  // Private state uses the wallet-derived key
+  const { state, isInitialized, updateAfterTransfer } = usePrivateState(walletKey);
+  const { frozen } = useVeilPool(POOL_ID);
 
   const [activeTab, setActiveTab] = useState<Tab>("deposit");
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
@@ -97,9 +101,49 @@ export default function DashboardPage() {
 
   const spending = state?.cumulativeSpending ?? 0n;
 
-  // Load encrypted credentials from localStorage when wallet connects
+  // Auto-unlock: attempt to load cached key when wallet connects
   useEffect(() => {
-    if (!walletAddress) {
+    if (!walletAddress || isUnlocked) return;
+
+    let cancelled = false;
+
+    async function tryAutoUnlock(address: string) {
+      try {
+        // unlock() checks IndexedDB first -- if a cached key exists,
+        // no wallet prompt appears. Only prompts on first-ever unlock.
+        await unlock(address);
+      } catch {
+        // Cache miss or IndexedDB unavailable -- user will need to click "Unlock Vault"
+        // This is expected on first visit; don't set an error
+      }
+      if (cancelled) return;
+    }
+
+    tryAutoUnlock(walletAddress);
+    return () => {
+      cancelled = true;
+    };
+  }, [walletAddress, isUnlocked, unlock]);
+
+  // Manual unlock handler for the button
+  const handleUnlock = useCallback(async () => {
+    if (!walletAddress) return;
+    setIsUnlocking(true);
+    setUnlockError(null);
+    try {
+      await unlock(walletAddress);
+    } catch (e) {
+      setUnlockError(
+        e instanceof Error ? e.message : "Failed to unlock vault",
+      );
+    } finally {
+      setIsUnlocking(false);
+    }
+  }, [walletAddress, unlock]);
+
+  // Load encrypted credentials from localStorage when key is available
+  useEffect(() => {
+    if (!walletKey) {
       setCredentials([]);
       setCredentialsLoaded(false);
       credKeyRef.current = null;
@@ -107,13 +151,10 @@ export default function DashboardPage() {
     }
 
     let cancelled = false;
+    credKeyRef.current = walletKey;
 
-    async function loadCredentials(address: string) {
+    async function loadCredentials(key: CryptoKey) {
       try {
-        const key = await deriveKey(address);
-        if (cancelled) return;
-        credKeyRef.current = key;
-
         const stored = localStorage.getItem(CREDENTIAL_STORAGE_KEY);
         if (!stored) {
           if (!cancelled) setCredentialsLoaded(true);
@@ -132,7 +173,7 @@ export default function DashboardPage() {
             localStorage.setItem(CREDENTIAL_STORAGE_KEY, encrypted);
             if (!cancelled) setCredentials(legacy);
           } catch {
-            // Corrupted data -- start fresh
+            // Corrupted or encrypted with old address-derived key -- start fresh
             localStorage.removeItem(CREDENTIAL_STORAGE_KEY);
           }
         }
@@ -142,9 +183,9 @@ export default function DashboardPage() {
       if (!cancelled) setCredentialsLoaded(true);
     }
 
-    loadCredentials(walletAddress);
+    loadCredentials(walletKey);
     return () => { cancelled = true; };
-  }, [walletAddress]);
+  }, [walletKey]);
 
   // Persist credentials to localStorage (encrypted)
   useEffect(() => {
@@ -187,9 +228,48 @@ export default function DashboardPage() {
     setCredentials((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  // --- Unlock gate: show unlock prompt if wallet connected but vault locked ---
+  if (walletAddress && !isUnlocked) {
+    return (
+      <div className={styles.dashboard}>
+        <Header />
+        <main className={styles.content}>
+          <div className={styles.unlockPanel}>
+
+            <div className={styles.unlockPanelAccent} />
+            <p className={styles.unlockTitle}>Unlock Vault</p>
+            <p className={styles.unlockDescription}>
+              Sign a message with your wallet to derive your encryption key.
+              This never leaves your browser and is required once per session.
+            </p>
+            <button
+              type="button"
+              className={componentStyles.depositSubmitBtn}
+              onClick={handleUnlock}
+              disabled={isUnlocking}
+            >
+              {isUnlocking ? "Signing..." : "Unlock Vault"}
+            </button>
+            {unlockError && (
+              <p className={componentStyles.depositResultError}>
+                {unlockError}
+              </p>
+            )}
+          </div>
+        </main>
+        <footer className={styles.footer}>
+          Built for Sui Overflow 2026 — DeFi &amp; Payments Track
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.dashboard}>
-      <Header />
+      <Header
+        cumulativeSpending={state?.cumulativeSpending}
+        isPrivateStateReady={isInitialized}
+      />
 
       <main className={styles.content}>
         <BalanceDisplay privateState={state} />
