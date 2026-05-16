@@ -1,10 +1,17 @@
-// Force dynamic rendering for the dashboard (wallet SDK references window/document at module level)
-export const dynamic = "force-dynamic";
+import dynamic from "next/dynamic";
+
+export const runtime = "nodejs";
+export const fetchCache = "force-no-store";
+
+const Providers = dynamic(
+  () => import("../providers").then((m) => m.Providers),
+  { ssr: false },
+);
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <Providers>{children}</Providers>;
 }

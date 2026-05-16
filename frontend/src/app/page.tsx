@@ -201,8 +201,8 @@ export default function Home() {
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Security &amp; Audit</h2>
         <div className={styles.scoreHeader}>
-          <span className={styles.scoreValue}>142/165</span>
-          <span className={styles.scoreLabel}>overall score (86%)</span>
+          <span className={styles.scoreValue}>157.8/165</span>
+          <span className={styles.scoreLabel}>overall score (95.6%)</span>
         </div>
         <div className={styles.auditStats}>
           {AUDIT_STATS.map((s) => (
