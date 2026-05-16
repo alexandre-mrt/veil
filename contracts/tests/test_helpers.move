@@ -35,3 +35,8 @@ public fun make_inputs_with_threshold(threshold: u64): vector<u8> {
     };
     inputs
 }
+
+/// Minimal dummy VK (232 zero bytes) — shared across test files to avoid duplication.
+public fun dummy_vk(): vector<u8> {
+    make_n_zero_bytes(232)
+}
