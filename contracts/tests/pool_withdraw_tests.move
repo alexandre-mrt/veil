@@ -6,6 +6,7 @@ use sui::coin;
 use sui::test_scenario;
 use veil::compliance;
 use veil::pool::{Self, Pool, AdminCap};
+use veil::test_helpers;
 use veil::token::TOKEN;
 
 // ---------------------------------------------------------------------------
@@ -48,10 +49,10 @@ const DUMMY_AUDITOR_KEY: vector<u8> = vector[
 // EDGE CASE TESTS (continued from pool_tests.move)
 // ===========================================================================
 
-// 36. shielded_transfer with 193 bytes (too long)
+// 36. shielded_transfer with 225 bytes (too long, expected 224)
 #[test]
 #[expected_failure(abort_code = 7, location = veil::pool)]
-fun test_shielded_transfer_193_bytes_public_inputs() {
+fun test_shielded_transfer_225_bytes_public_inputs() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
@@ -61,7 +62,7 @@ fun test_shielded_transfer_193_bytes_public_inputs() {
         let mut pool = scenario.take_shared<Pool>();
         let clock = sui::clock::create_for_testing(scenario.ctx());
         let proof = vector[0u8];
-        let long_inputs = make_n_zero_bytes(193);
+        let long_inputs = test_helpers::make_n_zero_bytes(225);
         pool::shielded_transfer(&mut pool, proof, long_inputs, &clock, scenario.ctx());
         sui::clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -369,7 +370,7 @@ fun test_zk_withdraw_no_vk() {
         let mut pool = scenario.take_shared<Pool>();
         let clock = clock::create_for_testing(scenario.ctx());
         let proof = vector[0u8];
-        let inputs = make_n_zero_bytes(128);
+        let inputs = test_helpers::make_n_zero_bytes(160);
         // No withdraw VK set — must abort with E_NO_WITHDRAW_VK
         pool::zk_withdraw(&mut pool, proof, inputs, USER, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
@@ -395,7 +396,7 @@ fun test_zk_withdraw_frozen() {
         clock::set_for_testing(&mut clock, EPOCH_DURATION_MS);
         pool::freeze_pool(&mut pool, &cap, &clock);
         let proof = vector[0u8];
-        let inputs = make_n_zero_bytes(128);
+        let inputs = test_helpers::make_n_zero_bytes(160);
         pool::zk_withdraw(&mut pool, proof, inputs, USER, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -420,7 +421,7 @@ fun test_zk_withdraw_short_inputs() {
         pool::propose_withdraw_vk(&mut pool, &cap, DUMMY_VK, &clock);
         clock::set_for_testing(&mut clock, EPOCH_DURATION_MS);
         let proof = vector[0u8];
-        let short_inputs = make_n_zero_bytes(100);
+        let short_inputs = test_helpers::make_n_zero_bytes(100);
         pool::zk_withdraw(&mut pool, proof, short_inputs, USER, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -429,16 +430,3 @@ fun test_zk_withdraw_short_inputs() {
     scenario.end();
 }
 
-// ===========================================================================
-// HELPERS
-// ===========================================================================
-
-fun make_n_zero_bytes(n: u64): vector<u8> {
-    let mut result = vector[];
-    let mut i: u64 = 0;
-    while (i < n) {
-        result.push_back(0u8);
-        i = i + 1;
-    };
-    result
-}

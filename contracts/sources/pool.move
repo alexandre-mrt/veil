@@ -44,6 +44,9 @@ const E_INVALID_WITHDRAW_PROOF: u64 = 28;
 const E_NO_WITHDRAW_VK: u64 = 29;
 const E_INVALID_RECIPIENT: u64 = 30;
 const E_INVALID_EPOCH_DURATION: u64 = 31;
+const E_MERKLE_ROOT_MISMATCH: u64 = 32;
+const E_INVALID_COMMITMENT_ROOT_LENGTH: u64 = 33;
+const E_COMMITMENT_ROOT_UPDATE_PENDING: u64 = 34;
 const MIN_VK_LENGTH: u64 = 232;
 
 public struct Pool has key {
@@ -70,6 +73,11 @@ public struct Pool has key {
     // Withdraw VK timelock
     pending_withdraw_vk: vector<u8>,
     withdraw_vk_update_epoch: u64,
+    // Merkle accumulator for commitment privacy
+    commitment_root: vector<u8>,        // 32-byte Poseidon Merkle root
+    next_leaf_index: u64,               // Next leaf position (increments on each insert)
+    pending_commitment_root: vector<u8>, // Pending root update (timelock)
+    commitment_root_update_epoch: u64,   // Epoch when pending root becomes active
 }
 
 public struct AdminCap has key {
@@ -95,6 +103,10 @@ public struct ComplianceToggleAppliedEvent has copy, drop { pool_id: ID, new_val
 public struct WithdrawalProposedEvent has copy, drop { pool_id: ID, amount: u64, recipient: address, effective_epoch: u64 }
 public struct WithdrawalCancelledEvent has copy, drop { pool_id: ID }
 public struct WithdrawalExecutedEvent has copy, drop { pool_id: ID, amount: u64, recipient: address }
+// Merkle commitment root events
+public struct CommitmentRootUpdatedEvent has copy, drop { pool_id: ID, new_root: vector<u8>, effective_epoch: u64 }
+public struct CommitmentRootCancelledEvent has copy, drop { pool_id: ID }
+public struct CommitmentRootAppliedEvent has copy, drop { pool_id: ID }
 
 public fun create_pool(transfer_vk: vector<u8>, threshold: u64, epoch_duration_ms: u64, ctx: &mut TxContext) {
     assert!(transfer_vk.length() >= MIN_VK_LENGTH, E_INVALID_VK_LENGTH);
@@ -121,6 +133,10 @@ public fun create_pool(transfer_vk: vector<u8>, threshold: u64, epoch_duration_m
         pending_withdrawal_epoch: 0,
         pending_withdraw_vk: vector[],
         withdraw_vk_update_epoch: 0,
+        commitment_root: vector[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        next_leaf_index: 0,
+        pending_commitment_root: vector[],
+        commitment_root_update_epoch: 0,
     };
     let cap = AdminCap { id: object::new(ctx), pool_id };
     transfer::share_object(pool);
@@ -171,10 +187,13 @@ fun execute_transfer(
     public_inputs_bytes: vector<u8>,
     clock: &sui::clock::Clock,
 ) {
-    assert!(public_inputs_bytes.length() == 192, E_INVALID_INPUTS_LENGTH);
+    assert!(public_inputs_bytes.length() == 224, E_INVALID_INPUTS_LENGTH);
 
     // Apply pending VK update if epoch has passed
     apply_pending_vk(pool, clock);
+
+    // Apply pending commitment root update if epoch has passed
+    apply_pending_commitment_root(pool, clock);
 
     let proof_threshold = verifier::le_bytes_to_u64(&public_inputs_bytes, 64);
     verifier::assert_upper_bytes_zero(&public_inputs_bytes, 72, 96, E_INVALID_INPUTS_LENGTH);
@@ -195,6 +214,10 @@ fun execute_transfer(
         public_inputs_bytes,
     );
     assert!(valid, E_INVALID_PROOF);
+
+    // Verify Merkle root: bytes 192..224 must match on-chain commitment_root
+    let proof_merkle_root = verifier::extract_bytes(&public_inputs_bytes, 192, 224);
+    assert!(proof_merkle_root == pool.commitment_root, E_MERKLE_ROOT_MISMATCH);
 
     // Verify commitment chain — UTXO-style: consume old, create new
     let old_commitment = verifier::extract_bytes(&public_inputs_bytes, 0, 32);
@@ -249,6 +272,7 @@ public fun deposit_and_register(
     balance::join(&mut pool.balance, coin.into_balance());
     let epoch_now = pool_epoch(pool, clock);
     dynamic_field::add(&mut pool.id, comm_key, epoch_now);
+    pool.next_leaf_index = pool.next_leaf_index + 1;
     event::emit(DepositEvent { pool_id: pool.id.to_inner() });
 }
 
@@ -352,6 +376,44 @@ fun apply_pending_vk(pool: &mut Pool, clock: &sui::clock::Clock) {
         pool.pending_vk = vector[];
         pool.vk_update_epoch = 0;
     };
+}
+
+fun apply_pending_commitment_root(pool: &mut Pool, clock: &sui::clock::Clock) {
+    if (pool.pending_commitment_root.length() > 0 && pool_epoch(pool, clock) >= pool.commitment_root_update_epoch) {
+        pool.commitment_root = pool.pending_commitment_root;
+        pool.pending_commitment_root = vector[];
+        pool.commitment_root_update_epoch = 0;
+        event::emit(CommitmentRootAppliedEvent { pool_id: pool.id.to_inner() });
+    };
+}
+
+/// Propose commitment Merkle root update with 1-epoch timelock.
+/// Admin (or indexer-triggered admin) computes the root off-chain from all
+/// CommitmentKey dynamic fields and submits it here.
+public fun update_commitment_root(
+    pool: &mut Pool,
+    cap: &AdminCap,
+    new_root: vector<u8>,
+    clock: &sui::clock::Clock,
+) {
+    assert_pool_admin(cap, pool);
+    assert!(new_root.length() == 32, E_INVALID_COMMITMENT_ROOT_LENGTH);
+    assert!(pool.pending_commitment_root.length() == 0, E_COMMITMENT_ROOT_UPDATE_PENDING);
+    let effective = pool_epoch(pool, clock) + 1;
+    pool.pending_commitment_root = new_root;
+    pool.commitment_root_update_epoch = effective;
+    event::emit(CommitmentRootUpdatedEvent {
+        pool_id: pool.id.to_inner(),
+        new_root,
+        effective_epoch: effective,
+    });
+}
+
+public fun cancel_commitment_root_update(pool: &mut Pool, cap: &AdminCap) {
+    assert_pool_admin(cap, pool);
+    pool.pending_commitment_root = vector[];
+    pool.commitment_root_update_epoch = 0;
+    event::emit(CommitmentRootCancelledEvent { pool_id: pool.id.to_inner() });
 }
 
 public fun freeze_pool(pool: &mut Pool, cap: &AdminCap, clock: &sui::clock::Clock) {
@@ -463,11 +525,13 @@ fun apply_pending_withdraw_vk(pool: &mut Pool, clock: &sui::clock::Clock) {
 }
 
 /// ZK-proven withdrawal: user proves ownership of a commitment and withdraws tokens.
-/// Public inputs layout (128 bytes = 4 x 32):
-///   [0..32)   commitment      — the UTXO commitment to consume
-///   [32..64)  withdrawAmount  — amount to withdraw (LE u64 in first 8 bytes, upper 24 zero)
-///   [64..96)  nullifier       — prevents double-withdraw
-///   [96..128) recipientHash   — Poseidon(8, recipient) binds withdrawal to address
+/// Partial withdrawal: creates a change commitment for the remaining balance.
+/// Public inputs layout (160 bytes = 5 x 32):
+///   [0..32)    commitment      — the UTXO commitment to consume
+///   [32..64)   withdrawAmount  — amount to withdraw (LE u64 in first 8 bytes, upper 24 zero)
+///   [64..96)   nullifier       — prevents double-withdraw
+///   [96..128)  recipientHash   — Poseidon(8, recipient) binds withdrawal to address
+///   [128..160) newCommitment   — change commitment for remaining balance
 public fun zk_withdraw(
     pool: &mut Pool,
     proof_bytes: vector<u8>,
@@ -479,7 +543,7 @@ public fun zk_withdraw(
     assert!(!pool.frozen, E_FROZEN);
     apply_pending_withdraw_vk(pool, clock);
     assert!(pool.withdraw_vk.length() >= MIN_VK_LENGTH, E_NO_WITHDRAW_VK);
-    assert!(public_inputs_bytes.length() == 128, E_INVALID_INPUTS_LENGTH);
+    assert!(public_inputs_bytes.length() == 160, E_INVALID_INPUTS_LENGTH);
 
     let valid = verifier::verify_withdraw_proof(
         &pool.withdraw_vk,
@@ -498,7 +562,10 @@ public fun zk_withdraw(
     // Front-running is prevented: changing recipient invalidates the Groth16 proof.
     // bytes 96-128 (recipientHash) are verified by the proof itself.
 
-    // Consume commitment (UTXO-style)
+    // Extract change commitment (bytes 128-160)
+    let new_commitment = verifier::extract_bytes(&public_inputs_bytes, 128, 160);
+
+    // Consume old commitment (UTXO-style)
     let comm_key = CommitmentKey { bytes: commitment_bytes };
     assert!(
         dynamic_field::exists(&pool.id, comm_key),
@@ -519,6 +586,12 @@ public fun zk_withdraw(
     let withdrawn = coin::from_balance(balance::split(&mut pool.balance, withdraw_amount), ctx);
     transfer::public_transfer(withdrawn, recipient);
 
+    // Store change commitment (with current epoch for maturity)
+    let epoch_now = pool_epoch(pool, clock);
+    let new_comm_key = CommitmentKey { bytes: new_commitment };
+    assert!(!dynamic_field::exists(&pool.id, new_comm_key), E_COMMITMENT_EXISTS);
+    dynamic_field::add(&mut pool.id, new_comm_key, epoch_now);
+
     event::emit(WithdrawEvent { pool_id: pool.id.to_inner() });
 }
 
@@ -538,6 +611,8 @@ public fun pool_epoch(pool: &Pool, clock: &sui::clock::Clock): u64 {
 }
 
 public fun epoch_duration(pool: &Pool): u64 { pool.epoch_duration_ms }
+public fun commitment_root(pool: &Pool): vector<u8> { pool.commitment_root }
+public fun next_leaf_index(pool: &Pool): u64 { pool.next_leaf_index }
 
 fun is_standard_amount(amount: u64): bool {
     amount == DENOM_SMALL || amount == DENOM_MEDIUM || amount == DENOM_LARGE

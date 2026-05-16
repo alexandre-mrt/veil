@@ -5,6 +5,7 @@ use sui::clock;
 use sui::coin;
 use sui::test_scenario;
 use veil::pool::{Self, Pool, AdminCap};
+use veil::test_helpers;
 use veil::token::TOKEN;
 
 // ---------------------------------------------------------------------------
@@ -86,7 +87,7 @@ fun test_deposit_and_register() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        let commitment = valid_commitment(1);
+        let commitment = test_helpers::valid_commitment(1);
         let clock = clock::create_for_testing(scenario.ctx());
         pool::deposit_and_register(&mut pool, deposit_coin, commitment, &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT, 0);
@@ -194,7 +195,7 @@ fun test_shielded_transfer_invalid_proof_fails() {
         let mut pool = scenario.take_shared<Pool>();
         let clock = sui::clock::create_for_testing(scenario.ctx());
         let invalid_proof = vector[1u8, 2u8, 3u8];
-        let public_inputs = make_192_zero_bytes();
+        let public_inputs = test_helpers::make_224_zero_bytes();
         pool::shielded_transfer(
             &mut pool, invalid_proof, public_inputs, &clock, scenario.ctx(),
         );
@@ -259,7 +260,7 @@ fun test_shielded_transfer_when_frozen() {
         let mut pool = scenario.take_shared<Pool>();
         let clock = sui::clock::create_for_testing(scenario.ctx());
         let proof = vector[0u8];
-        let inputs = make_192_zero_bytes();
+        let inputs = test_helpers::make_224_zero_bytes();
         pool::shielded_transfer(&mut pool, proof, inputs, &clock, scenario.ctx());
         sui::clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -330,7 +331,7 @@ fun test_deposit_and_register_when_frozen() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        let commitment = valid_commitment(1);
+        let commitment = test_helpers::valid_commitment(1);
         let clock = clock::create_for_testing(scenario.ctx());
         pool::deposit_and_register(&mut pool, deposit_coin, commitment, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
@@ -482,7 +483,7 @@ fun test_deposit_and_register_below_min_deposit() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let dust_coin = coin::mint_for_testing<TOKEN>(MIN_DEPOSIT - 1, scenario.ctx());
-        let commitment = valid_commitment(1);
+        let commitment = test_helpers::valid_commitment(1);
         let clock = clock::create_for_testing(scenario.ctx());
         pool::deposit_and_register(&mut pool, dust_coin, commitment, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
@@ -529,7 +530,7 @@ fun test_deposit_and_register_duplicate_commitment() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        let commitment = valid_commitment(1);
+        let commitment = test_helpers::valid_commitment(1);
         let clock = clock::create_for_testing(scenario.ctx());
         pool::deposit_and_register(&mut pool, deposit_coin, commitment, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
@@ -539,7 +540,7 @@ fun test_deposit_and_register_duplicate_commitment() {
     {
         let mut pool = scenario.take_shared<Pool>();
         let deposit_coin = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
-        let commitment = valid_commitment(1);
+        let commitment = test_helpers::valid_commitment(1);
         let clock = clock::create_for_testing(scenario.ctx());
         pool::deposit_and_register(&mut pool, deposit_coin, commitment, &clock, scenario.ctx());
         clock::destroy_for_testing(clock);
@@ -597,7 +598,7 @@ fun test_shielded_transfer_short_public_inputs() {
         let mut pool = scenario.take_shared<Pool>();
         let clock = sui::clock::create_for_testing(scenario.ctx());
         let proof = vector[0u8];
-        let short_inputs = make_n_zero_bytes(100);
+        let short_inputs = test_helpers::make_n_zero_bytes(100);
         pool::shielded_transfer(&mut pool, proof, short_inputs, &clock, scenario.ctx());
         sui::clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -605,10 +606,10 @@ fun test_shielded_transfer_short_public_inputs() {
     scenario.end();
 }
 
-// 22. shielded_transfer with public_inputs exactly 191 bytes
+// 22. shielded_transfer with public_inputs exactly 223 bytes (one short of 224)
 #[test]
 #[expected_failure(abort_code = 7, location = veil::pool)]
-fun test_shielded_transfer_191_bytes_public_inputs() {
+fun test_shielded_transfer_223_bytes_public_inputs() {
     let mut scenario = test_scenario::begin(ADMIN);
     {
         pool::create_pool(DUMMY_VK, THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
@@ -618,7 +619,7 @@ fun test_shielded_transfer_191_bytes_public_inputs() {
         let mut pool = scenario.take_shared<Pool>();
         let clock = sui::clock::create_for_testing(scenario.ctx());
         let proof = vector[0u8];
-        let short_inputs = make_n_zero_bytes(191);
+        let short_inputs = test_helpers::make_n_zero_bytes(223);
         pool::shielded_transfer(&mut pool, proof, short_inputs, &clock, scenario.ctx());
         sui::clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -639,7 +640,7 @@ fun test_shielded_transfer_bad_proof_with_valid_length_inputs() {
         let mut pool = scenario.take_shared<Pool>();
         let clock = sui::clock::create_for_testing(scenario.ctx());
         let proof = vector[0u8, 0u8, 0u8, 0u8];
-        let public_inputs = make_inputs_with_threshold(THRESHOLD);
+        let public_inputs = test_helpers::make_inputs_with_threshold(THRESHOLD);
         pool::shielded_transfer(&mut pool, proof, public_inputs, &clock, scenario.ctx());
         sui::clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -661,7 +662,7 @@ fun test_shielded_transfer_wrong_threshold() {
         let clock = sui::clock::create_for_testing(scenario.ctx());
         let proof = vector[0u8];
         let wrong_threshold = THRESHOLD + 1;
-        let public_inputs = make_inputs_with_threshold(wrong_threshold);
+        let public_inputs = test_helpers::make_inputs_with_threshold(wrong_threshold);
         pool::shielded_transfer(&mut pool, proof, public_inputs, &clock, scenario.ctx());
         sui::clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -682,7 +683,7 @@ fun test_shielded_transfer_nonzero_upper_bytes_threshold() {
         let mut pool = scenario.take_shared<Pool>();
         let clock = sui::clock::create_for_testing(scenario.ctx());
         let proof = vector[0u8];
-        let mut public_inputs = make_inputs_with_threshold(THRESHOLD);
+        let mut public_inputs = test_helpers::make_inputs_with_threshold(THRESHOLD);
         *&mut public_inputs[72] = 1u8;
         pool::shielded_transfer(&mut pool, proof, public_inputs, &clock, scenario.ctx());
         sui::clock::destroy_for_testing(clock);
@@ -905,7 +906,7 @@ fun test_multiple_deposit_and_register_unique_commitments() {
         let mut pool = scenario.take_shared<Pool>();
         let coin1 = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
         let clock = clock::create_for_testing(scenario.ctx());
-        pool::deposit_and_register(&mut pool, coin1, valid_commitment(1), &clock, scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin1, test_helpers::valid_commitment(1), &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT, 0);
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -915,7 +916,7 @@ fun test_multiple_deposit_and_register_unique_commitments() {
         let mut pool = scenario.take_shared<Pool>();
         let coin2 = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
         let clock = clock::create_for_testing(scenario.ctx());
-        pool::deposit_and_register(&mut pool, coin2, valid_commitment(2), &clock, scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin2, test_helpers::valid_commitment(2), &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT * 2, 1);
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -925,7 +926,7 @@ fun test_multiple_deposit_and_register_unique_commitments() {
         let mut pool = scenario.take_shared<Pool>();
         let coin3 = coin::mint_for_testing<TOKEN>(DEPOSIT_AMOUNT, scenario.ctx());
         let clock = clock::create_for_testing(scenario.ctx());
-        pool::deposit_and_register(&mut pool, coin3, valid_commitment(3), &clock, scenario.ctx());
+        pool::deposit_and_register(&mut pool, coin3, test_helpers::valid_commitment(3), &clock, scenario.ctx());
         assert!(pool.pool_balance() == DEPOSIT_AMOUNT * 3, 2);
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -966,7 +967,7 @@ fun test_deposit_and_register_exact_min_deposit() {
         let mut pool = scenario.take_shared<Pool>();
         let min_coin = coin::mint_for_testing<TOKEN>(100_000_000, scenario.ctx());
         let clock = clock::create_for_testing(scenario.ctx());
-        pool::deposit_and_register(&mut pool, min_coin, valid_commitment(1), &clock, scenario.ctx());
+        pool::deposit_and_register(&mut pool, min_coin, test_helpers::valid_commitment(1), &clock, scenario.ctx());
         assert!(pool.pool_balance() == 100_000_000, 0);
         clock::destroy_for_testing(clock);
         test_scenario::return_shared(pool);
@@ -974,41 +975,3 @@ fun test_deposit_and_register_exact_min_deposit() {
     scenario.end();
 }
 
-// ===========================================================================
-// HELPERS
-// ===========================================================================
-
-fun valid_commitment(seed: u8): vector<u8> {
-    let mut commitment = vector[];
-    let mut i: u8 = 0;
-    while (i < 32) {
-        commitment.push_back(seed + i);
-        i = i + 1;
-    };
-    commitment
-}
-
-fun make_n_zero_bytes(n: u64): vector<u8> {
-    let mut result = vector[];
-    let mut i: u64 = 0;
-    while (i < n) {
-        result.push_back(0u8);
-        i = i + 1;
-    };
-    result
-}
-
-fun make_192_zero_bytes(): vector<u8> {
-    make_n_zero_bytes(192)
-}
-
-fun make_inputs_with_threshold(threshold: u64): vector<u8> {
-    let mut inputs = make_192_zero_bytes();
-    let mut i: u8 = 0;
-    while (i < 8) {
-        let byte_val = ((threshold >> ((i as u8) * 8)) & 0xFF as u8);
-        *&mut inputs[64 + (i as u64)] = byte_val;
-        i = i + 1;
-    };
-    inputs
-}
