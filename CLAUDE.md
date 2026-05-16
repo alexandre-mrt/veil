@@ -3,7 +3,7 @@
 ## Overview
 ZK privacy payments with cumulative spending proofs and UTXO-style commitments on Sui.
 Circuit v2: Poseidon(4) identity-bound commitments, note-based nullifiers, domain-separated txAmountHash.
-4-loop security audit + sui-critic review (88/100). 85 Move tests, 0 failures.
+5-loop security audit (4 contract loops + 1 comprehensive 11-agent audit). 95 Move tests, 349+ total tests, 0 failures.
 Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), context-bound credential nullifiers (unique per transfer), ECDH P-256 + AES-GCM auditor encryption.
 Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-end.
 
@@ -53,6 +53,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - Loop 2: 24 findings, UTXO model introduced
 - Loop 3: 5 findings, UTXO verified correct
 - Loop 4: CLEAN (0 critical, 0 high, 0 medium)
+- Loop 5: 11-agent comprehensive audit (68 findings: 3C, 5H, 15M, 25L, 20I) -- see docs/loop5-audit-report.md
 - Privacy red team: 15 findings, standard deposits applied
 
 ## Error Codes (pool.move)

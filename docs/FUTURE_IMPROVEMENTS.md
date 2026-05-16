@@ -2,21 +2,28 @@
 
 ## Current State
 
-Veil is a **confidential compliance proof system**: transaction amounts are hidden inside ZK proofs, spending thresholds are enforced in zero-knowledge, but sender identity is visible on Sui transactions. The ZK circuit is sound and audited (4 loops, 0 critical findings).
+Veil is a **confidential compliance proof system** with tiered privacy:
+- **Tier 1/2**: amounts hidden via ZK proofs, spending thresholds enforced in zero-knowledge
+- **Tier 3**: dual Groth16 proofs (transfer + KYC compliance), ECDH auditor encryption
+- **Sender privacy**: sponsored transaction relayer hides sender address on-chain
+
+Audited through 5 loops (4 contract loops + 1 comprehensive 11-agent audit). 85 Move tests, 40 circuit tests, 349+ total tests, 0 failures.
 
 ## Use Cases (Current)
 
 1. **Regulatory-compliant confidential transfers** — prove spending < threshold without revealing amounts
-2. **Confidential payroll** — hide individual payment amounts while proving total compliance
-3. **Treasury management** — hide OTC/grant amounts from public chain observers
-4. **Proof of solvability** — prove "I spent < X this month" without revealing exact amount
+2. **Tiered KYC compliance** — anonymous below threshold, KYC proof above (no identity revealed)
+3. **Confidential payroll** — hide individual payment amounts while proving total compliance
+4. **Treasury management** — hide OTC/grant amounts from public chain observers
+5. **Auditor-compatible privacy** — encrypted amounts readable only by designated auditor key
 
 ## Upgrade Roadmap
 
 ### Tier 1 — Quick Wins (1-2 days each)
 
-#### 1.1 Encrypted Client-Side Storage
+#### 1.1 Encrypted Client-Side Storage — NOT YET IMPLEMENTED
 **Fixes:** PRIV-003 (userSecret in plaintext), PRIV-009 (txHistory in plaintext)
+**Status:** Open -- flagged again in Loop 5 audit (HIGH severity: userSecret in localStorage)
 
 **Files to modify:**
 - `frontend/src/hooks/usePrivateState.ts`
@@ -55,8 +62,9 @@ Also encrypt `frontend/src/lib/txHistory.ts` — store commitment hashes instead
 
 ---
 
-#### 1.2 Commitment Maturity Period
+#### 1.2 Commitment Maturity Period -- IMPLEMENTED
 **Fixes:** PRIV-007 (PTB deposit+transfer atomic link), PRIV-010 (timing correlation)
+**Status:** Done -- `assert!(current_epoch(clock) > created_epoch, E_COMMITMENT_NOT_MATURE)` in pool.move:188
 
 **Files to modify:**
 - `contracts/sources/pool.move`
@@ -83,8 +91,9 @@ This prevents atomic deposit+transfer in one PTB (different epochs required) and
 
 ### Tier 2 — Architecture Changes (1-2 weeks each)
 
-#### 2.1 Relayer Pattern
+#### 2.1 Relayer Pattern -- IMPLEMENTED
 **Fixes:** PRIV-001 (cross-epoch linking), PRIV-002 (sender deanonymization), PRIV-006 (gas fingerprinting)
+**Status:** Done -- `scripts/src/relayer.ts` (Sui sponsored transactions, HTTP API, demo mode). Loop 5 flagged: needs CORS restriction, rate limiting, TransactionKind validation for production.
 
 **New files to create:**
 - `relayer/` — new service directory
@@ -258,39 +267,29 @@ for (var i = 0; i < 20; i++) {
 
 ---
 
-### Tier 3 — Full Privacy Protocol (1-2 months)
+### Tier 3 — Full Privacy Protocol -- IMPLEMENTED
 
-#### 3.1 KYC Compliance Circuit
-**Already designed in veil-anonymous-creds skill (~7,200 constraints)**
+#### 3.1 KYC Compliance Circuit -- IMPLEMENTED
+**Status:** Done -- `circuits/compliance.circom` (10 constraints, Merkle depth 20, Poseidon leaf hash, context-bound nullifiers). Contract: `contracts/sources/compliance.move` with `compliant_transfer` dual-proof verification. 67 compliance util tests, 32 E2E compliance tests.
 
-When cumulative spending exceeds threshold, user provides a SECOND proof proving membership in a KYC credential Merkle tree. Identity still hidden — only "I have a valid KYC credential" is proved.
-
-**New circuit:** `circuits/compliance.circom`
-**Contract:** Add `compliance_vk` to Pool, verify both proofs in `shielded_transfer` when threshold exceeded.
-
-#### 3.2 ElGamal Auditor Pattern
-**Already designed in veil-compliance skill**
-
-Each transfer includes an ElGamal encryption of (amount, randomness) under an auditor public key. The auditor can decrypt if legally required. Observers see only ciphertext.
-
-**Contract:** Add `auditor_key` to Pool. Each TransferEvent includes `encrypted_amount: vector<u8>`.
-**Circuit:** Add constraint proving ElGamal ciphertext encrypts the same amount used in the commitment.
+#### 3.2 Auditor Encryption Pattern -- IMPLEMENTED
+**Status:** Done -- ECDH P-256 + AES-128-GCM (not ElGamal, changed for practical reasons). Auditor key stored in `ComplianceConfig`, encrypted amounts emitted via `ComplianceVerifiedEvent`. Frontend: `useAuditorEncryption` hook. Auditor event browser in UI.
 
 ---
 
-## Privacy Level After Each Tier
+## Privacy Level — Current Status
 
-| Property | Current | +Tier 1 | +Tier 2 | +Tier 3 |
-|----------|---------|---------|---------|---------|
-| Amount hidden | ✅ | ✅ | ✅ | ✅ |
-| Threshold enforced | ✅ | ✅ | ✅ | ✅ |
-| Client secrets encrypted | ❌ | ✅ | ✅ | ✅ |
-| Deposit-transfer unlinkable | ❌ | ✅ | ✅ | ✅ |
-| Sender anonymous | ❌ | ❌ | ✅ | ✅ |
-| UTXO chain hidden | ❌ | ❌ | ✅ | ✅ |
-| Self-serve withdrawal | ❌ | ❌ | ✅ | ✅ |
-| KYC without identity reveal | ❌ | ❌ | ❌ | ✅ |
-| Regulatory selective disclosure | ❌ | ❌ | ❌ | ✅ |
+| Property | Status | Implemented In |
+|----------|--------|---------------|
+| Amount hidden | ✅ | transfer.circom (Poseidon commitments) |
+| Threshold enforced | ✅ | transfer.circom C9 (LessEqThan) |
+| Client secrets encrypted | ❌ | Open (Tier 1.1) |
+| Deposit-transfer unlinkable | ✅ | pool.move (commitment maturity) |
+| Sender anonymous | ✅ | relayer.ts (sponsored transactions) |
+| UTXO chain hidden | ❌ | Open (Tier 2.3 — Merkle accumulator) |
+| Self-serve withdrawal | ❌ | Open (Tier 2.2 — ZK withdrawal circuit) |
+| KYC without identity reveal | ✅ | compliance.circom + compliance.move |
+| Regulatory selective disclosure | ✅ | ECDH auditor encryption |
 
 ## Red Team Findings Reference
 
@@ -298,17 +297,17 @@ Full report: `docs/privacy-red-team-report.md`
 
 | ID | Severity | Title | Fixed By |
 |----|----------|-------|----------|
-| PRIV-001 | CRITICAL | Cross-epoch identity linking via same address | Tier 2.1 (relayer) |
-| PRIV-002 | CRITICAL | Sender visible in Sui tx metadata | Tier 2.1 (relayer) |
-| PRIV-003 | CRITICAL | userSecret plaintext in localStorage | Tier 1.1 (encryption) |
+| PRIV-001 | CRITICAL | Cross-epoch identity linking via same address | ✅ Fixed (relayer) |
+| PRIV-002 | CRITICAL | Sender visible in Sui tx metadata | ✅ Fixed (relayer) |
+| PRIV-003 | CRITICAL | userSecret plaintext in localStorage | Open (Tier 1.1) |
 | PRIV-004 | HIGH | Deposit amount visible on-chain | ✅ Fixed (standard denominations) |
-| PRIV-005 | HIGH | UTXO chain traceable via dynamic fields | Tier 2.3 (Merkle tree) |
-| PRIV-006 | HIGH | Gas coin fingerprinting | Tier 2.1 (relayer) |
-| PRIV-007 | HIGH | PTB atomic deposit+transfer link | Tier 1.2 (maturity) |
-| PRIV-008 | MEDIUM | Anonymity set likely = 1 | Tier 2.3 (Merkle tree) |
-| PRIV-009 | MEDIUM | txHistory plaintext in localStorage | Tier 1.1 (encryption) |
-| PRIV-010 | MEDIUM | Timing correlation deposit→transfer | Tier 1.2 (maturity) |
-| PRIV-011 | MEDIUM | Admin-gated withdrawal (censorship) | Tier 2.2 (ZK withdrawal) |
+| PRIV-005 | HIGH | UTXO chain traceable via dynamic fields | Open (Tier 2.3 Merkle tree) |
+| PRIV-006 | HIGH | Gas coin fingerprinting | ✅ Fixed (relayer) |
+| PRIV-007 | HIGH | PTB atomic deposit+transfer link | ✅ Fixed (commitment maturity) |
+| PRIV-008 | MEDIUM | Anonymity set likely = 1 | Open (Tier 2.3 Merkle tree) |
+| PRIV-009 | MEDIUM | txHistory plaintext in localStorage | Open (Tier 1.1) |
+| PRIV-010 | MEDIUM | Timing correlation deposit→transfer | ✅ Fixed (commitment maturity) |
+| PRIV-011 | MEDIUM | Admin-gated withdrawal (censorship) | Open (Tier 2.2 ZK withdrawal) |
 | PRIV-012 | LOW | Proof generation time side channel | Accept (fixed-size circuit) |
 | PRIV-013 | LOW | Mock proof mode zero privacy | Accept (dev-only) |
 | PRIV-014 | INFO | IP leakage via RPC | Standard (use Tor/VPN) |

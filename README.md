@@ -82,7 +82,7 @@ User: send 100 VEIL to a Tier 3 pool
   Execute UTXO state transition (identical to standard transfer)
 ```
 
-The credential nullifier (`Poseidon(5, credentialSecret, epoch, contextId)`) prevents double-use within an epoch without linking uses across epochs. The auditor ciphertext is logged off-chain; no identity data is stored in contract state.
+The credential nullifier (`Poseidon(5, userSecret, contextId)` where `contextId = Poseidon(6, transferNullifier, userSecret)`) is unique per transfer, preventing compliance proof replay without linking uses across transfers. The auditor ciphertext is emitted via `ComplianceVerifiedEvent`; no identity data is stored in contract state.
 
 ### On-Chain Verification
 
@@ -132,18 +132,46 @@ The credential nullifier (`Poseidon(5, credentialSecret, epoch, contextId)`) pre
 
 ## Security
 
-### 4-Loop Deep Audit (8 agents per loop)
+### 5-Loop Deep Audit
 
 - **Loop 1**: 92 findings, 16 critical fixes (commitment chain, VK timelock, AdminCap binding)
 - **Loop 2**: 24 findings, UTXO model, frontend v2 hashes, anti-griefing deposit
 - **Loop 3**: 5 findings, UTXO verified correct, E2E updated
 - **Loop 4**: CLEAN -- 0 critical, 0 high, 0 medium
+- **Loop 5**: 11 specialized agents (access control, arithmetic, crypto/identity, cross-protocol, DeFi economics, flash loans, infra/ops, object model, oracle/timing, type safety, persona flows) -- see `docs/loop5-audit-report.md`
+
+### Loop 5 Audit Summary (11 agents)
+
+| Agent | Risk | Key Findings |
+|-------|------|-------------|
+| Access Control | LOW | AdminCap isolation correct, all 19 admin functions gated |
+| Arithmetic | LOW | `requiredKycLevel` 8-bit wraparound in circuit (on-chain backstop) |
+| Crypto & Identity | MEDIUM | Domain separation sound, nullifier uniqueness verified |
+| Cross-Protocol | MEDIUM | UpgradeCap unsecured, fake ComplianceConfig defense fragile |
+| DeFi Economics | HIGH | Admin withdrawal uncapped, Sybil on spending limits, no user withdrawal |
+| Flash Loans | MEDIUM | All flash loan vectors blocked by commitment maturity check |
+| Infra & Ops | HIGH | Trusted setup dev-only, relayer open CORS, UpgradeCap in EOA |
+| Object Model | MEDIUM | AdminCap `store` wrapping risk, no object destruction functions |
+| Oracle & Timing | MEDIUM | E2E test epoch mismatch, Date.now() vs Clock desync |
+| Type Safety | MEDIUM | `pool_uid_mut` access surface, type system sound overall |
+| Persona Flows | MEDIUM | userSecret in localStorage, emergency withdraw no timelock |
+
+**Aggregate: 3 critical (infra), 5 high, 15 medium, 25 low, 20 info -- 68 total findings (deduplicated from 11 agents)**
+
+### Pre-Mainnet Blockers (from Loop 5)
+
+1. **UpgradeCap**: transfer to multisig or burn (`sui::package::make_immutable`)
+2. **Trusted setup**: run multi-party ceremony (minimum 3 contributors)
+3. **Relayer**: restrict CORS, add rate limiting, validate TransactionKind
+4. **EPOCH_DURATION_MS**: change to `2_592_000_000` (30 days) before mainnet deploy
+5. **Faucet function**: remove `token::faucet()` from production bytecode
+6. **`requiredKycLevel`**: add `Num2Bits(8)` range proof in compliance circuit
 
 ### Privacy Red Team (15 findings)
 
 - Identified protocol as "confidential compliance system" (amounts hidden, sender visible)
 - Applied standard deposit denominations to resist amount correlation
-- Documented relayer requirement for full sender privacy
+- Relayer pattern implemented for sender privacy
 
 ### Test Coverage
 
@@ -246,28 +274,45 @@ Network: testnet (chain-id `4c78adac`), 1-hour epochs, compliance required
 veil/
 ├── circuits/
 │   ├── transfer.circom              # 11-constraint transfer circuit (v2)
-│   ├── scripts/compile.sh           # Circom compilation + Groth16 trusted setup
+│   ├── compliance.circom            # 10-constraint KYC compliance circuit (Merkle depth 20)
+│   ├── templates/merkle_proof.circom # Poseidon Merkle proof template
+│   ├── scripts/compile.sh           # Transfer circuit compilation + Groth16 trusted setup
+│   ├── scripts/compile-compliance.sh # Compliance circuit compilation + setup
 │   └── test/transfer.test.mjs       # 40 constraint tests (happy + violation + edge)
 ├── contracts/
 │   ├── sources/
 │   │   ├── pool.move                # Core: deposit, transfer, withdraw, UTXO model
-│   │   ├── verifier.move            # sui::groth16 BN254 wrapper
+│   │   ├── compliance.move          # Tier 3: KYC compliance, credential root, auditor key
+│   │   ├── verifier.move            # sui::groth16 BN254 wrapper (transfer + compliance)
 │   │   └── token.move               # VEIL token (6 decimals, TreasuryCap + faucet)
-│   └── tests/pool_tests.move        # 37 tests (happy path, errors, edge cases)
+│   └── tests/                       # 85 tests (pool, compliance, scenario/threat tests)
 ├── frontend/
 │   ├── src/app/                     # Next.js 14 App Router
 │   ├── src/components/              # UI: deposit, transfer, withdraw, privacy status
-│   ├── src/hooks/                   # useProofGeneration, useShieldedTransfer, useSponsoredTransaction
+│   ├── src/hooks/                   # useProofGeneration, useShieldedTransfer, useCompliantTransfer, useSponsoredTransaction
 │   └── src/lib/                     # proof-converter, relayer client, constants, types
 ├── scripts/
 │   ├── src/relayer.ts               # Sponsored tx relayer (sender privacy)
 │   ├── src/e2e-test.ts              # Full pipeline: compile, prove, deploy, verify
+│   ├── src/e2e-compliance-test.ts   # Compliance E2E: dual proofs, ECDH encryption
+│   ├── src/compliance-utils.ts      # Credential leaf, nullifier, Merkle tree builder
 │   ├── src/proof-converter.ts       # snarkjs JSON to Sui arkworks bytes
 │   ├── src/test-converter.ts        # 109 converter tests
+│   ├── src/test-compliance-utils.ts # 67 compliance utility tests
+│   ├── src/fuzz-tests.ts            # Property-based fuzz tests (fast-check)
+│   ├── src/seed-credential-tree.ts  # Credential tree seeding for testnet
 │   └── src/deploy.ts                # Contract deployment helper
 └── docs/
     ├── architecture.md              # Full architecture description
+    ├── FUTURE_IMPROVEMENTS.md       # Upgrade roadmap with implementation status
+    ├── SPEC.md                      # Protocol specification
+    ├── loop5-audit-report.md        # Loop 5: 11-agent comprehensive audit
+    ├── tier3-audit-report.md        # Tier 3 compliance audit (10 agents)
+    ├── privacy-red-team-report.md   # Privacy red team (15 findings)
+    ├── zk-vulnerability-research.md # ZK vulnerability classes research
     ├── veil-architecture-report.html # Print-ready HTML report
+    ├── demo-showcase.html           # Demo guide with screenshots
+    ├── protocol-flow.html           # Interactive protocol flow diagram
     └── c4-*.html                    # Interactive C4 diagrams
 ```
 
@@ -355,12 +400,16 @@ For production, the relayer should be run by multiple independent parties with n
 
 ## Known Limitations (Documented)
 
-- ~~Sender address visible on Sui transactions (needs relayer for full privacy)~~ **Solved: relayer pattern implemented**
-- UTXO chain traceable via transaction effects (needs Merkle accumulator)
+- ~~Sender address visible on Sui transactions~~ **Solved: relayer pattern implemented**
+- ~~KYC compliance requires identity disclosure~~ **Solved: ZK credential proof (Tier 3)**
+- UTXO chain traceable via transaction effects (needs Merkle accumulator -- Tier 2.3)
+- No user-initiated withdrawal (needs ZK withdrawal circuit -- Tier 2.2)
 - Trusted setup uses single contributor (needs MPC ceremony for mainnet)
-- Admin can drain pool via withdraw (needs ZK-proof-gated redemption)
-- Tier 3 credential Merkle root update is admin-gated; revocation latency = time between root updates
-- Auditor ciphertext is logged off-chain only; on-chain auditability requires an indexer
+- Admin can drain pool via timelock withdrawal or instant emergency_withdraw when frozen
+- `userSecret` stored in plaintext localStorage (needs encryption -- Tier 1.1)
+- Sybil attack on spending limits: multiple `userSecret` values bypass per-chain threshold
+- UpgradeCap not burned or multisig-controlled (pre-mainnet blocker)
+- `EPOCH_DURATION_MS` hardcoded to 1 hour (testnet); must be changed for mainnet
 
 ## Track
 
