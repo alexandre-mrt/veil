@@ -20,6 +20,8 @@ Veil introduces **cumulative spending proofs** -- a novel ZK primitive that:
 ## How It Works
 
 > **[Interactive Protocol Flow Diagram](docs/protocol-flow.html)** -- visual architecture with animated flows, expandable circuit details, and compliance path breakdown.
+>
+> **[Demo Guide](docs/demo-showcase.html)** -- step-by-step walkthrough with screenshots and what to look for at each stage.
 
 ```
 User: send 100 VEIL anonymously
@@ -255,9 +257,10 @@ veil/
 ├── frontend/
 │   ├── src/app/                     # Next.js 14 App Router
 │   ├── src/components/              # UI: deposit, transfer, withdraw, privacy status
-│   ├── src/hooks/                   # useProofGeneration, useShieldedTransfer, useVeilPool
-│   └── src/lib/                     # proof-converter, constants, types
+│   ├── src/hooks/                   # useProofGeneration, useShieldedTransfer, useSponsoredTransaction
+│   └── src/lib/                     # proof-converter, relayer client, constants, types
 ├── scripts/
+│   ├── src/relayer.ts               # Sponsored tx relayer (sender privacy)
 │   ├── src/e2e-test.ts              # Full pipeline: compile, prove, deploy, verify
 │   ├── src/proof-converter.ts       # snarkjs JSON to Sui arkworks bytes
 │   ├── src/test-converter.ts        # 109 converter tests
@@ -279,9 +282,80 @@ veil/
 7. **Dual-proof compliant transfers** -- transfer proof + compliance proof verified atomically on-chain
 8. **Epoch-scoped credential nullifiers** -- prove KYC once per epoch without linking epochs
 
+## Sender Privacy (Relayer)
+
+Veil hides transaction **amounts** via ZK proofs, but the sender address is still visible on-chain by default. The relayer pattern solves this by submitting transactions on behalf of users.
+
+### How It Works
+
+Sui natively supports **sponsored transactions** where one address pays gas for another's transaction. Veil leverages this:
+
+```
+User (browser)                          Relayer (server)                    Sui Network
+     |                                       |                                  |
+     |-- 1. Build TransactionKind ---------->|                                  |
+     |   (Move calls, no gas info)           |                                  |
+     |                                       |-- 2. Add gas payment ----------->|
+     |<- 3. Return full TX bytes ------------|   (relayer's coin)               |
+     |                                       |                                  |
+     |-- 4. Sign TX data (wallet) --------->|                                  |
+     |                                       |-- 5. Co-sign + submit ---------> |
+     |                                       |                                  |
+     |<- 6. Digest -------------------------|<-- 7. Confirm -------------------|
+```
+
+On-chain, the transaction shows:
+- **sender** = user address (required for Move-level authorization)
+- **gas payer** = relayer address (the network-visible submitter)
+
+This means observers scanning the network see the relayer's address, not individual users. Combined with multiple users sharing the same relayer, this provides a strong anonymity set.
+
+### Running the Relayer
+
+```bash
+# Demo mode (local, shows the full flow)
+cd scripts && bun run relayer:demo
+
+# Server mode (HTTP API for frontend integration)
+cd scripts && bun run relayer
+# or with custom port:
+bun run src/relayer.ts serve --port 4000
+```
+
+### Frontend Integration
+
+The frontend provides `useSponsoredTransaction` hook and `submitViaRelayer` utility:
+
+```typescript
+import { useSponsoredTransaction } from "@/hooks/useSponsoredTransaction";
+
+function PrivateTransfer() {
+  const { execute, step, isPending } = useSponsoredTransaction();
+
+  const handleTransfer = () => execute((tx) => {
+    tx.moveCall({
+      target: `${PACKAGE_ID}::pool::shielded_transfer`,
+      arguments: [/* ... */],
+    });
+  });
+}
+```
+
+### Trust Model
+
+| Aspect | Guarantee |
+|--------|-----------|
+| Transaction integrity | User signs the Move call -- relayer cannot alter it |
+| Gas payment | Relayer pays -- user needs no SUI balance |
+| Sender privacy | Relayer's address appears on-chain, not user's |
+| Trust requirement | Relayer can censor (refuse to submit) but cannot steal funds or forge transactions |
+| Mitigation | Multiple independent relayers, user can fall back to direct submission |
+
+For production, the relayer should be run by multiple independent parties with no-log policies, or replaced by a decentralized gas station network.
+
 ## Known Limitations (Documented)
 
-- Sender address visible on Sui transactions (needs relayer for full privacy)
+- ~~Sender address visible on Sui transactions (needs relayer for full privacy)~~ **Solved: relayer pattern implemented**
 - UTXO chain traceable via transaction effects (needs Merkle accumulator)
 - Trusted setup uses single contributor (needs MPC ceremony for mainnet)
 - Admin can drain pool via withdraw (needs ZK-proof-gated redemption)
