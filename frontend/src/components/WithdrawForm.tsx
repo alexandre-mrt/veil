@@ -9,10 +9,6 @@ import { useWithdraw } from "@/hooks/useWithdraw";
 import { appendTx } from "@/lib/txHistory";
 import styles from "./components.module.css";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function formatSpending(value: bigint): string {
   const divisor = 10n ** BigInt(VEIL_DECIMALS);
   const whole = value / divisor;
@@ -22,18 +18,10 @@ function formatSpending(value: bigint): string {
   return `${whole}.${fracStr.slice(0, 4)}`;
 }
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
-
 interface WithdrawFormProps {
   readonly privateState?: VeilPrivateState | null;
   readonly onTxAppended?: () => void;
 }
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 export function WithdrawForm({ privateState, onTxAppended }: WithdrawFormProps) {
   const account = useCurrentAccount();
@@ -41,7 +29,6 @@ export function WithdrawForm({ privateState, onTxAppended }: WithdrawFormProps) 
 
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
-  const [showAdminForm, setShowAdminForm] = useState(false);
   const [result, setResult] = useState<{ success: boolean; digest?: string; error?: string } | null>(null);
 
   const effectiveRecipient = recipient.trim() || account?.address || "";
@@ -87,100 +74,79 @@ export function WithdrawForm({ privateState, onTxAppended }: WithdrawFormProps) 
   return (
     <div className={styles.withdrawForm}>
       <div className={styles.withdrawFormAccent} />
-      <span className={styles.withdrawTitle}>Withdraw</span>
+      <span className={styles.withdrawTitle}>ZK Withdrawal</span>
 
-      <div className={styles.withdrawTier2Banner}>
-        ZK-proof withdrawal is coming in Tier 2. Private withdrawals will use zero-knowledge proofs to unshield funds without revealing the sender.
+      <div className={styles.withdrawSpendingInfo}>
+        Withdraw funds from the shielded pool using a zero-knowledge proof.
+        Your commitment is consumed and tokens are sent to the specified recipient.
+        {privateState && (
+          <> Cumulative spending this epoch: {formatSpending(privateState.cumulativeSpending)} VEIL</>
+        )}
       </div>
 
-      {privateState && (
-        <div className={styles.withdrawSpendingInfo}>
-          Your cumulative spending this epoch: {formatSpending(privateState.cumulativeSpending)} VEIL
-        </div>
-      )}
-
-      <div className={styles.withdrawAdminNotice}>
-        For emergency withdrawal, contact the pool admin. Only the admin can process withdrawals in the current version.
-      </div>
-
-      <label className={styles.withdrawAdminToggle}>
+      <div className={styles.withdrawInputGroup}>
+        <label htmlFor="withdraw-amount" className={styles.withdrawInputLabel}>
+          Amount (VEIL)
+        </label>
         <input
-          type="checkbox"
-          checked={showAdminForm}
-          onChange={(e) => setShowAdminForm(e.target.checked)}
+          id="withdraw-amount"
+          type="number"
+          min="0"
+          step="0.000001"
+          placeholder="0.00"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className={styles.withdrawInput}
+          disabled={isPending}
         />
-        Admin Access
-      </label>
+      </div>
 
-      {showAdminForm && (
-        <>
-          <div className={styles.withdrawInputGroup}>
-            <label htmlFor="withdraw-amount" className={styles.withdrawInputLabel}>
-              Amount (VEIL)
-            </label>
-            <input
-              id="withdraw-amount"
-              type="number"
-              min="0"
-              step="0.000001"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className={styles.withdrawInput}
-              disabled={isPending}
-            />
-          </div>
+      <div className={styles.withdrawInputGroup}>
+        <label htmlFor="withdraw-recipient" className={styles.withdrawInputLabel}>
+          Recipient address (default: your wallet)
+        </label>
+        <input
+          id="withdraw-recipient"
+          type="text"
+          placeholder={account?.address ?? "0x..."}
+          value={recipient}
+          onChange={(e) => setRecipient(e.target.value)}
+          className={styles.withdrawInput}
+          disabled={isPending}
+        />
+      </div>
 
-          <div className={styles.withdrawInputGroup}>
-            <label htmlFor="withdraw-recipient" className={styles.withdrawInputLabel}>
-              Recipient address (default: your wallet)
-            </label>
-            <input
-              id="withdraw-recipient"
-              type="text"
-              placeholder={account?.address ?? "0x..."}
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              className={styles.withdrawInput}
-              disabled={isPending}
-            />
-          </div>
+      <button
+        type="button"
+        className={styles.withdrawSubmitBtn}
+        disabled={isDisabled}
+        onClick={(e) => handleSubmit(e as unknown as FormEvent)}
+      >
+        {isPending ? "Generating proof..." : "Withdraw"}
+      </button>
 
-          <button
-            type="button"
-            className={styles.withdrawSubmitBtn}
-            disabled={isDisabled}
-            onClick={(e) => handleSubmit(e as unknown as FormEvent)}
-          >
-            {isPending ? "Signing..." : "Withdraw from Pool"}
-          </button>
-
-          {result && (
-            <div
-              className={`${styles.withdrawResult} ${
-                result.success
-                  ? styles.withdrawResultSuccess
-                  : styles.withdrawResultError
-              }`}
-            >
-              {result.success ? (
-                <>
-                  Withdrawal confirmed.{" "}
-                  <a
-                    href={`${EXPLORER_TX_URL}/${result.digest}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.withdrawResultLink}
-                  >
-                    View on Suiscan
-                  </a>
-                </>
-              ) : (
-                result.error
-              )}
-            </div>
+      {result && (
+        <div
+          className={`${styles.withdrawResult} ${
+            result.success ? styles.withdrawResultSuccess : styles.withdrawResultError
+          }`}
+        >
+          {result.success ? (
+            <>
+              Withdrawal confirmed.{" "}
+              <a
+                href={`${EXPLORER_TX_URL}/${result.digest}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.withdrawResultLink}
+              >
+                View on Suiscan
+              </a>
+            </>
+          ) : (
+            result.error
           )}
-        </>
+        </div>
       )}
     </div>
   );
