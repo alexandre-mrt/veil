@@ -146,7 +146,7 @@ async function generateRealProof(
   const txAmountHash = F.toString(poseidon([3n, txAmount, salt]));
 
   // Build Merkle proof for old commitment inclusion
-  // NIGHT-SHIFT-REVIEW: Merkle tree is built with mock data — requires on-chain indexer to fetch real commitment leaves
+  // Demo: single-leaf Merkle tree. Production requires indexing all pool commitments.
   const merkleTree = new MerkleTree();
   await merkleTree.init();
   // Insert old commitment as the only leaf (demo mode)
