@@ -1,13 +1,15 @@
 /**
- * Dynamically imports a module by name, bypassing webpack static analysis.
- * This prevents build failures when optional dependencies are not installed.
- *
- * Uses Function constructor to create a dynamic import that webpack cannot
- * statically analyze, allowing optional dependencies to be missing at build time.
+ * Dynamically imports known optional dependencies.
  */
 export async function dynamicRequire(moduleName: string): Promise<unknown> {
-  const importFn = new Function("m", "return import(m)") as (
-    m: string,
-  ) => Promise<unknown>;
-  return importFn(moduleName);
+  switch (moduleName) {
+    case "circomlibjs":
+      // @ts-expect-error — no type declarations
+      return import("circomlibjs");
+    case "snarkjs":
+      // @ts-expect-error — no type declarations for dynamic import
+      return import("snarkjs");
+    default:
+      throw new Error(`Unknown dynamic module: ${moduleName}`);
+  }
 }
