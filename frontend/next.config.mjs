@@ -16,7 +16,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
-              "connect-src 'self' https://fullnode.testnet.sui.io https://sui-testnet.mystenlabs.com wss://sui-testnet.mystenlabs.com https://sui-mainnet.mystenlabs.com http://localhost:3001",
+              "connect-src 'self' https://*.sui.io https://*.mystenlabs.com wss://*.mystenlabs.com https://api.slush.app http://localhost:3001",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data:",

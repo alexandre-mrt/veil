@@ -1,10 +1,9 @@
 import { createDAppKit } from "@mysten/dapp-kit-core";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
 
-let _instance: any = null;
-let _initPromise: Promise<any> | null = null;
+let _instance: ReturnType<typeof createInstance> | null = null;
 
-async function createInstance() {
-  const { SuiGrpcClient } = await import("@mysten/sui/grpc");
+function createInstance() {
   return createDAppKit({
     networks: ["testnet", "mainnet"] as const,
     defaultNetwork: "testnet" as const,
@@ -12,27 +11,22 @@ async function createInstance() {
       new SuiGrpcClient({
         network,
         baseUrl: network === "mainnet"
-          ? "https://sui-mainnet.mystenlabs.com"
-          : "https://sui-testnet.mystenlabs.com",
+          ? "https://fullnode.mainnet.sui.io:443"
+          : "https://fullnode.testnet.sui.io:443",
       }),
     autoConnect: true,
   });
 }
 
-export async function getDAppKitAsync() {
-  if (_instance) return _instance;
-  if (!_initPromise) _initPromise = createInstance();
-  _instance = await _initPromise;
-  return _instance;
-}
-
 export function getDAppKit() {
-  if (!_instance) throw new Error("DAppKit not initialized — call getDAppKitAsync first");
+  if (!_instance) {
+    _instance = createInstance();
+  }
   return _instance;
 }
 
 declare module "@mysten/dapp-kit-react" {
   interface Register {
-    dAppKit: any;
+    dAppKit: ReturnType<typeof createInstance>;
   }
 }
