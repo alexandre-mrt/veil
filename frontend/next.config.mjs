@@ -15,7 +15,7 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'",
               "connect-src 'self' https://*.sui.io https://*.mystenlabs.com wss://*.mystenlabs.com https://api.slush.app http://localhost:3001",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
