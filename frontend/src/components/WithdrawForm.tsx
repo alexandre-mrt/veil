@@ -1,12 +1,8 @@
 "use client";
 
 import { useCurrentAccount } from "@mysten/dapp-kit-react";
-import { type FormEvent, useCallback, useState } from "react";
-import { VEIL_DECIMALS, EXPLORER_TX_URL } from "@/lib/constants";
-import { parseAmountToBigInt } from "@/lib/utils";
 import type { VeilPrivateState } from "@/lib/types";
-import { useWithdraw } from "@/hooks/useWithdraw";
-import { appendTx } from "@/lib/txHistory";
+import { VEIL_DECIMALS } from "@/lib/constants";
 import styles from "./components.module.css";
 
 function formatSpending(value: bigint): string {
@@ -23,53 +19,8 @@ interface WithdrawFormProps {
   readonly onTxAppended?: () => void;
 }
 
-export function WithdrawForm({ privateState, onTxAppended }: WithdrawFormProps) {
+export function WithdrawForm({ privateState }: WithdrawFormProps) {
   const account = useCurrentAccount();
-  const { withdraw, isPending } = useWithdraw();
-
-  const [amount, setAmount] = useState("");
-  const [recipient, setRecipient] = useState("");
-  const [result, setResult] = useState<{ success: boolean; digest?: string; error?: string } | null>(null);
-
-  const effectiveRecipient = recipient.trim() || account?.address || "";
-
-  const handleSubmit = useCallback(
-    async (e: FormEvent) => {
-      e.preventDefault();
-      setResult(null);
-
-      if (!account) {
-        setResult({ success: false, error: "Wallet not connected" });
-        return;
-      }
-
-      const parsed = Number.parseFloat(amount);
-      if (Number.isNaN(parsed) || parsed <= 0) {
-        setResult({ success: false, error: "Invalid amount" });
-        return;
-      }
-
-      if (!effectiveRecipient) {
-        setResult({ success: false, error: "No recipient address" });
-        return;
-      }
-
-      const amountRaw = parseAmountToBigInt(amount, VEIL_DECIMALS);
-
-      const txResult = await withdraw(amountRaw, effectiveRecipient);
-      setResult(txResult);
-
-      if (txResult.success && txResult.digest) {
-        appendTx({ type: "withdraw", amount: amountRaw, digest: txResult.digest });
-        onTxAppended?.();
-        setAmount("");
-        setRecipient("");
-      }
-    },
-    [account, amount, effectiveRecipient, withdraw, onTxAppended],
-  );
-
-  const isDisabled = isPending || !account || !amount;
 
   return (
     <div className={styles.withdrawForm}>
@@ -78,76 +29,35 @@ export function WithdrawForm({ privateState, onTxAppended }: WithdrawFormProps) 
 
       <div className={styles.withdrawSpendingInfo}>
         Withdraw funds from the shielded pool using a zero-knowledge proof.
-        Your commitment is consumed and tokens are sent to the specified recipient.
-        {privateState && (
-          <> Cumulative spending this epoch: {formatSpending(privateState.cumulativeSpending)} VEIL</>
-        )}
+        Your commitment is consumed and a change commitment is created for the remaining balance.
+        The withdrawal is bound to your address via the proof — no front-running possible.
       </div>
 
-      <div className={styles.withdrawInputGroup}>
-        <label htmlFor="withdraw-amount" className={styles.withdrawInputLabel}>
-          Amount (VEIL)
-        </label>
-        <input
-          id="withdraw-amount"
-          type="number"
-          min="0"
-          step="0.000001"
-          placeholder="0.00"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className={styles.withdrawInput}
-          disabled={isPending}
-        />
-      </div>
-
-      <div className={styles.withdrawInputGroup}>
-        <label htmlFor="withdraw-recipient" className={styles.withdrawInputLabel}>
-          Recipient address (default: your wallet)
-        </label>
-        <input
-          id="withdraw-recipient"
-          type="text"
-          placeholder={account?.address ?? "0x..."}
-          value={recipient}
-          onChange={(e) => setRecipient(e.target.value)}
-          className={styles.withdrawInput}
-          disabled={isPending}
-        />
-      </div>
-
-      <button
-        type="button"
-        className={styles.withdrawSubmitBtn}
-        disabled={isDisabled}
-        onClick={(e) => handleSubmit(e as unknown as FormEvent)}
-      >
-        {isPending ? "Generating proof..." : "Withdraw"}
-      </button>
-
-      {result && (
-        <div
-          className={`${styles.withdrawResult} ${
-            result.success ? styles.withdrawResultSuccess : styles.withdrawResultError
-          }`}
-        >
-          {result.success ? (
-            <>
-              Withdrawal confirmed.{" "}
-              <a
-                href={`${EXPLORER_TX_URL}/${result.digest}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.withdrawResultLink}
-              >
-                View on Suiscan
-              </a>
-            </>
-          ) : (
-            result.error
-          )}
+      {privateState && (
+        <div className={styles.withdrawSpendingInfo}>
+          Cumulative spending this epoch: {formatSpending(privateState.cumulativeSpending)} VEIL
         </div>
       )}
+
+      <div style={{
+        padding: 16, background: "#141414", border: "1px solid #1f1f1f",
+        color: "#808080", fontSize: 12, lineHeight: 1.8, marginTop: 8,
+      }}>
+        <span style={{ color: "#00ff88", fontWeight: 700 }}>How it works:</span>
+        <br />
+        1. The withdraw circuit proves you own a commitment (Poseidon identity binding)
+        <br />
+        2. The proof binds to your recipient address (Poseidon tag 8) — cannot be redirected
+        <br />
+        3. A change commitment is created for remaining balance (partial withdrawal supported)
+        <br />
+        4. The on-chain contract verifies the Groth16 proof, consumes the UTXO, and transfers tokens
+        <br /><br />
+        <span style={{ color: "#ffaa00" }}>
+          The pool admin must set the withdraw verification key before ZK withdrawals are enabled.
+          {!account && " Connect your wallet to check the pool status."}
+        </span>
+      </div>
     </div>
   );
 }
