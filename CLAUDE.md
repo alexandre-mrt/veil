@@ -3,7 +3,7 @@
 ## Overview
 ZK privacy payments with cumulative spending proofs and UTXO-style commitments on Sui.
 Circuit v2: Poseidon(4) identity-bound commitments, note-based nullifiers, domain-separated txAmountHash.
-5-loop security audit (4 contract loops + 1 comprehensive 11-agent audit). Final grade: 142/165 (86%). 124 Move tests, 449+ total tests, 0 failures.
+6-loop security audit (4 contract + 1 comprehensive 11-agent + 1 validation). Final grade: 157.8/165 (95.6%). 124 Move tests, 3456+ total tests, 0 failures.
 Tier 3 compliance: dual Groth16 proofs (transfer + compliance.circom), context-bound credential nullifiers (unique per transfer), ECDH P-256 + AES-GCM auditor encryption.
 Merkle accumulator (depth-20 Poseidon tree) for commitment privacy. Multi-sig governance (multisig.move). Partial ZK withdrawal.
 Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-end.
@@ -58,7 +58,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 - Loop 4: CLEAN (0 critical, 0 high, 0 medium)
 - Loop 5: 11-agent comprehensive audit (68 findings: 3C, 5H, 15M, 25L, 20I) -- see docs/loop5-audit-report.md
 - Privacy red team: 15 findings, standard deposits applied
-- Final grade: **142/165 (86%) -- STRONG** -- see docs/final-grade-report.md
+- Final grade: **157.8/165 (95.6%) -- EXCEPTIONAL** (7 grading iterations) -- see docs/final-grade-report.md
 
 ## Error Codes
 ### pool.move (1-35)
@@ -101,6 +101,14 @@ E_ACTION_NOT_APPROVED=203, E_INVALID_SIGNER_COUNT=204, E_POOL_MISMATCH=205
 - UpgradeCap: `0x81637da203607af529fc2652c49d709e48d2246bc6097963ffb358d6b28a018e`
 - Frontend: https://frontend-sepia-nine-30.vercel.app
 - Chain: testnet, Epoch duration: 1h, Move edition 2024
+
+## Deployment Gotchas
+- **CSP**: Next.js needs `unsafe-inline` + `unsafe-eval` in script-src. Wallet SDKs need `*.sui.io`, `api.slush.app` in connect-src. Google Fonts need style-src + font-src entries.
+- **gRPC URL**: use `fullnode.testnet.sui.io:443` (not `sui-testnet.mystenlabs.com` which has no DNS)
+- **Dynamic imports**: `new Function("m", "return import(m)")` fails in production bundles. Use real `import()` in a switch with `@ts-expect-error`.
+- **Vercel deploy**: always `vercel --prod --force --yes`. Plain `--prod` may not update the alias.
+- **TreasuryCap**: owned by deployer after publish. Transfer to user/multisig if faucet should be user-callable.
+- **Module splits**: when moving functions between modules, update ALL frontend references to the new target path.
 
 ## Skills
 - `/sui-move` -- Sui Move patterns
