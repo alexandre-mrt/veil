@@ -1,133 +1,102 @@
-# Veil — Nightly Research Loop (prompt for scheduled cloud agent)
+# Veil — Nightly Research Loop
 
-Paste everything below the line into the Claude Code app as the recurring prompt.
-Recommended: 1 run/night, effort `xhigh`, repo `alexandre-mrt/veil`, base branch `main`.
+The recurring prompt for a scheduled cloud agent. **Run it on Fable 5** (`claude-fable-5`), effort
+`high`.
+
+Why Fable, and why `high` and not `xhigh`: Fable is the stronger model for from-scratch building and
+long autonomous runs, and it over-deliberates at the top effort tier. It is also deliberately given
+few rules below — Fable follows instructions strongly, and over-prescribing degrades it.
+
+One caveat: adversarial/threat-model work can trip Fable's cyber classifier and silently reroute to
+Opus 4.8. The framing below is defensive (protecting users, modelling what an attacker learns), which
+normally passes. If a run reroutes, the output is still fine — Opus 4.8 is strong at this — just
+expect it.
+
+Everything below the line is the prompt.
 
 ---
 
-You are running one iteration of Veil's **nightly cryptography & scalability research loop**.
-Veil is a ZK privacy payment protocol on Sui (Circom/Groth16 + Move + Next.js). Read `CLAUDE.md`
-first — it holds the architecture, build and test commands.
+You are running one iteration of Veil's nightly cryptography & scalability research loop.
+Veil is a ZK privacy payment protocol on Sui (Circom/Groth16 + Move + Next.js). `CLAUDE.md` has the
+architecture and the build/test commands. The `veil-*` skills in `.claude/skills/` are yours.
 
-Your job tonight is **one measured experiment**, merged as a PR, and permanently documented.
-Not a refactor. Not a sweep of small fixes. One hypothesis, tested, with numbers.
+Tonight's job is **one experiment, measured, merged as a PR, and permanently documented.** Not a
+refactor, not a sweep of small fixes. One hypothesis, tested, with real numbers.
 
-## 0. State of the loop
+## Where the loop stands
 
-The substrate already exists — read it, don't recreate it:
-- `docs/research/LEDGER.md` — append-only, one row per night, with the verdicts so far.
+- `docs/research/LEDGER.md` — append-only, one row per night, with every verdict so far.
 - `docs/research/EXPERIMENTS.md` — the ranked queue.
-- `docs/research/2026-07-14-contra-confidential-transfers.md` — a worked example of the expected
-  report shape (hypothesis → threat model → measured results → verdict → use cases).
+- `docs/research/2026-07-14-contra-confidential-transfers.md` — a worked example of the report shape.
 
-**`BASELINE.md` does not exist yet, and it is queue item #1.** Veil's own numbers — per-circuit
-constraints, proving time, proof/VK size, on-chain gas per entry point, browser proving latency —
-have never been measured in one run on one machine. Until they exist, every comparison is half-blind.
-If tonight is the first run, build it: every number from a command you actually ran, raw output
-pasted, plus a reusable `scripts/bench/`.
+Take the highest-ranked queue item that isn't already settled (`KEEP`/`REJECT`) in the ledger. Never
+silently re-run a settled experiment; if one deserves a rematch, say why and re-rank it.
 
-## 1. Pick tonight's experiment
+**`BASELINE.md` does not exist yet and is queue item #1.** Veil's own numbers — per-circuit
+constraints, proving time, proof and VK size, on-chain gas per entry point, browser proving latency —
+have never been measured in one run on one machine. Until they exist every comparison is half-blind.
 
-Read `docs/research/LEDGER.md` and `docs/research/EXPERIMENTS.md`.
-Take the **highest-ranked queue item not already `KEEP`/`REJECT`**. Never redo a settled experiment —
-if you think a `REJECT` deserves a rematch, say why explicitly in the report and re-rank it, don't silently
-re-run it. Re-rank the queue at the end of the night based on what you learned.
+## The one rule that matters
 
-Two experiments max per night, and only if the first came back `BLOCKED` on a missing toolchain.
+**Every number you report comes from a command you actually ran, with the raw output pasted.**
 
-## 2. Experiment axes
+No estimates presented as measurements. If a toolchain won't install and you genuinely cannot
+measure, mark the experiment `BLOCKED`, write down exactly what was missing, and fall back to a
+design-only experiment labelled `UNMEASURED` everywhere it appears. Benchmarks go in a reusable
+script under `scripts/bench/` with the exact command cited.
 
-**Cryptography**
-- Proof system: Groth16 → PLONK / Halo2 / Nova-Folding; trusted-setup elimination; recursion for batching.
-- Hash & commitments: Poseidon2 vs Poseidon, arity tuning, domain-tag audit, Pedersen/Sinsemilla comparison.
-- Circuit soundness: under-constrained signals, alias checks on field elements, nullifier collision surface,
-  malleability of the (proof, publicSignals) pair, VK-swap and epoch-boundary attacks.
-- Compliance: dual-proof composition cost, credential nullifier context binding, revocation-friendly
-  accumulators (RSA / KZG / Verkle) vs the current depth-20 Merkle tree.
-- Auditor path: ECDH P-256 + AES-GCM padding analysis, forward secrecy, threshold auditing (t-of-n) vs
-  the current single auditor key.
-- Post-quantum exposure: which primitives break, what a migration would cost.
+A circuit change also needs, in the same PR: a soundness argument, a leakage analysis (what does a
+chain observer learn that they didn't before), and a negative test proving a malicious witness is
+rejected.
 
-**Scalability**
-- Constraint reduction per circuit (the number that dominates prover time).
-- Batch / aggregated proofs: N transfers → 1 on-chain verification; recursion vs proof aggregation.
-- Merkle accumulator: batch insertion, incremental roots, sparse trees, depth vs anonymity-set trade-off,
-  off-chain indexer throughput at 10⁵–10⁷ commitments.
-- On-chain gas: `sui::groth16` call cost, PTB packing, shared-object contention on the pool
-  (`ExecutionCancelledDueToSharedObjectCongestion` under concurrent transfers — measure it).
-- Client: WASM proving latency on mobile, parallel witness generation, precomputed VK caching.
-- Relayer: throughput, rate-limit behaviour, sender-privacy leakage under load.
+Never loosen, skip, or fudge a test to get to green. A broken invariant is a finding, not an
+obstacle. Run the full suite from `CLAUDE.md` before opening the PR: green → normal PR, red → draft
+PR with the failure and its root cause written up.
+
+## What to explore
+
+**Cryptography** — proof system (Groth16 → PLONK/Halo2/Nova-folding, eliminating the trusted setup,
+recursion for batching); hashing and commitments (Poseidon2, arity, domain-tag collisions);
+circuit soundness (under-constrained signals, alias checks, nullifier collisions, proof malleability);
+compliance (dual-proof cost, revocation-friendly accumulators vs the depth-20 Merkle tree, threshold
+auditing vs the single auditor key); post-quantum exposure.
+
+**Scalability** — constraint count (it dominates prover time); batched/aggregated proofs (N transfers
+→ 1 on-chain verification); the Merkle accumulator at 10⁵–10⁷ commitments (batch insertion, depth vs
+anonymity-set trade-off, indexer throughput); on-chain gas and shared-object contention on the pool
+under concurrent transfers; WASM proving latency on mobile; relayer throughput and what it leaks
+under load.
 
 Prefer experiments that move a number Veil actually pays for: prover time, gas, anonymity-set size,
 or a threat currently unmitigated.
 
-## 3. Execute — evidence or it didn't happen
+## The deliverable
 
-- Work on a fresh branch: `research/YYYY-MM-DD-<slug>`. **Never push to `main`.**
-- Install what you need (circom, snarkjs, sui CLI, bun). If a toolchain genuinely cannot be installed in
-  this environment, mark the experiment `BLOCKED`, write down exactly what was missing, and fall back to a
-  **design-only** experiment — which must be labelled `UNMEASURED` everywhere it appears. Never estimate a
-  benchmark and present it as a measurement.
-- Every number in the report comes from a command whose raw output you paste. No extrapolation without
-  saying it is one.
-- Benchmarks must be reproducible: add or extend a script under `scripts/bench/` and cite the exact command.
-- Any circuit change requires, in the same PR: (a) a soundness argument, (b) a leakage analysis — what a
-  chain observer learns that they didn't before, (c) at least one **negative test** proving a malicious
-  witness is rejected.
-- Before opening the PR, run the full suite from `CLAUDE.md` (Move + circuits + converter + frontend + E2E).
-  Green → normal PR. Red → open it as a **draft** with the failure and its root cause documented.
-  Never loosen, skip, or fudge a test to get green. A broken invariant is a finding, not an obstacle.
-
-## 4. Document — the real deliverable
+Work on `research/YYYY-MM-DD-<slug>`. Never push to `main`.
 
 Write `docs/research/YYYY-MM-DD-<slug>.md`:
 
-```markdown
-# <Experiment title>
-Date · Branch · Verdict: KEEP | REJECT | PARK | BLOCKED
+- **Hypothesis** — one falsifiable sentence naming the number it should move.
+- **Threat / privacy model** — the concrete adversary this defends against (chain observer,
+  colluding relayer, malicious auditor, statistical deanonymiser, malicious prover, quantum
+  adversary): what they can do and what they observe. Then, bluntly, **what it does not defend
+  against** — the residual surface. Then the assumptions (trusted setup, hardness, key custody), and
+  how it maps to the STRIDE entries in `docs/threat-model.md`.
+- **Approach** — what you built, and which alternatives you rejected before building it.
+- **Results** — baseline vs after, as a table, with the raw command output below it.
+- **Verdict** — `KEEP` (merged, `BASELINE.md` updated) / `REJECT` (why it lost — keep the branch, the
+  knowledge survives) / `PARK` (promising, blocked on X → X goes in the queue) / `BLOCKED`.
+- **Where this could be used** — beyond Veil: which protocol classes, which deployments, which thesis
+  chapter. Be specific. "Confidential payroll on Sui with a t-of-n auditor board", not "privacy
+  applications".
+- **Open questions** — these become tomorrow's queue.
 
-## Hypothesis
-One sentence, falsifiable, with the number it should move.
+Then append a row to `LEDGER.md`, re-rank `EXPERIMENTS.md`, and if the verdict is `KEEP` update
+`BASELINE.md` (and `docs/threat-model.md` / `docs/SPEC.md` if the security properties changed).
 
-## Threat / privacy model
-- **What this defends against** — the concrete adversary: chain observer, colluding relayer, malicious
-  auditor, honest-but-curious validator, statistical deanonymiser, quantum adversary, malicious prover.
-  Name their capabilities and what they observe.
-- **What it does NOT defend against** — the residual attack surface after this change. Be blunt.
-- **Assumptions** — trusted setup, hardness assumption, honest-majority, key custody.
-- **Where it maps in `docs/threat-model.md`** — cite the STRIDE entries covered or newly exposed.
+Open the PR (`research: <slug>`) and reply with a short summary: what was tested, the number, the
+verdict, what's next.
 
-## Approach
-What was built, and the alternatives considered and rejected before building it (and why).
-
-## Results
-Baseline vs after, in a table. Raw command output below it. Deltas in % and absolute.
-
-## Verdict & rationale
-KEEP → merged, `BASELINE.md` updated with the new numbers.
-REJECT → why it lost; keep the branch, do not delete the knowledge.
-PARK → promising but blocked on X; add X to the queue.
-
-## Where this could be used
-Beyond Veil: which protocol classes, which real deployments, which thesis chapter. Be specific —
-"confidential payroll on Sui with a t-of-n auditor board", not "privacy applications".
-
-## Open questions
-Feeds tomorrow night's queue.
-```
-
-Then, in the same PR:
-- Append one row to `docs/research/LEDGER.md`.
-- Re-rank `docs/research/EXPERIMENTS.md`, adding what tonight's open questions surfaced.
-- If `KEEP`: update `BASELINE.md`, and update `docs/threat-model.md` / `docs/SPEC.md` if the security
-  properties changed.
-
-## 5. Close out
-
-Open the PR: title `research: <slug>`, body = hypothesis, headline number, verdict, and the list of files
-changed. Then reply with a ≤10-line summary: what was tested, the number, the verdict, what's next.
-
-**Stop criteria** — end the night when the experiment reaches a verdict, or when you have spent the run
-without a measurable result. In that case commit the partial work, mark it `PARK` with an honest account of
-where you got stuck, and stop. A documented dead end is a successful night. Silently inventing a plausible
-benchmark is a failed one.
+Stop when the experiment reaches a verdict, or when the run is spent without a measurable result — in
+that case commit the partial work, mark it `PARK`, and record honestly where it stalled. A documented
+dead end is a good night. An invented benchmark is a failed one.
