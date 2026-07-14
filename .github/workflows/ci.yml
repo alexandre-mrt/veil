@@ -2,49 +2,95 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/*]
+    branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
   move-tests:
+    name: Move contracts (sui move test)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Install Sui CLI
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Sui CLI (testnet)
         run: |
-          curl -fsSL https://sui.io/install.sh | sh
-          echo "$HOME/.sui/bin" >> $GITHUB_PATH
-      - name: Build contracts
+          set -euo pipefail
+          TAG=$(curl -fsSL https://api.github.com/repos/MystenLabs/sui/releases \
+            | jq -r '[.[] | select(.tag_name | startswith("testnet-"))][0].tag_name')
+          echo "Installing Sui $TAG"
+          curl -fsSL -o sui.tgz \
+            "https://github.com/MystenLabs/sui/releases/download/${TAG}/sui-${TAG}-ubuntu-x86_64.tgz"
+          mkdir -p sui-bin && tar -xzf sui.tgz -C sui-bin
+          SUI_BIN=$(find sui-bin -type f -name 'sui*' -perm -u+x | grep -E '/sui(-ubuntu-x86_64)?$' | head -1)
+          sudo install -m 0755 "$SUI_BIN" /usr/local/bin/sui
+          sui --version
+      - name: Build
         run: cd contracts && sui move build
-      - name: Run Move tests
+      - name: Test
         run: cd contracts && sui move test
 
   circuit-tests:
+    name: Circom circuits (real Groth16 proofs)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
-      - name: Install circom
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/nicholasgasior/circom-installer/main/install.sh | bash
-      - name: Install dependencies
+      - name: Cache circom binary
+        id: circom-cache
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ~/.cargo/bin/circom
+          key: circom-2.2.3-${{ runner.os }}
+      - name: Install circom 2.2.3
+        if: steps.circom-cache.outputs.cache-hit != 'true'
+        run: cargo install --locked --git https://github.com/iden3/circom.git --tag v2.2.3 circom
+      - name: Install deps
         run: cd circuits && npm ci
-      - name: Run circuit tests
+      - name: Compile circuits + dev trusted setup
+        # Downloads pot15 (~85MB), compiles the 3 circuits and produces zkeys, so the
+        # test suites run in full-proof mode (groth16.fullProve + verify) rather than
+        # the JS constraint-simulation fallback.
+        run: |
+          set -euo pipefail
+          cd circuits
+          mkdir -p build
+          curl -fsSL -o build/pot15_final.ptau \
+            https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_15.ptau
+          for c in transfer compliance withdraw; do
+            circom "$c.circom" --r1cs --wasm --sym -o build -l node_modules
+            npx snarkjs r1cs info "build/$c.r1cs"
+            npx snarkjs groth16 setup "build/$c.r1cs" build/pot15_final.ptau "build/${c}_0000.zkey"
+            echo "ci-entropy-$GITHUB_SHA" | npx snarkjs zkey contribute \
+              "build/${c}_0000.zkey" "build/${c}_final.zkey" --name=ci -v
+            npx snarkjs zkey export verificationkey "build/${c}_final.zkey" "build/${c}_vk.json"
+          done
+      - name: Test circuits
         run: cd circuits && npm test
 
   script-tests:
+    name: Proof converter + compliance utils
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: oven-sh/setup-bun@735343b667d3e6f658f44e0a462d63b48e3324cb
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44e0a462d63b48e3324cb # v2.0.1
         with:
           bun-version: latest
-      - name: Install dependencies
-        run: cd scripts && bun install
-      - name: Run converter tests
-        run: cd scripts && bun run src/test-converter.ts
-      - name: Run compliance utils tests
-        run: cd scripts && bun run src/test-compliance-utils.ts
+      - run: cd scripts && bun install --frozen-lockfile
+      - run: cd scripts && bun run src/test-converter.ts
+      - run: cd scripts && bun run src/test-compliance-utils.ts
+      - run: cd scripts && bun run src/fuzz-tests.ts
+
+  frontend-tests:
+    name: Frontend (vitest + biome + tsc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44e0a462d63b48e3324cb # v2.0.1
+        with:
+          bun-version: latest
+      - run: cd frontend && bun install --frozen-lockfile
+      - run: cd frontend && bunx tsc --noEmit
+      - run: cd frontend && bunx biome check .
+      - run: cd frontend && bunx vitest run

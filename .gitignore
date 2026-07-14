@@ -1,12 +1,14 @@
 node_modules/
 .env
 .env.local
+.env.*.local
 .env.testnet
 .env.mainnet
-.env.*.local
 build/
+dist/
 .next/
 target/
+*.tsbuildinfo
 
 # Circuit artifacts (large binaries)
 *.ptau
@@ -18,5 +20,3 @@ target/
 
 # Sui
 contracts/Published.toml
-
-TODO.md
