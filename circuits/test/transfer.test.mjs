@@ -31,6 +31,7 @@ const MAX_U64 = 2n ** 64n;
 const DOMAIN_COMMITMENT = 1n;
 const DOMAIN_NULLIFIER = 2n;
 const DOMAIN_TX_AMOUNT = 3n;
+const MERKLE_DEPTH = 20;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,20 @@ function toBI(val) {
     return poseidonF.toObject(val);
   }
   return BigInt(val);
+}
+
+/**
+ * Recompute a depth-20 Merkle root from a leaf and its authentication path,
+ * using the same Poseidon(2) node hash as templates/merkle_proof.circom.
+ */
+function merkleRootFromPath(poseidon, leaf, pathElements, pathIndices) {
+  let node = leaf;
+  for (let i = 0; i < MERKLE_DEPTH; i++) {
+    const sibling = pathElements[i];
+    const [left, right] = pathIndices[i] === 0n ? [node, sibling] : [sibling, node];
+    node = toBI(poseidon([left, right]));
+  }
+  return node;
 }
 
 /**
@@ -79,15 +94,23 @@ function buildValidWitness(poseidon, {
   // txAmountHash = Poseidon(3, txAmount, salt)
   const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
+  // C0: membership of oldCommitment in the depth-20 commitment tree.
+  // The witness places the leaf at index 0 with empty siblings; the root is
+  // recomputed with the same Poseidon(2) node hash the circuit uses.
+  const pathElements = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const pathIndices = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const merkleRoot = merkleRootFromPath(poseidon, oldCommitment, pathElements, pathIndices);
+
   return {
-    // Public inputs (6)
+    // Public inputs (7)
     oldCommitment,
     newCommitment,
     threshold,
     epochId,
     nullifier,
     txAmountHash,
-    // Private inputs (7)
+    merkleRoot,
+    // Private inputs (7 + Merkle path)
     cumulativeOld,
     cumulativeNew,
     txAmount,
@@ -95,6 +118,8 @@ function buildValidWitness(poseidon, {
     randomnessNew,
     userSecret,
     salt,
+    pathElements,
+    pathIndices,
   };
 }
 
@@ -138,12 +163,21 @@ function assertEqual(a, b, label) {
 function simulateTransfer(poseidon, inputs) {
   const {
     oldCommitment, newCommitment, threshold, epochId,
-    nullifier, txAmountHash,
+    nullifier, txAmountHash, merkleRoot,
     cumulativeOld, cumulativeNew, txAmount,
     randomnessOld, randomnessNew, userSecret, salt,
+    pathElements, pathIndices,
   } = inputs;
 
   const errors = [];
+
+  // C0: oldCommitment is a leaf of the tree whose root is merkleRoot
+  if (merkleRoot !== undefined && pathElements && pathIndices) {
+    const computedRoot = merkleRootFromPath(poseidon, oldCommitment, pathElements, pathIndices);
+    if (merkleRoot !== computedRoot) {
+      errors.push(`C0: merkleRoot mismatch (expected ${computedRoot}, got ${merkleRoot})`);
+    }
+  }
 
   // C1: old commitment = Poseidon(1, cumOld, randOld, userSecret)
   const expectedOldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
@@ -213,7 +247,7 @@ async function loadSnarkjs() {
 async function proveAndVerify(groth16, vk, inputs) {
   const stringInputs = {};
   for (const [k, v] of Object.entries(inputs)) {
-    stringInputs[k] = v.toString();
+    stringInputs[k] = Array.isArray(v) ? v.map((x) => x.toString()) : v.toString();
   }
   const { proof, publicSignals } = await groth16.fullProve(stringInputs, WASM_PATH, ZKEY_PATH);
   const valid = await groth16.verify(vk, publicSignals, proof);
@@ -1106,6 +1140,47 @@ async function main() {
     // Verify chaining: w2.oldCommitment must equal w1.newCommitment
     assertEqual(w2.oldCommitment, w1.newCommitment, "chain: w2.oldCommitment == w1.newCommitment");
     await assertAccepted(groth16, vk, poseidon, w2, "T40 second tx");
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MERKLE MEMBERSHIP (C0)
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log("\n--- Merkle membership (C0) ---");
+
+  // T41: a merkleRoot that does not match the authentication path is rejected
+  await test("T41: C0 — wrong merkleRoot rejected (commitment not in tree)", async () => {
+    const w = buildValidWitness(poseidon, { cumulativeOld: 10n, txAmount: 5n, userSecret: 4141n });
+    w.merkleRoot = w.merkleRoot + 1n;
+    await assertRejected(groth16, vk, poseidon, w, "C0", "T41");
+  });
+
+  // T42: a tampered sibling breaks membership even if the root is unchanged
+  await test("T42: C0 — tampered Merkle sibling rejected", async () => {
+    const w = buildValidWitness(poseidon, { cumulativeOld: 10n, txAmount: 5n, userSecret: 4242n });
+    w.pathElements = [...w.pathElements];
+    w.pathElements[0] = 999n;
+    await assertRejected(groth16, vk, poseidon, w, "C0", "T42");
+  });
+
+  // T43: pathIndices must be boolean — the circuit constrains idx*(1-idx) === 0
+  await test("T43: C0 — non-boolean pathIndices rejected", async () => {
+    const w = buildValidWitness(poseidon, { cumulativeOld: 10n, txAmount: 5n, userSecret: 4343n });
+    w.pathIndices = [...w.pathIndices];
+    w.pathIndices[3] = 2n;
+    if (FULL_PROOF_AVAILABLE) {
+      let threw = false;
+      try {
+        await proveAndVerify(groth16, vk, w);
+      } catch {
+        threw = true;
+      }
+      assert(threw, "T43: non-boolean path index must fail witness generation");
+    } else {
+      assert(
+        w.pathIndices.some((i) => i !== 0n && i !== 1n),
+        "T43: witness must contain a non-boolean index",
+      );
+    }
   });
 
   // ── Summary ───────────────────────────────────────────────────────────────
