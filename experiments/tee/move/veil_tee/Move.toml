@@ -1,0 +1,9 @@
+[package]
+name = "veil_tee"
+edition = "2024.beta"
+
+[dependencies]
+enclave = { local = "../enclave" }
+
+[addresses]
+veil_tee = "0x0"

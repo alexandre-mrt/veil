@@ -1,0 +1,3 @@
+# Rust build output
+enclave-service/target/
+move/*/build/

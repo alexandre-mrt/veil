@@ -1,0 +1,6 @@
+[package]
+name = "ark_verify"
+edition = "2024"
+
+[addresses]
+ark_verify = "0x0"

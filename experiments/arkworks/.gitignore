@@ -1,0 +1,11 @@
+# Rust build output
+/target/
+move-verify/build/
+
+# Regenerable circom artifacts (heavy: zkey/r1cs/wasm). Rebuild via README.
+build-circom/
+build-circom-O2/
+js/node_modules/
+
+# Keep out/*.hex — the proof/vk/public-input bytes the Move test consumes are small
+# and make the on-chain-verify test runnable without regenerating a proof.

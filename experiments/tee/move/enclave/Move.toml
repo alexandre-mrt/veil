@@ -1,0 +1,12 @@
+# Vendored from MystenLabs Nautilus (move/enclave), local mirror
+# ~/projects/tools/sui-source-mirror/repos/nautilus.
+# Single modification vs upstream: a #[test_only] enclave constructor at the
+# bottom of sources/enclave.move (see README.md "Deviations from upstream").
+[package]
+name = "enclave"
+edition = "2024.beta"
+
+[dependencies]
+
+[addresses]
+enclave = "0x0"

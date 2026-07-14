@@ -1,0 +1,43 @@
+[package]
+name = "veil-tee-enclave"
+version = "0.1.0"
+edition = "2021"
+description = "Veil KYC credential issuance enclave service (Nautilus-style spike)"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bcs = "0.1.6"
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+rand = "0.8"
+hex = "0.4"
+zeroize = { version = "1", features = ["derive"] }
+num-bigint = "0.4"
+light-poseidon = "0.3"
+ark-bn254 = "0.5"
+ark-ff = "0.5"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Real Nitro attestation path (compiles only inside an AWS Nitro enclave build).
+# UNPROVEN on this machine: requires Linux + /dev/nsm. Mirrors Nautilus common.rs.
+nsm_api = { git = "https://github.com/aws/aws-nitro-enclaves-nsm-api.git/", rev = "8ec7eac72bbb2097f1058ee32c13e1ff232f13e8", package = "aws-nitro-enclaves-nsm-api", optional = true }
+serde_bytes = { version = "0.11", optional = true }
+
+[features]
+default = []
+nitro = ["dep:nsm_api", "dep:serde_bytes"]
+
+[[bin]]
+name = "veil-tee-enclave"
+path = "src/main.rs"
+
+[[bin]]
+name = "gen_vector"
+path = "src/bin/gen_vector.rs"
+
+[[bin]]
+name = "verify_response"
+path = "src/bin/verify_response.rs"
