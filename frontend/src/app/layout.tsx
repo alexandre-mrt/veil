@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Veil — Private Payments on Sui",
   description:
-    "Anonymous below threshold. Compliant above. Zero-knowledge proofs protect your spending.",
+    "Confidential compliance proofs on Sui: amounts hidden, spending threshold proven in zero-knowledge. Sender remains visible on-chain.",
 };
 
 export default function RootLayout({

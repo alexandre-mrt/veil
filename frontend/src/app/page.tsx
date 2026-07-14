@@ -1,11 +1,11 @@
 import Link from "next/link";
 import styles from "./page.module.css";
 
-const BADGES = ["157.8/165 audit score", "124 Move tests", "Sui Overflow 2026"] as const;
+const BADGES = ["124 Move tests", "Unaudited — testnet only", "Sui Overflow 2026"] as const;
 
 const STEPS = [
   { n: "1", title: "Deposit", desc: "Standard amounts (100/500/1000). Genesis commitment created on-chain." },
-  { n: "2", title: "Prove", desc: "Groth16 in browser via snarkjs WASM (~2s). 11 constraints verified." },
+  { n: "2", title: "Prove", desc: "Groth16 in browser via snarkjs WASM (~2s). 13,611 R1CS constraints." },
   { n: "3", title: "Transfer", desc: "UTXO consumed, nullifier stored, new commitment created." },
   { n: "4", title: "Comply", desc: "Above threshold: dual proof (transfer + KYC). Auditor encryption via ECDH." },
   { n: "5", title: "Withdraw", desc: "ZK-proven exit. No admin needed. Recipient bound to proof." },
@@ -22,22 +22,16 @@ const CIRCUIT_ROWS = [
   { signal: "secret / rand", type: "private", desc: "User secret + randomness for commitment binding" },
 ] as const;
 
-const AUDIT_CATEGORIES = [
-  { label: "Security", score: 24.2, max: 25 },
-  { label: "Architecture", score: 19.5, max: 20 },
-  { label: "Code Quality", score: 14.5, max: 15 },
-  { label: "SOTA Comparison", score: 9.5, max: 10 },
-  { label: "DeFi/Token Design", score: 9.7, max: 10 },
-  { label: "Frontend & UX", score: 9.3, max: 10 },
-  { label: "Documentation", score: 9.8, max: 10 },
-  { label: "Test Coverage", score: 4.8, max: 5 },
-  { label: "Persona Flows", score: 56.5, max: 60 },
+const LIMITATIONS = [
+  "Sender is NOT anonymous — the user's wallet signs every transfer (red-team finding PRIV-002)",
+  "No third-party audit. Self-review only. Testnet deployment, valueless test token",
+  "Trusted setup is a single-contributor dev ceremony, not a real MPC",
+  "Admin can drain the pool (timelocked withdrawal, or emergency withdrawal while frozen)",
+  "Spending threshold is Sybil-bypassable: a fresh userSecret restarts the counter",
 ] as const;
 
-const AUDIT_STATS = ["6 audit loops", "0 critical remaining", "124 Move tests", "3,456+ total tests"] as const;
-
 const SEC_FEATURES = [
-  "10 timelocks on all admin-mutable parameters",
+  "Timelocks on admin-mutable parameters",
   "Merkle accumulator (anonymity set = all commitments)",
   "Multi-sig governance (N-of-M signer approval)",
   "Wallet-signature key derivation (IndexedDB non-extractable)",
@@ -57,7 +51,7 @@ interface ComparisonRow {
 }
 
 const COMPARISONS: readonly ComparisonRow[] = [
-  { protocol: "Veil", compliance: "Leading", anonymity: "Competitive", proving: "Competitive" },
+  { protocol: "Veil", compliance: "Leading", anonymity: "Behind", proving: "Competitive" },
   { protocol: "Tornado Cash", compliance: "Behind", anonymity: "Competitive", proving: "Competitive" },
   { protocol: "Zcash Orchard", compliance: "Competitive", anonymity: "Leading", proving: "Leading" },
   { protocol: "Railgun", compliance: "Competitive", anonymity: "Competitive", proving: "Competitive" },
@@ -70,7 +64,7 @@ const RATING_STYLE: Record<ComparisonRating, string> = {
   Behind: styles.cellWarn,
 };
 
-const CONTRIBUTIONS = [
+const DESIGN_CHOICES = [
   { title: "Cumulative spending proofs", desc: "Track total spending across an epoch without revealing individual transactions." },
   { title: "Dual-proof compliance", desc: "Above threshold: submit both transfer proof and compliance proof in one transaction." },
   { title: "Context-bound credential nullifiers", desc: "Credential nullifiers are unique per transfer, preventing cross-context tracking." },
@@ -95,9 +89,9 @@ export default function Home() {
       {/* 1. Hero */}
       <section className={styles.hero}>
         <h1 className={styles.title}>VEIL</h1>
-        <p className={styles.subtitle}>Private Payments on Sui</p>
+        <p className={styles.subtitle}>Confidential compliance proofs on Sui</p>
         <p className={styles.oneliner}>
-          Anonymous below threshold. Compliant above. Zero-knowledge.
+          Amounts hidden. Spending threshold proven. Sender still visible.
         </p>
         <Link href="/dashboard" className={styles.launchButton}>
           Launch App
@@ -193,41 +187,23 @@ export default function Home() {
           </table>
         </div>
         <p className={styles.colText}>
-          Transfer: 11 constraints | Compliance: 10 constraints (Merkle depth 20) | Withdraw: 8 constraints
+          R1CS constraints (snarkjs r1cs info) — transfer: 13,611 | compliance: 12,743 | withdraw: 3,058
         </p>
       </section>
 
-      {/* 6. Security & Audit Score */}
+      {/* 6. Security posture */}
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Security &amp; Audit</h2>
-        <div className={styles.scoreHeader}>
-          <span className={styles.scoreValue}>157.8/165</span>
-          <span className={styles.scoreLabel}>overall score (95.6%)</span>
-        </div>
-        <div className={styles.auditStats}>
-          {AUDIT_STATS.map((s) => (
-            <span key={s} className={styles.auditStat}>{s}</span>
-          ))}
-        </div>
-        <div className={styles.scoreGrid}>
-          {AUDIT_CATEGORIES.map((c) => (
-            <div key={c.label} className={styles.scoreRow}>
-              <span className={styles.scoreRowLabel}>{c.label}</span>
-              <div className={styles.scoreBar}>
-                <div
-                  className={styles.scoreBarFill}
-                  style={{ width: `${(c.score / c.max) * 100}%` }}
-                />
-              </div>
-              <span className={styles.scoreRowValue}>{c.score}/{c.max}</span>
-            </div>
-          ))}
-        </div>
+        <h2 className={styles.sectionTitle}>Security &amp; Limitations</h2>
         <div className={styles.secFeatures}>
           {SEC_FEATURES.map((f) => (
             <span key={f} className={styles.secFeature}>{f}</span>
           ))}
         </div>
+        <ul className={styles.colText}>
+          {LIMITATIONS.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
       </section>
 
       {/* 7. SOTA Comparison */}
@@ -259,11 +235,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 8. Novel Contributions */}
+      {/* 8. Design choices */}
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Novel Contributions</h2>
+        <h2 className={styles.sectionTitle}>Design Choices</h2>
         <div className={styles.novelList}>
-          {CONTRIBUTIONS.map((c, i) => (
+          {DESIGN_CHOICES.map((c, i) => (
             <div key={c.title} className={styles.novelItem}>
               <span className={styles.novelNumber}>{i + 1}</span>
               <div className={styles.novelContent}>

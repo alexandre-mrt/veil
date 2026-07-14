@@ -1,6 +1,6 @@
 # Veil Protocol — Red Team Privacy Attack Report
 
-**Agent:** privacy red team  
+**Method:** adversarial self-review — attack the protocol's own privacy claims  
 **Date:** 2026-05-15  
 **Scope:** Full protocol — Move contracts, Circom circuits, frontend hooks, e2e test  
 **Verdict:** The Veil protocol's ZK circuit is cryptographically sound, but the surrounding infrastructure provides **effectively zero sender privacy** in its current form.

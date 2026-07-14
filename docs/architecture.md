@@ -2,7 +2,7 @@
 
 ## Overview
 
-Veil is a privacy payment protocol on Sui. It combines Circom ZK circuits with native Sui Groth16 verification to let users transact with hidden amounts while enforcing spending limits in zero-knowledge. The protocol uses a UTXO-style commitment model with note-based nullifiers, enabling multiple transfers per epoch without linkability.
+Veil is a confidential compliance protocol on Sui. It combines Circom ZK circuits with native Sui Groth16 verification to let users transact with hidden amounts while enforcing a cumulative spending threshold in zero-knowledge. It hides amounts, not senders: the user's wallet signs every transaction, so sender privacy is not achieved (see docs/privacy-red-team-report.md, PRIV-002). The protocol uses a UTXO-style commitment model with note-based nullifiers, enabling multiple transfers per epoch without linkability.
 
 ## System Architecture
 
@@ -20,7 +20,7 @@ Veil is a privacy payment protocol on Sui. It combines Circom ZK circuits with n
 └──────────┬─────────────────────────────────────────────────────────────┘
            │
            │  Generate Groth16 proof (snarkjs WASM, ~2s)
-           │  11 constraints, 6 public + 7 private inputs
+           │  13,611 R1CS constraints, 7 public + 47 private inputs
            │
            ▼
 ┌──────────────────────┐
@@ -297,7 +297,8 @@ veil/
 │       └── test-converter.ts        # 109 converter tests
 └── docs/
     ├── architecture.md              # This file
-    ├── veil-architecture-report.html # Print-ready HTML report
+    ├── privacy-red-team-report.md   # Privacy attack report (15 findings)
+    ├── threat-model.md              # STRIDE threat model
     └── c4-*.html                    # Interactive C4 diagrams (4 levels)
 ```
 
@@ -345,12 +346,12 @@ Tier 3 extends Veil with a second ZK circuit (`compliance.circom`) that proves c
 │  │   (v2 -- unchanged)     │   │   • merkleRoot                   │    │
 │  │                         │   │   • currentEpoch                 │    │
 │  │   BN254 Groth16         │   │   • contextId (pool_id)          │    │
-│  │   ~11 constraints       │   │   • requiredKycLevel             │    │
+│  │   13,611 R1CS           │   │   • requiredKycLevel             │    │
 │  │                         │   │   • nullifier (tag 5)            │    │
 │  │                         │   │   • validCredential (must = 1)   │    │
 │  │                         │   │                                  │    │
 │  │                         │   │   BN254 Groth16                  │    │
-│  │                         │   │   ~7,200 constraints             │    │
+│  │                         │   │   12,743 R1CS constraints        │    │
 │  └────────────┬────────────┘   └──────────────┬───────────────────┘    │
 │               │                               │                        │
 │               │    + auditor ciphertext        │                        │

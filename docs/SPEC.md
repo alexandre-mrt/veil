@@ -223,7 +223,7 @@ Tag 5 → Credential nullifier: Poseidon(5, credentialSecret, currentEpoch, cont
 ```
 
 ### Constraint Count
-~7,200 constraints total:
+12,743 R1CS constraints (6,057 non-linear), measured with `snarkjs r1cs info` on the compiled circuit:
 - Poseidon(5) leaf hash
 - 20-level Merkle membership proof
 - Nullifier preimage check

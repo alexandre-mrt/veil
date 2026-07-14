@@ -38,7 +38,7 @@ svg { width: 100%; height: auto; display: block; }
 <h1>VEIL PROTOCOL FLOW</h1>
 <p class="subtitle">Privacy payments with cumulative spending proofs on Sui -- UTXO model, BN254 Groth16</p>
 <div class="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:#00ff88"></div>Anonymous path</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00ff88"></div>Below-threshold path</div>
   <div class="legend-item"><div class="legend-dot" style="background:#00aaff"></div>Compliance path</div>
   <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div>Blocked / Frozen</div>
   <div class="legend-item"><div class="legend-dot" style="background:#333"></div>On-chain (Sui Move)</div>
@@ -71,7 +71,7 @@ svg { width: 100%; height: auto; display: block; }
   <line x1="160" y1="125" x2="280" y2="125" class="flow-line" stroke="#00ff88" stroke-width="1.5"/>
   <polygon points="275,122 280,125 275,128" fill="#00ff88"/>
 
-  <!-- ANONYMOUS PATH (top) -->
+  <!-- BELOW-THRESHOLD PATH (top) -->
   <!-- Poseidon commitment -->
   <g class="node" data-tip="Poseidon(4) hash: H(domain=1, cumNew, randNew, userSecret). BN254 field arithmetic. ~50ms in WASM.">
     <rect x="420" y="85" width="130" height="40" rx="2" fill="#1a1a1a" stroke="#00ff88" stroke-width="1"/>
@@ -82,10 +82,10 @@ svg { width: 100%; height: auto; display: block; }
   <text x="395" y="107" font-size="7" fill="#00ff88" font-family="monospace">YES</text>
 
   <!-- Transfer proof gen -->
-  <g class="node" id="transfer-proof-node" data-tip="Groth16 proof via snarkjs WASM. 11 constraints (C1-C11). ~2s proving time. Click to expand constraints.">
+  <g class="node" id="transfer-proof-node" data-tip="Groth16 proof via snarkjs WASM. 11 assertions (C1-C11) = 13,611 R1CS constraints. ~2s proving time. Click to expand.">
     <rect x="580" y="85" width="140" height="40" rx="2" fill="#1a1a1a" stroke="#00ff88" stroke-width="1.5"/>
     <text x="650" y="105" text-anchor="middle" font-size="8" fill="#00ff88" font-family="monospace">Transfer Proof</text>
-    <text x="650" y="116" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">Groth16 / 11 constraints / ~2s</text>
+    <text x="650" y="116" text-anchor="middle" font-size="6.5" fill="#666" font-family="monospace">Groth16 / 13,611 R1CS / ~2s</text>
   </g>
   <line x1="550" y1="105" x2="580" y2="105" class="flow-line" stroke="#00ff88" stroke-width="1"/>
 
@@ -214,7 +214,7 @@ svg { width: 100%; height: auto; display: block; }
   <!-- Public inputs box -->
   <g class="node" data-tip="6 public inputs (32 bytes each, BN254 field): [oldCommitment, newCommitment, nullifier, epochId, threshold, txAmountHash]. Upper 24 bytes zero-checked for u64 values.">
     <rect x="780" y="420" width="180" height="55" rx="2" fill="#0f0f0f" stroke="#555" stroke-width="0.5"/>
-    <text x="870" y="438" text-anchor="middle" font-size="7.5" fill="#888" font-family="monospace">6 Public Inputs (32B each)</text>
+    <text x="870" y="438" text-anchor="middle" font-size="7.5" fill="#888" font-family="monospace">7 Public Inputs (32B each)</text>
     <text x="870" y="450" text-anchor="middle" font-size="6" fill="#555" font-family="monospace">oldCommit | newCommit | nullifier</text>
     <text x="870" y="460" text-anchor="middle" font-size="6" fill="#555" font-family="monospace">epochId | threshold | txAmountHash</text>
     <text x="870" y="472" text-anchor="middle" font-size="6" fill="#444" font-family="monospace">upper 24B zero-check (overflow prot.)</text>
@@ -232,7 +232,7 @@ svg { width: 100%; height: auto; display: block; }
 <div class="overlay" id="overlay"></div>
 <div class="expand-panel" id="transfer-panel">
   <span class="close-btn" onclick="closePanel()">&times;</span>
-  <h3>Transfer Circuit -- 11 Constraints</h3>
+  <h3>Transfer Circuit -- 11 assertions / 13,611 R1CS constraints</h3>
   <table>
     <tr><th>#</th><th>Constraint</th><th>Component</th></tr>
     <tr><td>C1</td><td>oldCommit == Poseidon(1, cumOld, rOld, secret)</td><td>Poseidon(4)</td></tr>

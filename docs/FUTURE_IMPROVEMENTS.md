@@ -5,9 +5,9 @@
 Veil is a **confidential compliance proof system** with tiered privacy:
 - **Tier 1/2**: amounts hidden via ZK proofs, spending thresholds enforced in zero-knowledge
 - **Tier 3**: dual Groth16 proofs (transfer + KYC compliance), ECDH auditor encryption
-- **Sender privacy**: sponsored transaction relayer hides sender address on-chain
+- **Sender privacy**: NOT achieved. The sponsored-transaction relayer moves the gas payer only; the tx sender is still the user (PRIV-002).
 
-Reviewed iteratively. 113 Move tests, 100 circuit tests (transfer 40 + compliance 30 + withdraw 30), 438+ total tests, 0 failures.
+Self-reviewed only — no third-party audit. Measured test counts: 124 Move, 108 circuit (transfer 43 + compliance 30 + withdraw 35, real Groth16), 109 proof-converter, 67 compliance-utils, 19 frontend.
 
 ## Use Cases (Current)
 
@@ -58,7 +58,7 @@ This prevents atomic deposit+transfer in one PTB (different epochs required) and
 
 #### 2.1 Relayer Pattern -- IMPLEMENTED
 **Fixes:** PRIV-001 (cross-epoch linking), PRIV-002 (sender deanonymization), PRIV-006 (gas fingerprinting)
-**Status:** Done -- `scripts/src/relayer.ts` (Sui sponsored transactions, HTTP API, demo mode). Loop 5 flagged: needs CORS restriction, rate limiting, TransactionKind validation for production.
+**Status:** Done -- `scripts/src/relayer.ts` (Sui sponsored transactions, HTTP API, demo mode). Review flagged: needs CORS restriction, rate limiting, TransactionKind validation for production.
 
 **New files to create:**
 - `relayer/` — new service directory
@@ -140,7 +140,7 @@ const { digest } = await response.json();
 | Threshold enforced | ✅ | transfer.circom C9 (LessEqThan) |
 | Client secrets encrypted | ✅ | usePrivateState.ts (IndexedDB non-extractable keys + PBKDF2 fallback) |
 | Deposit-transfer unlinkable | ✅ | pool.move (commitment maturity) |
-| Sender anonymous | ✅ | relayer.ts (sponsored transactions) |
+| Sender anonymous | ❌ | Not achieved — sponsored tx hides the gas payer, not the sender (PRIV-002) |
 | UTXO chain hidden | ✅ | pool.move (depth-20 Poseidon Merkle accumulator, root on-chain) |
 | Self-serve withdrawal | ✅ | pool.move:zk_withdraw + withdraw.circom |
 | KYC without identity reveal | ✅ | compliance.circom + compliance.move |

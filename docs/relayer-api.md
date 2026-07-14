@@ -1,6 +1,8 @@
 # Veil Relayer API
 
-The Veil relayer provides sponsored transaction submission for sender privacy. It pays gas fees on behalf of users so that the on-chain transaction shows the relayer address as the gas payer, hiding the user's network-level identity.
+The Veil relayer provides sponsored transaction submission: it pays gas on behalf of users, so the on-chain transaction shows the relayer address as the *gas payer*.
+
+**This is not sender privacy.** In a Sui sponsored transaction the `sender` field is still the user's address (the Move code authorizes against it) — only the gas payer changes. Red-team finding `PRIV-002` (see `docs/privacy-red-team-report.md`) therefore remains open. The relayer's real benefits are gas abstraction (users need no SUI) and hiding which address funds the gas.
 
 Base URL: `http://localhost:3001` (dev) or configured via `RELAYER_URL`
 
