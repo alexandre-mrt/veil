@@ -26,4 +26,11 @@ GROUND_TRUTH_HEALTH.md
 .ground_truth.sha256
 TODO.md
 LEARNINGS.md
-.claude/
+# Keep project skills + agents in the repo (cloud agents clone them); ignore local-only state
+.claude/settings.local.json
+.claude/worktrees/
+.claude/*.local.md
+
+# OS / editor / build noise
+.DS_Store
+*.tsbuildinfo

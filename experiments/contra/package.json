@@ -1,0 +1,19 @@
+{
+	"name": "veil-contra-experiment",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Veil x contra (Sui confidential transfers) — devnet PoC: confidential payroll with auditor oversight.",
+	"scripts": {
+		"poc": "tsx src/payroll-poc.ts"
+	},
+	"dependencies": {
+		"@mysten/sui": "^2.17.0",
+		"contra-utils": "file:./vendor/confidential-transfers/utils/ts-utils",
+		"ts-sdk": "file:./vendor/confidential-transfers/ts-sdk"
+	},
+	"devDependencies": {
+		"tsx": "^4.19.2",
+		"typescript": "^5.9.3"
+	}
+}

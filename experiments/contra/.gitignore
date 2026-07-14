@@ -1,0 +1,5 @@
+# Upstream contra checkout — rebuilt by setup.sh, never committed.
+vendor/
+node_modules/
+build/
+results/

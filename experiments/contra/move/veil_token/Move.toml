@@ -1,0 +1,10 @@
+[package]
+name = "veil_token"
+edition = "2024"
+
+# The environments section is injected at build time by `patchMoveToml` (contra-utils),
+# which stamps in the CURRENT devnet chain id. Devnet is wiped periodically, so a
+# hardcoded chain id goes stale and breaks the build.
+#
+# Do NOT write that section name literally anywhere in this file, even in a comment:
+# patchMoveToml decides whether to inject by a plain substring check on the file.
