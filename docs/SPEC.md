@@ -2,7 +2,7 @@
 
 ## Circuit Interfaces (v2)
 
-### transfer.circom -- Public Inputs (6, order matters)
+### transfer.circom -- Public Inputs (7, order matters)
 ```
 signal input oldCommitment;      // Poseidon(1, cumulative_old, randomness_old, userSecret)
 signal input newCommitment;      // Poseidon(1, cumulative_new, randomness_new, userSecret)
@@ -10,16 +10,21 @@ signal input threshold;          // KYC-free limit
 signal input epochId;            // Current epoch from Clock
 signal input nullifier;          // Poseidon(2, userSecret, epochId, randomnessOld)
 signal input txAmountHash;       // Poseidon(3, txAmount, salt)
+signal input merkleRoot;         // Commitment Merkle tree root (anonymity set = all commitments)
 ```
 
-### transfer.circom -- Private Inputs (7)
+### transfer.circom -- Private Inputs (7 + Merkle path)
 ```
 signal input cumulativeOld, cumulativeNew, txAmount;
 signal input randomnessOld, randomnessNew, userSecret, salt;
+signal input pathElements[20];   // Merkle sibling hashes (depth 20)
+signal input pathIndices[20];    // Left/right flags (0 or 1)
 ```
 
-### Circuit Constraints (11)
+### Circuit Constraints (12 named checks; 13,611 R1CS constraints total -- measured
+### in docs/research/BASELINE.md, dominated by the depth-20 Poseidon Merkle proof)
 ```
+C0:  merkleRoot === MerkleProof(20, oldCommitment, pathElements, pathIndices)
 C1:  oldCommitment === Poseidon(1, cumOld, randOld, userSecret)     [Poseidon(4)]
 C2:  newCommitment === Poseidon(1, cumNew, randNew, userSecret)     [Poseidon(4)]
 C3:  cumNew === cumOld + txAmount                                   [Addition]
@@ -32,6 +37,8 @@ C9:  cumNew <= threshold                                            [LessEqThan(
 C10: nullifier === Poseidon(2, userSecret, epochId, randOld)        [Poseidon(4)]
 C11: txAmountHash === Poseidon(3, txAmount, salt)                   [Poseidon(3)]
 ```
+Note: "11 constraints" in older docs meant these 11 (now 12, with C0) named checks,
+not the R1CS constraint count the prover actually pays for -- see BASELINE.md.
 
 ### Domain Separation Tags
 ```
@@ -192,7 +199,7 @@ vkToSuiBytes(vk: SnarkjsVK): Uint8Array                           // 32 + 64*3 +
 | Layer | File | Count | Coverage |
 |-------|------|-------|---------|
 | Move | contracts/tests/pool_tests.move | 37 | Every function, every error code, edge cases |
-| Circuit | circuits/test/transfer.test.mjs | 40 | Every constraint (C1-C11), boundaries, domain separation |
+| Circuit | circuits/test/transfer.test.mjs | 42 | Every constraint (C0-C11), boundaries, domain separation, forged Merkle membership |
 | Converter | scripts/src/test-converter.ts | 109 | bigintToLE32, G1/G2 compression, sign bits, VK layout |
 | **Total** | -- | **186** | **0 failures** |
 

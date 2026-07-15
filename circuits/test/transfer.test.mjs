@@ -31,6 +31,7 @@ const MAX_U64 = 2n ** 64n;
 const DOMAIN_COMMITMENT = 1n;
 const DOMAIN_NULLIFIER = 2n;
 const DOMAIN_TX_AMOUNT = 3n;
+const MERKLE_DEPTH = 20;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,34 @@ function toBI(val) {
     return poseidonF.toObject(val);
   }
   return BigInt(val);
+}
+
+/**
+ * Mirrors templates/merkle_proof.circom's MerkleProof(depth): at each level,
+ * pathIndices[i] selects whether the running node is the left or right input
+ * to Poseidon(2) against pathElements[i].
+ */
+function computeMerkleRoot(poseidon, leaf, pathElements, pathIndices) {
+  let node = leaf;
+  for (let i = 0; i < pathElements.length; i++) {
+    const [l, r] = pathIndices[i] === 0n ? [node, pathElements[i]] : [pathElements[i], node];
+    node = toBI(poseidon([l, r]));
+  }
+  return node;
+}
+
+/**
+ * Attach a valid depth-20 Merkle membership proof for `w.oldCommitment` — the
+ * transfer circuit's C0 constraint (added when the anonymity-set membership
+ * proof was introduced) requires merkleRoot/pathElements/pathIndices on every
+ * witness, valid or not. Uses an all-zero sibling path (leaf at index 0 of a
+ * zero-padded tree), which is a real, circuit-satisfying proof.
+ */
+function withMerkleProof(poseidon, w) {
+  const pathElements = new Array(MERKLE_DEPTH).fill(0n);
+  const pathIndices = new Array(MERKLE_DEPTH).fill(0n);
+  const merkleRoot = computeMerkleRoot(poseidon, w.oldCommitment, pathElements, pathIndices);
+  return { ...w, merkleRoot, pathElements, pathIndices };
 }
 
 /**
@@ -79,15 +108,15 @@ function buildValidWitness(poseidon, {
   // txAmountHash = Poseidon(3, txAmount, salt)
   const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
-  return {
-    // Public inputs (6)
+  return withMerkleProof(poseidon, {
+    // Public inputs (7 — merkleRoot added by withMerkleProof below)
     oldCommitment,
     newCommitment,
     threshold,
     epochId,
     nullifier,
     txAmountHash,
-    // Private inputs (7)
+    // Private inputs (7 + pathElements[20]/pathIndices[20] added by withMerkleProof below)
     cumulativeOld,
     cumulativeNew,
     txAmount,
@@ -95,7 +124,7 @@ function buildValidWitness(poseidon, {
     randomnessNew,
     userSecret,
     salt,
-  };
+  });
 }
 
 // ── Test runner ───────────────────────────────────────────────────────────────
@@ -138,12 +167,22 @@ function assertEqual(a, b, label) {
 function simulateTransfer(poseidon, inputs) {
   const {
     oldCommitment, newCommitment, threshold, epochId,
-    nullifier, txAmountHash,
+    nullifier, txAmountHash, merkleRoot, pathElements, pathIndices,
     cumulativeOld, cumulativeNew, txAmount,
     randomnessOld, randomnessNew, userSecret, salt,
   } = inputs;
 
   const errors = [];
+
+  // C0: old commitment is a member of the Merkle anonymity set
+  if (pathIndices.some(b => b !== 0n && b !== 1n)) {
+    errors.push("C0: pathIndices must be binary");
+  } else {
+    const expectedRoot = computeMerkleRoot(poseidon, oldCommitment, pathElements, pathIndices);
+    if (merkleRoot !== expectedRoot) {
+      errors.push(`C0: merkleRoot mismatch (expected ${expectedRoot}, got ${merkleRoot})`);
+    }
+  }
 
   // C1: old commitment = Poseidon(1, cumOld, randOld, userSecret)
   const expectedOldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
@@ -213,7 +252,7 @@ async function loadSnarkjs() {
 async function proveAndVerify(groth16, vk, inputs) {
   const stringInputs = {};
   for (const [k, v] of Object.entries(inputs)) {
-    stringInputs[k] = v.toString();
+    stringInputs[k] = Array.isArray(v) ? v.map(e => e.toString()) : v.toString();
   }
   const { proof, publicSignals } = await groth16.fullProve(stringInputs, WASM_PATH, ZKEY_PATH);
   const valid = await groth16.verify(vk, publicSignals, proof);
@@ -524,11 +563,11 @@ async function main() {
     const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
     const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
-    const tampered = {
+    const tampered = withMerkleProof(poseidon, {
       oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
-    };
+    });
     await assertRejected(groth16, vk, poseidon, tampered, "C4:", "T13");
   });
 
@@ -549,11 +588,11 @@ async function main() {
     const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
     const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
-    const tampered = {
+    const tampered = withMerkleProof(poseidon, {
       oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
-    };
+    });
     await assertRejected(groth16, vk, poseidon, tampered, "C5:", "T14");
   });
 
@@ -574,11 +613,11 @@ async function main() {
     const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
     const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
-    const tampered = {
+    const tampered = withMerkleProof(poseidon, {
       oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
-    };
+    });
     await assertRejected(groth16, vk, poseidon, tampered, "C6:", "T15");
   });
 
@@ -598,12 +637,12 @@ async function main() {
     const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
     const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
-    const tampered = {
+    const tampered = withMerkleProof(poseidon, {
       oldCommitment, newCommitment,
       threshold: 1_000_000_000n, epochId, nullifier, txAmountHash,
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
-    };
+    });
     await assertRejected(groth16, vk, poseidon, tampered, "C7:", "T16");
   });
 
@@ -638,11 +677,11 @@ async function main() {
     const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
     const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
-    const tampered = {
+    const tampered = withMerkleProof(poseidon, {
       oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
-    };
+    });
     await assertRejected(groth16, vk, poseidon, tampered, "C9:", "T18");
   });
 
@@ -745,11 +784,11 @@ async function main() {
     const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
     const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
-    const w = {
+    const w = withMerkleProof(poseidon, {
       oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
-    };
+    });
     await assertRejected(groth16, vk, poseidon, w, "C9:", "T24");
   });
 
@@ -872,11 +911,11 @@ async function main() {
     const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
     const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
-    const w = {
+    const w = withMerkleProof(poseidon, {
       oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
-    };
+    });
 
     if (FULL_PROOF_AVAILABLE) {
       let threw = false;
@@ -1008,11 +1047,11 @@ async function main() {
     const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
     const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
 
-    const w = {
+    const w = withMerkleProof(poseidon, {
       oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash,
       cumulativeOld, cumulativeNew, txAmount,
       randomnessOld, randomnessNew, userSecret, salt,
-    };
+    });
     await assertRejected(groth16, vk, poseidon, w, "C9:", "T35");
   });
 
@@ -1106,6 +1145,46 @@ async function main() {
     // Verify chaining: w2.oldCommitment must equal w1.newCommitment
     assertEqual(w2.oldCommitment, w1.newCommitment, "chain: w2.oldCommitment == w1.newCommitment");
     await assertAccepted(groth16, vk, poseidon, w2, "T40 second tx");
+  });
+
+  // T41: C0 — tampered Merkle sibling breaks the membership proof (malicious witness)
+  await test("T41: C0 — tampered pathElement invalidates Merkle membership proof", async () => {
+    const w = buildValidWitness(poseidon, {
+      cumulativeOld: 0n, txAmount: 10n,
+      randomnessOld: 0n, randomnessNew: 1n,
+      userSecret: 4141n, epochId: 1n, salt: 1n,
+    });
+    // Flip one sibling on the path: merkleRoot was computed against all-zero
+    // siblings, so this makes the claimed root unreachable from oldCommitment.
+    const tamperedPathElements = [...w.pathElements];
+    tamperedPathElements[3] = 999n;
+    const tampered = { ...w, pathElements: tamperedPathElements };
+    await assertRejected(groth16, vk, poseidon, tampered, "C0:", "T41");
+  });
+
+  // T42: C0 — a well-formed commitment never inserted into the tree cannot
+  // forge membership by reusing a proof built for a different leaf
+  await test("T42: C0 — oldCommitment not in the tree is rejected (forged membership)", async () => {
+    const wReal = buildValidWitness(poseidon, {
+      cumulativeOld: 0n, txAmount: 10n,
+      randomnessOld: 0n, randomnessNew: 1n,
+      userSecret: 4242n, epochId: 1n, salt: 1n,
+    });
+    const wForeign = buildValidWitness(poseidon, {
+      cumulativeOld: 500n, txAmount: 10n,
+      randomnessOld: 7n, randomnessNew: 8n,
+      userSecret: 9999n, epochId: 1n, salt: 1n,
+    });
+    // wForeign.oldCommitment is well-formed on its own (C1 passes) but was
+    // never deposited into the tree. Attach wReal's proof — a valid proof
+    // for a DIFFERENT leaf — to isolate C0's own check from C1.
+    const forged = {
+      ...wForeign,
+      merkleRoot: wReal.merkleRoot,
+      pathElements: wReal.pathElements,
+      pathIndices: wReal.pathIndices,
+    };
+    await assertRejected(groth16, vk, poseidon, forged, "C0:", "T42");
   });
 
   // ── Summary ───────────────────────────────────────────────────────────────

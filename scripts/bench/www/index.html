@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Veil browser proving bench</title></head>
+<body>
+<pre id="out">running...</pre>
+<script src="snarkjs.min.js"></script>
+<script>
+async function run() {
+  const results = [];
+  for (let i = 0; i < 3; i++) {
+    const witness = await (await fetch("witness.json")).json();
+    const t0 = performance.now();
+    const { proof, publicSignals } = await snarkjs.groth16.fullProve(witness, "transfer.wasm", "transfer_final.zkey");
+    const t1 = performance.now();
+    const vk = await (await fetch("transfer_vk.json")).json();
+    const valid = await snarkjs.groth16.verify(vk, publicSignals, proof);
+    const t2 = performance.now();
+    results.push({ run: i, cold: i === 0, provingMs: +(t1 - t0).toFixed(1), verifyMs: +(t2 - t1).toFixed(1), valid });
+  }
+  document.title = "DONE";
+  document.getElementById("out").textContent = JSON.stringify(results);
+  window.__RESULTS__ = results;
+}
+run().catch(e => { document.title = "ERROR"; document.getElementById("out").textContent = String(e && e.stack || e); });
+</script>
+</body>
+</html>

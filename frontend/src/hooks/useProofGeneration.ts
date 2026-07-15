@@ -50,7 +50,7 @@ const DOMAIN_NULLIFIER = 2n;
 const CIRCUIT_WASM_PATH = "/circuits/transfer.wasm";
 const CIRCUIT_ZKEY_PATH = "/circuits/transfer_final.zkey";
 const MOCK_PROOF_BYTES = 128;
-const MOCK_PUBLIC_INPUTS_COUNT = 6;
+const MOCK_PUBLIC_INPUTS_COUNT = 7; // oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash, merkleRoot
 const MOCK_DELAY_MS = 3000;
 
 // ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@ Frontend: @mysten/dapp-kit-react v2 + SuiGrpcClient. Compliance UI wired end-to-
 
 ## Structure
 - `contracts/` -- Sui Move (pool, compliance, verifier, token, multisig + token_faucet)
-- `circuits/` -- Circom ZK circuits (transfer.circom 11c, compliance.circom ~7200c, withdraw.circom 9c)
+- `circuits/` -- Circom ZK circuits (transfer.circom: 13,611 R1CS constraints / 11 named C1-C11 checks + C0 Merkle membership, 7 public inputs; compliance.circom ~7200c; withdraw.circom 9c) -- measured in `docs/research/BASELINE.md`, "11 constraints" in older docs meant the 11 named checks, not the R1CS count
 - `frontend/` -- Next.js 14 + @mysten/dapp-kit + snarkjs WASM
 - `scripts/` -- deployment, proof conversion, E2E pipeline, relayer
 - `docs/` -- architecture, C4 diagrams, HTML report
