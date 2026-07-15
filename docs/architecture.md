@@ -78,7 +78,7 @@ Veil is a confidential compliance protocol on Sui. It combines Circom ZK circuit
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-## Circuit Architecture (v2 -- post-audit)
+## Circuit Architecture
 
 ### transfer.circom
 

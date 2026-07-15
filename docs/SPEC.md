@@ -1,4 +1,4 @@
-# Ground Truth: Interfaces & Contracts (v2 -- post-audit final)
+# Interfaces & Contracts
 
 ## Circuit Interfaces (v2)
 
