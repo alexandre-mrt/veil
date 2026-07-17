@@ -5,6 +5,8 @@ node_modules/
 .env.testnet
 .env.mainnet
 build/
+build-compliance/
+build-withdraw/
 dist/
 .next/
 target/
