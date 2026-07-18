@@ -1,0 +1,14 @@
+{
+  "name": "veil-bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reusable benchmark scripts for Veil's nightly research loop (docs/research/).",
+  "scripts": {
+    "prove": "node prove-bench.mjs",
+    "prove:browser": "node browser-prove-bench.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.61.1"
+  }
+}
