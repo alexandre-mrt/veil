@@ -1,0 +1,45 @@
+{
+  "machine": {
+    "platform": "linux",
+    "arch": "x64",
+    "node": "v22.22.2"
+  },
+  "results": [
+    {
+      "circuit": "transfer",
+      "runs": 10,
+      "proveMsMean": 905.0298167999997,
+      "proveMsMin": 836.8724429999993,
+      "proveMsMax": 1201.6764159999998,
+      "verifyMsMean": 27.255799600000067,
+      "proofJsonBytes": 723,
+      "vkJsonBytes": 4023,
+      "zkeyBytes": 6001422,
+      "wasmBytes": 2777293
+    },
+    {
+      "circuit": "compliance",
+      "runs": 10,
+      "proveMsMean": 829.8007799999996,
+      "proveMsMin": 800.0594039999996,
+      "proveMsMax": 863.5813489999982,
+      "verifyMsMean": 25.872604900000077,
+      "proofJsonBytes": 721,
+      "vkJsonBytes": 3838,
+      "zkeyBytes": 5682146,
+      "wasmBytes": 2862136
+    },
+    {
+      "circuit": "withdraw",
+      "runs": 10,
+      "proveMsMean": 264.5339385999996,
+      "proveMsMin": 254.84040399999867,
+      "proveMsMax": 278.62481599999956,
+      "verifyMsMean": 18.906211400000757,
+      "proofJsonBytes": 723,
+      "vkJsonBytes": 3653,
+      "zkeyBytes": 1385326,
+      "wasmBytes": 2298257
+    }
+  ]
+}

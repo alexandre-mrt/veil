@@ -11,5 +11,9 @@
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "snarkjs": "0.7.6"
+  },
+  "devDependencies": {
+    "@distributedlab/circom2": "^0.2.22-rc.1",
+    "wabt": "^1.0.39"
   }
 }
