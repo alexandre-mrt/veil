@@ -1,0 +1,14 @@
+{
+  "name": "veil-bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reusable benchmark scripts for Veil's nightly research loop (docs/research/).",
+  "dependencies": {
+    "circomlibjs": "^0.1.7",
+    "snarkjs": "0.7.6"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}
