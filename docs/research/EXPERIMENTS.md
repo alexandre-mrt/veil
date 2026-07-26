@@ -1,0 +1,28 @@
+# Research queue
+
+Ranked list of candidate experiments for the nightly cryptography & scalability loop. The
+highest-ranked item **not yet settled** (KEEP/REJECT in `LEDGER.md`) is the one to run next. Re-rank
+after every night; note why when something jumps the queue or gets deprioritized.
+
+Rank is driven by: how directly the number moves something Veil pays for (prover time, gas,
+anonymity-set size), how blocked/unblocked the required tooling is, and severity of the underlying
+residual risk (see `docs/threat-model.md`).
+
+| # | Experiment | Moves | Status | Notes |
+|---|---|---|---|---|
+| 1 | Baseline measurement: constraints, proving time, proof/VK size, on-chain gas, browser latency, for all 3 circuits | (establishes every future comparison) | **KEEP** — see `docs/research/2026-07-26-baseline-measurements.md` | Gas and real browser-device latency are BLOCKED — no `sui` CLI or GitHub access to fetch one from this sandbox, and no mobile device. Re-attempt when tooling is available; don't re-run the parts that already have numbers. |
+| 2 | On-chain gas per entry point (`shielded_transfer`, `compliant_transfer`, `zk_withdraw`, `deposit_and_register`) via `sui move test` gas reporting or a local `sui start-network` | gas | Blocked, carried from #1 | Needs the `sui` CLI. `cargo install` can't reach `static.crates.io` from this sandbox (org egress policy) and this session's GitHub access is scoped to `alexandre-mrt/veil` only, so a release binary can't be pulled from `MystenLabs/sui` either. Needs a session with broader network/repo access, or a vendored binary added to the environment ahead of time. |
+| 3 | Trusted-setup elimination: PLONK or Halo2 port of `transfer.circom`, compare prover time and verifier gas against Groth16 baseline | RR2 (single-contributor ceremony, currently High residual risk) | Queued | Biggest concrete security win available (removes RR2 entirely) but the largest lift — new proof system, new on-chain verifier since `sui::groth16` is Groth16-specific. Halo2 has no native Sui verifier; would need a custom Move verifier or a generic pairing/IPA check. Worth a design-only (UNMEASURED) first pass before committing to an implementation night. |
+| 4 | Merkle accumulator scaling: batch insertion cost and indexer throughput at 10^5–10^7 commitments; depth-20 anonymity-set trade-off | anonymity-set size, indexer throughput | Queued | Depth 20 caps the set at 2^20 ≈ 1.05M leaves — already below the 10^7 target in the prompt. Quantify insertion/proof-fetch cost as the tree fills, and what depth 22–24 would cost in constraints (`Num2Bits`/Merkle-path constraints scale linearly with depth). |
+| 5 | Batched/aggregated proofs: N transfers → 1 on-chain Groth16 verification | gas, shared-object contention | Queued | `sui::groth16` verifies one proof per call today. A recursive/aggregate scheme (or a single circuit that folds N transfers) would cut per-transfer gas and reduce contention on the pool shared object under concurrent transfers. Needs #2's gas baseline to quantify the win. |
+| 6 | Compliance dual-proof cost breakdown + revocation-friendly accumulator (e.g. sparse Merkle / RSA accumulator) vs the depth-20 credential tree; threshold auditing (t-of-n) vs the single auditor key | compliance cost, RR-adjacent (single auditor key is a soft central point of failure) | Queued | `compliant_transfer` already verifies two Groth16 proofs atomically (transfer + compliance) — measure that combined cost once #2 unblocks, then evaluate whether a revocable/accumulator-based credential store beats Merkle-tree reissuance for revocation latency. |
+| 7 | Poseidon2 migration: arity choice, domain-tag collision check across the 8 current tags (commitment, transfer nullifier, amount hash, credential leaf, credential nullifier, context binding, withdraw nullifier, recipient hash), constraint-count delta vs Poseidon1 | prover time (fewer constraints per hash) | Queued | Four Poseidon instances dominate `transfer.circom`'s non-linear constraints per the README breakdown — a cheaper permutation is a direct prover-time win if Poseidon2's security margin at this field/arity is accepted. |
+| 8 | WASM proving latency on a real mobile device (not headless desktop Chromium) | UX, adoption | Queued | The baseline experiment measured Node.js and, if time permitted, headless-Chromium latency — neither represents a phone. Needs an actual device or a mobile emulator with realistic CPU throttling; headless-desktop numbers should not be extrapolated to mobile without a documented throttling factor. |
+| 9 | Relayer throughput and metadata leakage under load (timing correlation between relayer requests and on-chain submissions) | unmitigated threat (relayer-observer deanonymization) | Queued | Distinct from PRIV-002 (sender is never hidden) — this is about what a relayer-adjacent network observer learns about *which* shielded transfers are linked, from request timing alone, even though the sender field itself is already public. |
+| 10 | Post-quantum exposure assessment: which primitives break under a quantum adversary (BN254 pairing → Groth16 soundness; Poseidon — fine; ECDH P-256 auditor channel — breaks) and what a PQ-safe auditor-channel replacement would cost | quantum adversary residual surface | Queued | Design-only / UNMEASURED by nature — no PQ proof system is a drop-in replacement for `sui::groth16` today. Useful as a documented residual-risk statement even without an implementation. |
+
+## Settled
+
+See `docs/research/LEDGER.md` for the append-only verdict history. As of 2026-07-26, only #1 is
+settled (KEEP, partial — gas and real-device browser latency remain open sub-items, tracked as #2
+and #8 above rather than re-queuing #1 itself).

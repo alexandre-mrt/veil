@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Veil browser proving bench</title></head>
+<body>
+<pre id="out">waiting...</pre>
+<script src="/scripts/node_modules/snarkjs/build/snarkjs.min.js"></script>
+<script>
+async function benchCircuit(name, trials, warmup) {
+  const input = await (await fetch(`/scripts/bench/browser-harness/inputs/${name}.json`)).json();
+  const wasmPath = `/circuits/build/${name}_js/${name}.wasm`;
+  const zkeyPath = `/circuits/build/${name}_final.zkey`;
+  const vk = await (await fetch(`/circuits/build/${name}_vk.json`)).json();
+
+  const proveMs = [];
+  let proofSizeBytes = 0;
+  let valid = false;
+  for (let i = 0; i < warmup + trials; i++) {
+    const t0 = performance.now();
+    const { proof, publicSignals } = await snarkjs.groth16.fullProve(input, wasmPath, zkeyPath);
+    const t1 = performance.now();
+    const ok = await snarkjs.groth16.verify(vk, publicSignals, proof);
+    if (i >= warmup) {
+      proveMs.push(t1 - t0);
+      proofSizeBytes = JSON.stringify(proof).length;
+      valid = ok;
+    }
+  }
+  const sorted = [...proveMs].sort((a, b) => a - b);
+  const mean = sorted.reduce((a, b) => a + b, 0) / sorted.length;
+  const median = sorted[Math.floor(sorted.length / 2)];
+  return { name, valid, trials, mean, median, min: sorted[0], max: sorted[sorted.length - 1], proofSizeBytes };
+}
+
+async function main() {
+  const results = [];
+  for (const name of ["withdraw", "compliance", "transfer"]) {
+    document.getElementById("out").textContent += `\nrunning ${name}...`;
+    const r = await benchCircuit(name, 5, 1);
+    results.push(r);
+  }
+  window.__RESULTS = results;
+  document.getElementById("out").textContent = JSON.stringify(results, null, 2);
+  document.title = "DONE";
+}
+main().catch((e) => {
+  window.__ERROR = String(e && e.stack || e);
+  document.title = "ERROR";
+  document.getElementById("out").textContent = "ERROR: " + window.__ERROR;
+});
+</script>
+</body>
+</html>
