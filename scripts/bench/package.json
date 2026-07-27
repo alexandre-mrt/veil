@@ -1,0 +1,14 @@
+{
+  "name": "veil-bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reusable baseline benchmarks for Veil's Groth16 circuits (circuit constraints, proving/verify time, artifact sizes). See docs/research/ for the reports these scripts back.",
+  "scripts": {
+    "prove-bench": "node prove-bench.mjs"
+  },
+  "dependencies": {
+    "circomlibjs": "^0.1.7",
+    "snarkjs": "0.7.6"
+  }
+}

@@ -30,20 +30,20 @@ The construction is a **composition of standard circomlib gadgets** — Poseidon
 
 ### Real constraint counts
 
-The "11 constraints" figure that used to be in this README was wrong: 11 is the number of *assertions written in the circuit*, not the R1CS constraint count. Four Poseidon instances and four `Num2Bits(64)` range checks dominate the real cost. Numbers below are `snarkjs r1cs info` output on the compiled circuits.
+The "11 constraints" figure that used to be in this README was wrong: 11 is the number of *assertions written in the circuit*, not the R1CS constraint count. Four Poseidon instances and four `Num2Bits(64)` range checks dominate the real cost. Numbers below are `snarkjs r1cs info` output on the compiled circuits, last re-measured 2026-07-27 — see [`docs/research/BASELINE.md`](docs/research/BASELINE.md) for the full methodology, proving-time numbers, and raw command output (this table previously said 13,611 / 12,743 / 3,058 — roughly 2x these figures; likely a stale measurement from a different circom optimization level, see the baseline report for the analysis).
 
 | Circuit | Assertions written | R1CS constraints | Non-linear | Public / private inputs |
 |---|---|---|---|---|
-| `transfer.circom` | 11 + Merkle membership | **13,611** | 6,470 | 7 / 47 |
-| `compliance.circom` | 10 | **12,743** | 6,057 | 6 / 45 |
-| `withdraw.circom` | 9 | **3,058** | 1,465 | 5 / 5 |
+| `transfer.circom` | 11 + Merkle membership | **6,384** | 6,384 | 7 / 47 |
+| `compliance.circom` | 10 | **5,979** | 5,979 | 6 / 45 |
+| `withdraw.circom` | 9 | **1,439** | 1,439 | 5 / 5 |
 
 Reproduce:
 
 ```bash
 cd circuits && npm install
 circom transfer.circom --r1cs -o build -l node_modules
-npx snarkjs r1cs info build/transfer.r1cs      # -> # of Constraints: 13611
+npx snarkjs r1cs info build/transfer.r1cs      # -> # of Constraints: 6384
 ```
 
 ### The transfer statement
