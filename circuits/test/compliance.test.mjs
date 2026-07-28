@@ -28,10 +28,20 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BUILD_DIR = join(__dirname, "..", "build");
-const WASM_PATH = join(BUILD_DIR, "compliance_js", "compliance.wasm");
-const ZKEY_PATH = join(BUILD_DIR, "compliance_final.zkey");
-const VK_PATH = join(BUILD_DIR, "compliance_vk.json");
+// compile-compliance.sh outputs to build-compliance/, but check build/ as fallback
+// (matches the lookup pattern in test/withdraw.test.mjs)
+const BUILD_DIR_PRIMARY = join(__dirname, "..", "build-compliance");
+const BUILD_DIR_FALLBACK = join(__dirname, "..", "build");
+
+function findArtifact(name) {
+  const primary = join(BUILD_DIR_PRIMARY, name);
+  if (existsSync(primary)) return primary;
+  return join(BUILD_DIR_FALLBACK, name);
+}
+
+const WASM_PATH = findArtifact(join("compliance_js", "compliance.wasm"));
+const ZKEY_PATH = findArtifact("compliance_final.zkey");
+const VK_PATH = findArtifact("compliance_vk.json");
 
 // -- Constants ----------------------------------------------------------------
 
