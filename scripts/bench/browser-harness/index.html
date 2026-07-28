@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Veil browser proving benchmark</title></head>
+<body>
+<pre id="out">waiting...</pre>
+<script src="/snarkjs.min.js"></script>
+<script>
+  window.runBenchmark = async function (circuit, runs) {
+    const witness = await fetch(`/witness/${circuit}`).then((r) => r.json());
+    const wasmPath = `/circuit/${circuit}/${circuit}.wasm`;
+    const zkeyPath = `/circuit/${circuit}/${circuit}_final.zkey`;
+
+    // Warm-up (pays one-time WASM instantiation / fetch cost)
+    const warm = await window.snarkjs.groth16.fullProve(witness, wasmPath, zkeyPath);
+
+    const times = [];
+    for (let i = 0; i < runs; i++) {
+      const t0 = performance.now();
+      await window.snarkjs.groth16.fullProve(witness, wasmPath, zkeyPath);
+      const t1 = performance.now();
+      times.push(t1 - t0);
+    }
+    const mean = times.reduce((a, b) => a + b, 0) / times.length;
+    const stddev = Math.sqrt(times.reduce((s, x) => s + (x - mean) ** 2, 0) / times.length);
+    return {
+      circuit,
+      runs,
+      meanMs: mean,
+      stddevMs: stddev,
+      minMs: Math.min(...times),
+      maxMs: Math.max(...times),
+      proofBytesJson: JSON.stringify(warm.proof).length,
+      publicSignalsCount: warm.publicSignals.length,
+      userAgent: navigator.userAgent,
+    };
+  };
+</script>
+</body>
+</html>
