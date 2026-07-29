@@ -10,16 +10,25 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). Blocked three times now (see LEDGER 2026-07-22, 2026-07-29) — 2026-07-29 confirmed
+   the root cause is sandbox **network policy** (GitHub scoped to this repo only, arbitrary hosts
+   including a public Sui fullnode blocked at the network layer, `crates.io` API also denies), not
+   missing tooling. Re-attempting the exact same paths a fourth time isn't worth a night's budget —
+   this needs either a session with a broader network allowlist, or a `sui` binary supplied ahead of
+   time some other way.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Cut `transfer.circom`/`compliance.circom` over to Poseidon2 Merkle hashing in production.**
+   2026-07-29 validated a Merkle-only Poseidon2 swap (`transfer_hybrid.circom`,
+   `compliance_hybrid.circom` — `MerkleProof2`, Poseidon2 compression mode, T=2): −4.85%/−5.18%
+   constraints, −4.4%/−3.7% Node proving time, 4 real-Groth16 negative tests confirming soundness,
+   zero privacy-model change. Design is proven; this item is the actual migration — regenerate and
+   redeploy VKs through the existing timelocked `update_commitment_root`/`update_credential_root`
+   path (`docs/threat-model.md` T3/T4/T5), reissue the frontend's shipped wasm/zkey, rerun the full
+   108-case suite end-to-end against new expected hash outputs. **Do not** extend the swap to
+   commitment/nullifier/leaf hashing (arity ≥3) — measured to be a large net loss (+41% to +126%
+   constraints at the primitive level) because this Poseidon2 implementation isn't R1CS-optimized
+   the way circomlib's Poseidon is; see the 2026-07-29 report's "Isolated primitive cost" table
+   before anyone is tempted to go further than the Merkle tree.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -72,4 +81,13 @@ what matters most — say why in the commit, don't just reorder silently.
     papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
-    individually. Low priority; fold into whichever future night touches `circuits/test/`.
+    individually. Low priority; fold into whichever future night touches `circuits/test/`. Still
+    present as of 2026-07-29 (worked around per-file with `timeout`/explicit `process.exit(0)` in
+    the new bench scripts and `poseidon2_hybrid.test.mjs` — not fixed at the source).
+
+13. **Build an R1CS-optimized Poseidon2** (fold the affine layer the way circomlib's `Poseidon`
+    does, instead of `@taceo/circom-lib`'s explicit per-round matrix evaluation). 2026-07-29 found
+    the off-the-shelf Poseidon2 implementation loses to circomlib's Poseidon by 41–126% of
+    constraints at arity ≥3, specifically because it isn't R1CS-optimized, not because Poseidon2's
+    underlying algebra is worse — real effort (a from-scratch optimized circuit implementation),
+    not a parameter tweak, so lower priority than actually shipping the win already found (item 2).
