@@ -47,3 +47,28 @@ Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
 place, not be appended as a separate table.
+
+## Poseidon2 Merkle-hashing candidate (validated 2026-07-29, not yet in production)
+
+**The tables above are still the deployed protocol's real numbers — nothing below has been cut into
+`transfer.circom`/`compliance.circom` yet.** See
+[`2026-07-29-poseidon2-merkle-hashing.md`](2026-07-29-poseidon2-merkle-hashing.md) for the full
+experiment: swapping only the repeated 20-level Merkle-tree pairwise hash from circomlib's
+`Poseidon(2)` to Poseidon2 in compression mode (`@taceo/circom-lib`, T=2, no capacity element) —
+commitment/nullifier/leaf hashes stay unchanged circomlib Poseidon — measures as a real, modest win.
+A naive "replace every Poseidon call" design was also measured and is a net loss (see the report);
+do not extend this beyond the Merkle tree.
+
+| Circuit | R1CS constraints | Non-linear | Linear | Wires | zkey (bytes) | Node proving time (mean of 10, same session as baseline) |
+|---|---|---|---|---|---|---|
+| `transfer_hybrid.circom` | 13,611 → 12,951 (−4.85%) | 6,470 → 5,930 | 7,141 → 7,021 | 13,632 → 12,972 | 6,001,422 → 5,742,712 | 922.46ms → 881.65ms (−4.4%) |
+| `compliance_hybrid.circom` | 12,743 → 12,083 (−5.18%) | 6,057 → 5,517 | 6,686 → 6,566 | 12,762 → 12,102 | 5,682,146 → 5,423,436 | 879.89ms → 847.68ms (−3.7%) |
+
+Reference circuits: `circuits/transfer_hybrid.circom`, `circuits/compliance_hybrid.circom`,
+`circuits/templates/merkle_proof_poseidon2.circom`, `circuits/templates/poseidon2_compat.circom`.
+Reproduce: `node scripts/bench/prove-latency-poseidon2.mjs --runs 10` (see `circuits/scripts/` and
+the report's Approach section for the compile + trusted-setup commands). Soundness:
+`node --experimental-vm-modules circuits/test/poseidon2_hybrid.test.mjs`.
+
+Cutting this into production is queue item #2 in `EXPERIMENTS.md` — it needs a VK regeneration and
+redeployment through the existing timelocked update path, not just a circuit-file edit.
