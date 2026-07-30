@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "compile": "bash scripts/compile.sh",
-    "test": "node --experimental-vm-modules test/transfer.test.mjs && node --experimental-vm-modules test/compliance.test.mjs && node --experimental-vm-modules test/withdraw.test.mjs"
+    "test": "node --experimental-vm-modules test/transfer.test.mjs && node --experimental-vm-modules test/compliance.test.mjs && node --experimental-vm-modules test/withdraw.test.mjs",
+    "test:poseidon2-merkle": "node --experimental-vm-modules test/poseidon2-merkle.test.mjs"
   },
   "dependencies": {
+    "@taceo/poseidon2": "^0.2.0",
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "snarkjs": "0.7.6"

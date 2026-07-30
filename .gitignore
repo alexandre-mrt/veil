@@ -5,6 +5,7 @@ node_modules/
 .env.testnet
 .env.mainnet
 build/
+build_v2/
 build-withdraw/
 build-compliance/
 dist/
