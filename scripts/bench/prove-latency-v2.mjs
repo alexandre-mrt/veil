@@ -1,28 +1,25 @@
 #!/usr/bin/env node
 /**
- * prove-latency.mjs — Node-side Groth16 proving-time benchmark for Veil's three circuits.
- *
- * Measures wall-clock time for snarkjs groth16.fullProve (witness generation + proving)
- * against the compiled wasm/zkey artifacts in circuits/build{,-withdraw,-compliance}/.
+ * prove-latency-v2.mjs — Node-side Groth16 proving-time benchmark for the Poseidon2-Merkle-hash
+ * experiment circuits (transfer_v2, compliance_v2). Mirrors prove-latency.mjs exactly; only the
+ * circuit set and witness builders differ (witnesses-v2.mjs, Poseidon2 Merkle path).
  *
  * Usage:
- *   node scripts/bench/prove-latency.mjs [--runs N]
+ *   node scripts/bench/prove-latency-v2.mjs [--runs N]
  *
  * Prerequisite (produces the artifacts this script reads):
  *   cd circuits
- *   circom transfer.circom --r1cs --wasm --sym --output build -l node_modules
- *   circom withdraw.circom --r1cs --wasm --sym --output build-withdraw -l node_modules
- *   circom compliance.circom --r1cs --wasm --sym --output build-compliance -l node_modules
- *   curl -L -o build/pot15_final.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_15.ptau
+ *   circom transfer_v2.circom --r1cs --wasm --sym --output build_v2 -l node_modules
+ *   circom compliance_v2.circom --r1cs --wasm --sym --output build_v2 -l node_modules
+ *   cp build/pot15_final.ptau build_v2/   # reuse the same ptau as the baseline run
  *   # then snarkjs groth16 setup + zkey contribute + export verificationkey per circuit
- *   # (see circuits/scripts/compile*.sh for the exact sequence)
  */
 import { buildPoseidon } from "circomlibjs";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import * as snarkjs from "snarkjs";
-import { WITNESS_BUILDERS, setPoseidonField, stringifyInputs } from "./witnesses.mjs";
+import { WITNESS_BUILDERS_V2, stringifyInputs } from "./witnesses-v2.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CIRCUITS_DIR = join(__dirname, "..", "..", "circuits");
@@ -33,9 +30,8 @@ const RUNS = (() => {
 })();
 
 const CIRCUITS = [
-  { name: "transfer", dir: "build" },
-  { name: "withdraw", dir: "build-withdraw" },
-  { name: "compliance", dir: "build-compliance" },
+  { name: "transfer_v2", dir: "build_v2" },
+  { name: "compliance_v2", dir: "build_v2" },
 ];
 
 function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
@@ -45,9 +41,8 @@ function stddev(arr, m) {
 
 async function main() {
   const poseidon = await buildPoseidon();
-  setPoseidonField(poseidon.F);
 
-  console.log(`=== Veil Groth16 proving-time benchmark (${RUNS} runs per circuit) ===`);
+  console.log(`=== Veil Groth16 proving-time benchmark — Poseidon2 Merkle hash (${RUNS} runs per circuit) ===`);
   console.log(`node ${process.version}, ${process.platform}/${process.arch}\n`);
 
   const results = [];
@@ -60,10 +55,9 @@ async function main() {
       continue;
     }
 
-    const inputs = stringifyInputs(WITNESS_BUILDERS[circuit.name](poseidon));
+    const inputs = stringifyInputs(WITNESS_BUILDERS_V2[circuit.name](poseidon));
     const times = [];
 
-    // Warm-up run (not counted — first call pays WASM instantiation cost)
     const warm = await snarkjs.groth16.fullProve(inputs, wasmPath, zkeyPath);
     const proofBytesJson = Buffer.byteLength(JSON.stringify(warm.proof));
     const publicSignalsCount = warm.publicSignals.length;
@@ -93,8 +87,8 @@ async function main() {
   console.log("=== Summary (JSON) ===");
   console.log(JSON.stringify(results, null, 2));
 
-  // snarkjs' bn128 curve keeps worker handles open after the last proof (same issue
-  // fixed for the test runners in #17) — without this the process hangs after printing.
+  // snarkjs' bn128 curve keeps worker handles open after the last proof — see
+  // prove-latency.mjs / circuits/test PR #17 for the same fix on the test runners.
   process.exit(0);
 }
 

@@ -10,16 +10,26 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). **Blocked three nights running now, for three different reasons**: 2026-07-22
+   tool-approval denial mid-session; 2026-07-30 a hard, non-retryable org-policy `403` from the
+   sandbox's egress proxy on both `fullnode.testnet.sui.io` and `api.github.com` (confirmed via
+   `/root/.ccr/README.md` — "do not retry or route around it"; `registry.npmjs.org` and
+   `raw.githubusercontent.com`/`release-assets.githubusercontent.com` were reachable the same
+   night, so it's a specific-host policy, not a blanket block). Still worth an early-run attempt
+   next time, but stop trying JSON-RPC to `fullnode.testnet.sui.io` specifically if the same `403`
+   recurs — that host looks policy-blocked, not transiently unavailable.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Hand-optimized Poseidon2 t=3 linear layer for the Merkle-path hash.** Direct follow-up to
+   2026-07-30 (`poseidon2-merkle-hash`, REJECT). That experiment verified the Poseidon2 t=3 round
+   constants and permutation correctness (byte-for-byte against the HorizenLabs reference, 8
+   end-to-end test vectors against an independent implementation) but found the *vendored*
+   `@taceo/circom-lib` template's linear layer (`ExternalMatMul3`/`InternalMatMul3`) costs +1,260
+   R1CS constraints per proof because it uses named-signal intermediates instead of circomlib's
+   `var`-accumulator folding (`Mix`/`MixS` in `node_modules/circomlib/circuits/poseidon.circom`).
+   Rewriting just the linear layer with the same folding trick, reusing the already-verified round
+   constants, is a well-scoped, low-soundness-risk night: if it still doesn't beat circomlib's
+   original Poseidon even with an optimal linear layer, that's a much stronger final answer on
+   whether Poseidon2 helps Veil's Merkle hash at all.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -30,7 +40,9 @@ what matters most — say why in the commit, don't just reorder silently.
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+   is the main lever available without redesigning the deposit flow). Also now the natural place to
+   check whether item 2's Merkle-hash finding holds at depths other than 20 — see 2026-07-30's open
+   questions.
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -68,8 +80,19 @@ what matters most — say why in the commit, don't just reorder silently.
     (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
     sender-relayer pairs under concurrent load) is unmeasured.
 
-12. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
-    papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
-    calls leave the Node process alive after the test file finishes printing results, which stalls
-    the `&&`-chained `npm test` script after the first file. Each file passes fine run
-    individually. Low priority; fold into whichever future night touches `circuits/test/`.
+12. **Search for a published, audited Poseidon2 t=5 parameter set.** New from 2026-07-30: the
+    commitment/nullifier hashes (`Poseidon(4)`, t=5) are the ones originally named in this queue's
+    Poseidon2 framing, but no published parameter set for t=5 was found on npm or in the
+    HorizenLabs reference during that night's search (only t ∈ {2,3,4,8,12,16} are published).
+    Worth a dedicated, short, search-only night before concluding a t=5 swap would require
+    hand-deriving constants (a meaningfully bigger soundness commitment than reusing a published
+    set).
+
+~~13. Fix `circuits`' chained `npm test` hang.~~ **Resolved before this queue was written up
+    tonight** — `npm test` was re-run chained (`transfer.test.mjs && compliance.test.mjs &&
+    withdraw.test.mjs`) on 2026-07-30 and completed cleanly (exit 0, no hang), fixed by an earlier
+    commit (`#17`, "exit test runners explicitly after the last proof") not part of this loop.
+    Removed from the active queue. Note: the *same* underlying issue (snarkjs keeps worker handles
+    open) was independently found and fixed tonight in `scripts/bench/prove-latency.mjs` and
+    `prove-latency-v2.mjs`, which hadn't gotten the #17 fix — worth a quick grep across
+    `scripts/src/*.ts` for the same pattern on a future lighter night.
