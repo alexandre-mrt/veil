@@ -5,32 +5,50 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+Re-ranked 2026-07-31 (see `LEDGER.md` same date and
+[`2026-07-31-hash-constraint-attribution.md`](2026-07-31-hash-constraint-attribution.md)): a fresh
+measurement showed the depth-20 Merkle path costs 4.2–5.8× what all of a circuit's identity/
+nullifier Poseidon calls cost combined, and is now the empirically larger lever — promoted above
+the Poseidon2 port, which also needs a new, *validated* cryptographic primitive before it can be
+attempted honestly (see item 2). On-chain gas demoted, not because it's less valuable, but because
+it's now confirmed **not autonomously actionable** by a code-only session — see item 3.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+1. **Merkle accumulator at scale / depth vs. batched verification (10^5–10^7 commitments).**
+   Promoted 2026-07-31. Now has a real per-level cost (246 non-linear / 274 linear constraints,
+   from `scripts/bench/hash-constraint-attribution.mjs`) to reason with, instead of a qualitative
+   "deeper is slower." Concretely: a real depth change (e.g. rebuild at depth 16, measure the
+   actual proving-time delta and the anonymity-set-size cost) or a batched/recursive Merkle-proof
+   scheme. Batch insertion cost and indexer throughput for reconstructing the tree client-side are
+   still open. Directly relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a
+   bigger anonymity set is the main lever available without redesigning the deposit flow).
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
+2. **Verified Poseidon2 port (arity, domain-tag collisions).** Re-scoped 2026-07-31: its
+   measurable half (exact non-linear-constraint contribution per Poseidon instance, and per
+   Merkle level) is now **done** — see `BASELINE.md`'s "Constraint attribution" section. What
+   remains is the actual swap-and-measure, which is gated on building a *verified* circom
+   Poseidon2 implementation first: no maintained one is reachable on this session's allow-listed
+   registries (npm was searched — nothing found). Before touching any production circuit: pull
+   reference test vectors from a maintained JS implementation (`@taceo/poseidon2` or
+   `@zkpassport/poseidon2`, both npm-published and BN254-targeted), hand-write a circom Poseidon2
+   template, and validate its output against those vectors in isolation. Only then does a real
+   swap-and-measure experiment (with the soundness argument, leakage analysis, and negative test
+   the nightly loop requires for any circuit change) become honest to attempt. Likely two nights:
+   build + validate, then swap + full writeup.
+
+3. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Re-attempted 2026-07-31 and
+   confirmed **blocked by session network-egress policy**, not a local toolchain gap: no prebuilt
+   `sui` binary reachable (`api.github.com` returns `403` at this session's proxy; `sui` is not a
+   real published crate — crates.io's `sui` is an unrelated name-squatted package), and a direct
+   JSON-RPC read against a public Sui fullnode is blocked the same way (`403` on `CONNECT` to
+   `fullnode.testnet.sui.io`). Demoted, not devalued: this needs the environment's network policy
+   widened or a `sui` binary provisioned some other way (baked into the container image, mounted
+   in) — re-attempting with the same tools each night will just reproduce the same 403s. Don't
+   re-spend night-budget on this without a change on the environment side; flag it instead.
+
+4. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
-
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+   Depends on item 3 existing first (need a real per-verify gas number to know how much this would
+   actually save) — blocked on the same network-policy issue as item 3.
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -73,3 +91,11 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **Commit or gitignore `frontend/public/circuits/withdraw_vk.json` deliberately.** Noticed
+    2026-07-31: unlike `transfer_vk.json` and `compliance_vk.json` (both committed), the withdraw
+    VK that `compile-withdraw.sh` copies into `frontend/public/circuits/` was never committed —
+    `git status` shows it untracked after any withdraw rebuild. Not a research experiment; needs a
+    real production-ceremony decision (what VK the frontend should actually ship), not a nightly
+    dev-ceremony artifact committed as a side effect. Low priority; fold into whichever night runs
+    a real ceremony (`circuits/scripts/ceremony.sh`) or touches `frontend/public/circuits/`.

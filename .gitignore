@@ -22,3 +22,9 @@ target/
 
 # Sui
 contracts/Published.toml
+
+# withdraw_vk.json is a dev-only single-contributor-ceremony artifact (new random entropy
+# every `compile-withdraw.sh` run) — unlike transfer_vk.json/compliance_vk.json, it was never
+# committed on purpose. Committing whatever this session's ceremony happened to produce would
+# ship a VK inconsistent with the deployed verifier. See docs/research/EXPERIMENTS.md #13.
+frontend/public/circuits/withdraw_vk.json
