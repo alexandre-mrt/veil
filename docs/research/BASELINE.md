@@ -36,6 +36,25 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Non-linear constraint breakdown by gadget
+
+Measured 2026-08-01. Every non-linear (and linear) constraint in all three circuits, attributed to a
+named gadget instantiation with zero unexplained residual. Full methodology, per-gadget isolated
+counts, and the reconciliation math:
+[`2026-08-01-poseidon-constraint-decomposition.md`](2026-08-01-poseidon-constraint-decomposition.md).
+
+| Circuit | Total non-linear | Poseidon-family total | Poseidon share | `MerkleProof(20)` alone |
+|---|---|---|---|---|
+| `transfer.circom` | 6,470 | 6,024 | 93.1% | 4,920 (76.0%) |
+| `compliance.circom` | 6,057 | 5,712 | 94.3% | 4,920 (81.2%) |
+| `withdraw.circom` | 1,465 | 1,143 | 78.0% | n/a (no Merkle proof) |
+
+The four *named* Poseidon domain-tag calls in `transfer.circom`/`compliance.circom`'s source comments
+are a small minority of each circuit's actual Poseidon cost — 76–81% of it is the 20 `Poseidon(2)`
+calls hidden inside `MerkleProof(20)`, uncounted by those comments. Reproduce: `CIRCOM_BIN=<path>
+node scripts/bench/poseidon-decompose.mjs` (needs `circuits/node_modules` installed and a circom
+2.1.x/2.2.x binary).
+
 ## Not yet measured
 
 | Metric | Status | Why |

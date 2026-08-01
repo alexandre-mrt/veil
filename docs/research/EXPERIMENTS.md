@@ -5,21 +5,30 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Blocked three times now
+   (2026-07-22, 2026-08-01) for increasingly well-diagnosed reasons: no prebuilt `sui` binary
+   reachable, a from-source build of the full Sui workspace judged impractical within one night's
+   budget, `cargo install sui` resolves to an unrelated nameless placeholder crate (not the real
+   CLI), and as of 2026-08-01 direct JSON-RPC to the public testnet fullnode is a confirmed,
+   explicit network-policy 403 on the CONNECT tunnel itself (not retried, per policy on org-policy
+   denials). One thing newly works as of 2026-08-01: plain `git clone` to arbitrary GitHub repos
+   succeeds even though `api.github.com`/`codeload.github.com` don't — this reopens a from-source
+   `sui` build (or a minimal subset sufficient for gas introspection) as a real option. Worth a
+   night specifically budgeted for attempting that build, rather than another quick look that
+   re-discovers the same dead ends.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Poseidon2 for the Merkle-path hasher (not the four named domain-tag hashes).** The
+   2026-08-01 constraint-decomposition experiment closed the "which Poseidon calls dominate" question
+   with an exact number: 76–81% of `transfer.circom`'s and `compliance.circom`'s non-linear
+   constraints are the 20 `Poseidon(2)` calls inside `MerkleProof(20)`, not the four named
+   domain-tag hashes the source comments enumerate (those are a minority — see
+   `BASELINE.md`'s constraint-breakdown table). A Poseidon2 swap should be scoped to that hasher
+   specifically. Still blocked on the same thing that stopped 2026-08-01 from attempting it: no
+   vetted Poseidon2 circom implementation reachable in this environment to port from (GitHub access
+   is scoped to this repo only, and `circomlib` doesn't ship one) — hand-deriving Poseidon2's round
+   constants and partial-round MDS matrix without a reference to verify against is exactly the kind
+   of unverified cryptographic surface this loop should not risk on a production, Groth16-verified
+   circuit in one night.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -30,7 +39,9 @@ what matters most — say why in the commit, don't just reorder silently.
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+   is the main lever available without redesigning the deposit flow). The 2026-08-01 decomposition
+   already gives the exact per-level circuit cost (243 non-linear / 274 linear constraints per
+   `Poseidon(2)` level) — use that directly instead of re-deriving it when this experiment runs.
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -73,3 +84,10 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **Does circom's alias-vs-linear-combination constraint-elimination rule generalize?** The
+    2026-08-01 decomposition found that a pure signal-to-signal `===`/`<==` costs 0 extra R1CS rows
+    under circom's default simplification, while one involving a `+`/`-`/`*` operator costs exactly
+    1 — verified against three circuits, all consistent. Worth a quick check against a fourth,
+    structurally different circuit before treating it as a general fact rather than a coincidence of
+    these three. Low priority, cheap to check whenever a future night touches a new circuit.
