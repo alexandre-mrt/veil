@@ -22,3 +22,7 @@ target/
 
 # Sui
 contracts/Published.toml
+contracts/Pub.*.toml
+
+# Regenerable benchmark output (rerun the script to reproduce; report cites the raw values)
+scripts/bench/gas-onchain-results.json
