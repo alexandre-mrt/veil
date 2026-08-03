@@ -25,6 +25,43 @@ Groth16 proofs are three fixed-size group elements (2×G1 + 1×G2) regardless of
 constant across all three circuits. snarkjs's own JSON proof encoding (decimal-string field
 elements) runs ~721–726 bytes for the same data.
 
+## Constraint attribution by gadget (added 2026-08-03)
+
+Every non-linear constraint in the three circuits above, attributed to a specific gadget via
+isolated single-gadget `circom` compiles, reconciled exactly against a fresh full-circuit compile.
+See [`2026-08-03-poseidon-constraint-attribution.md`](2026-08-03-poseidon-constraint-attribution.md)
+for the full methodology and raw output; reproduce with
+`bash scripts/bench/poseidon-constraint-attribution.sh`.
+
+| Gadget | Non-linear constraints (each) |
+|---|---|
+| `Poseidon(2)` (t=3) | 243 |
+| `Poseidon(3)` (t=4) | 264 |
+| `Poseidon(4)` (t=5) | 300 |
+| `Poseidon(5)` (t=6) | 324 |
+| `Num2Bits(64)` | 64 |
+| `Num2Bits(8)` | 8 |
+| `GreaterThan(64)` | 65 |
+| `LessEqThan(64)` | 65 |
+| `GreaterEqThan(64)` | 65 |
+| `GreaterEqThan(8)` | 9 |
+| `MultiMux1(2)` | 2 |
+| `MerkleProof(20)` (full template: 20×`Poseidon(2)` + 20×`MultiMux1(2)` + 20×boolean check) | 4,920 |
+
+| Circuit | Pure-Poseidon share | `MerkleProof(20)` share | Non-Poseidon (range/comparator) share |
+|---|---|---|---|
+| `transfer.circom` | 93.1% (6,024 / 6,470) | 76.0% (4,920 / 6,470) | 6.9% (446 / 6,470) |
+| `compliance.circom` | 94.3% (5,712 / 6,057) | 81.2% (4,920 / 6,057) | 5.7% (345 / 6,057) |
+| `withdraw.circom` | 78.0% (1,143 / 1,465) | n/a (no Merkle proof) | 22.0% (322 / 1,465) |
+
+**Key finding:** in both `transfer.circom` and `compliance.circom`, the depth-20 Merkle
+authentication path alone — not any individual commitment/nullifier/credential hash — accounts
+for 76–81% of non-linear constraints. Each additional tree depth level costs exactly 245
+non-linear constraints (one `Poseidon(2)` + one `MultiMux1(2)` + one boolean check). This is the
+real lever for future anonymity-set-size work (`docs/threat-model.md` RR5), not a hash-function
+version swap: Poseidon2 was evaluated and rejected as a constraint-count lever for this circuit
+family under Groth16/R1CS — see the linked report for why.
+
 ## Proving time (mean of 10 runs, includes witness generation)
 
 | Circuit | Node.js (this machine) | Chromium (headless, this machine) | Browser / Node ratio |
