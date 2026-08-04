@@ -5,6 +5,17 @@
 # Requires: circom 2.1.x, snarkjs 0.7.x (global or via npx)
 # Output artifacts go to circuits/build-withdraw/
 #
+# Compiles with --O2 (full constraint simplification) — measured
+# 2026-08-04 to cut this circuit from 3,058 to 1,439 R1CS constraints
+# (-53%) and Node proving time from ~256ms to ~234ms, with the existing
+# 35-test suite passing unchanged against the O2 build. See
+# docs/research/2026-08-04-poseidon2-vs-poseidon.md. NOTE: this changes
+# the compiled R1CS relative to any deployment built with the prior
+# (O1/default) flags, which changes the verifying key — an existing
+# on-chain deployment must go through the timelocked VK-update path
+# (see README.md), not a silent redeploy. The zkey itself grows slightly
+# (+16%) despite fewer constraints — see the research report for why.
+#
 # NOTE: This uses a single dev contributor for the trusted setup.
 # For production, use ceremony.sh with multiple contributors.
 
@@ -50,6 +61,7 @@ circom "$CIRCUIT_NAME.circom" \
   --r1cs \
   --wasm \
   --sym \
+  --O2 \
   --output "$BUILD_DIR"
 
 echo "Constraint count:"

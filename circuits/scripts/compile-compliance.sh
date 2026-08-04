@@ -4,6 +4,16 @@
 #
 # Requires: circom 2.1.x, snarkjs 0.7.x (global or via npx)
 # Output artifacts go to circuits/build-compliance/
+#
+# Compiles with --O2 (full constraint simplification) — measured
+# 2026-08-04 to cut this circuit from 12,743 to 5,979 R1CS constraints
+# (-53%) and Node proving time from ~761ms to ~577ms, with the existing
+# 30-test suite passing unchanged against the O2 build. See
+# docs/research/2026-08-04-poseidon2-vs-poseidon.md. NOTE: this changes
+# the compiled R1CS relative to any deployment built with the prior
+# (O1/default) flags, which changes the verifying key — an existing
+# on-chain deployment must go through the timelocked VK-update path
+# (see README.md), not a silent redeploy.
 
 set -euo pipefail
 
@@ -46,6 +56,7 @@ circom "$CIRCUIT_NAME.circom" \
   --r1cs \
   --wasm \
   --sym \
+  --O2 \
   --output "$BUILD_DIR"
 
 echo "Constraint count:"
