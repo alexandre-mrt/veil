@@ -5,21 +5,26 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Blocked a third time
+   2026-08-04, now with a sharper diagnosis than either prior attempt: `fullnode.testnet.sui.io`
+   and `static.crates.io` (crate downloads — the registry *index* is reachable, actual crates are
+   not) both return a hard `403` at this sandbox's network proxy, a standing policy denial rather
+   than a retriable tool-approval prompt. This looks structural to the sandbox, not something a
+   from-source build or a different RPC call routes around. Worth flagging to whoever configures
+   this environment's network policy before spending a fourth night on pure workarounds; if the
+   policy can't change, this may need to be attempted from a differently-configured environment.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Poseidon2 at t=5 (Veil's dominant Poseidon width).** Settled at t=3 2026-08-04 — REJECT (see
+   LEDGER, `2026-08-04-poseidon2-vs-poseidon.md`): ties `circomlib`'s Poseidon under `--O2`, loses
+   under `--O1`. But t=3 isn't where Veil's cost actually lives — `transfer.circom` and
+   `compliance.circom`'s Poseidon(4)/t=5 calls (5 of 8 total Poseidon instances across all three
+   circuits) dominate, and Poseidon2 has **no official BN254 parameter set at t=5 at all** (the
+   reference implementation only publishes `{2,3}` and multiples of 4). This item is now: either
+   (a) run the Poseidon2 authors' own parameter-generation script for t=5 and independently verify
+   the output against a second implementation before trusting it in a circuit, or (b) evaluate
+   restructuring the four Poseidon(4) calls to a supported width (t=8 most likely — check whether
+   the wasted capacity slots still net a constraint win before committing to it). Real engineering,
+   not a rounding error on a t=3 result — re-ranked down accordingly.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -73,3 +78,10 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **Why do Poseidon and Poseidon2 (t=3) converge to exactly the same non-linear constraint count
+    under `--O2`, despite different partial-round counts (57 vs 56)?** Curiosity noticed but not
+    chased down 2026-08-04 (`2026-08-04-poseidon2-vs-poseidon.md`, Open questions). Low priority —
+    doesn't change any KEEP/REJECT verdict — but worth understanding which specific `--O2`
+    substitution does it, since it bears on how much "fewer partial rounds" claims for Poseidon-
+    family hashes actually translate to R1CS/Groth16 circuits generally, not just this one case.
