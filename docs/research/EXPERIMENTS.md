@@ -5,21 +5,38 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
+**2026-08-05 re-rank:** item 2 (Poseidon2 vs Poseidon) is now settled **REJECT** — see LEDGER and
+[`2026-08-05-poseidon2-arity-mismatch.md`](2026-08-05-poseidon2-arity-mismatch.md). Left in place at
+position 2, struck through, rather than renumbering everything below it — it's cross-referenced by
+number from the ledger and the report. Skip it; nothing below it changed priority as a result of
+tonight's run. A new item is appended at the end (13) for the one open question that result raised:
+whether a Poseidon2 implementation with *native* t=5/t=6 support (instead of padding to t=8) would
+change the verdict — deliberately not attempted tonight, since generating fresh,
+independently-unverified round constants is a cryptographic construction task, not a benchmark. Item
+1 was re-attempted (not re-ranked, still #1) as an early-session unblock check: still BLOCKED, now
+with a more precise diagnosis — note updated below.
+
 1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). Blocked three times now: 2026-07-22 by a tool-approval denial on both the `sui`
+   source build and a fallback RPC call; 2026-08-05 by a hard network-policy `403` on every Sui RPC
+   host tried (testnet, mainnet, and a third-party public node) plus `github.com` release downloads
+   — a firmer, more conclusive block than either previous attempt, but a block all the same. Only
+   remaining open path is a from-source `sui` CLI build (Rust workspace, RocksDB, validator, Move
+   VM) budgeted explicitly across multiple nights, or a change to the network policy.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. ~~**Poseidon2 vs current Poseidon (arity, domain-tag collisions).**~~ **SETTLED — REJECT,
+   2026-08-05.** See LEDGER and
+   [`2026-08-05-poseidon2-arity-mismatch.md`](2026-08-05-poseidon2-arity-mismatch.md). The one
+   audited BN254 Poseidon2 circom implementation available (`@taceo/circom-lib`) doesn't natively
+   support the state width Veil's dominant hash call needs (t=5, from `Poseidon(4)`); padding to
+   the nearest supported width (t=8) costs +93.0% R1CS constraints and +16.6% Node proving time,
+   measured on a full `withdraw_poseidon2.circom` variant. Do not re-run against the same library
+   without new information — see item 9 for the one open variant (native t=5/t=6 constants) that
+   might change this.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -73,3 +90,16 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **Poseidon2 with natively-generated t=5/t=6 round constants.** 2026-08-05 rejected Poseidon2
+    for Veil because the only audited BN254 circom implementation available (`@taceo/circom-lib`)
+    doesn't support the state widths Veil's `Poseidon(4)`/`Poseidon(5)` calls need (t=5/t=6) and
+    padding to t=8 costs more than it saves. A from-scratch Poseidon2 instantiation at the exact
+    widths Veil needs might avoid that penalty entirely — but generating and trusting fresh round
+    constants for a permutation width with no published reference vectors is a real cryptographic
+    construction task (needs the reference constant-generation algorithm re-derived and
+    cross-checked against at least one independent implementation before it's safe to use in a
+    circuit), not a parameter tweak. Ranked low deliberately: real risk of shipping an unverified
+    primitive if rushed, and the potential upside (recovering the ~21% microbenchmark-scale win at
+    full-circuit scale) is unconfirmed, not proven — Table 2 vs Table 3 in the 2026-08-05 report
+    shows the same relative constraint/witness-gen tradeoff could still lose even at native width.

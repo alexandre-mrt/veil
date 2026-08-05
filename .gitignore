@@ -7,6 +7,7 @@ node_modules/
 build/
 build-withdraw/
 build-compliance/
+build-withdraw-compare/
 dist/
 .next/
 target/
@@ -19,6 +20,8 @@ target/
 *.r1cs
 *.wtns
 *.sym
+witness_calculator.js
+generate_witness.js
 
 # Sui
 contracts/Published.toml
