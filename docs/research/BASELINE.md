@@ -12,6 +12,12 @@ for all three circuits per the existing `compile*.sh` scripts), single dev-only 
 contribution (matches `circuits/scripts/compile*.sh` — **not** a production ceremony; see
 `ceremony.sh` and `docs/threat-model.md` RR2).
 
+2026-08-06 re-confirmed every constraint count above byte-for-byte using a different circom
+distribution — `npm install --no-save circom2` (WASM build, `registry.npmjs.org`, reports
+`circom compiler 2.2.3`) — needed because that session's sandbox blocked GitHub/crates.io outright
+(see `2026-08-06-poseidon-constraint-decomposition.md`). Either toolchain reproduces these numbers;
+`circom2` needs no from-source build step.
+
 ## Constraint counts, artifact sizes
 
 | Circuit | R1CS constraints | Non-linear | Linear | Wires | Public / private inputs | zkey (bytes) | vk (bytes) | Compressed on-chain proof (bytes) |
@@ -35,6 +41,39 @@ elements) runs ~721–726 bytes for the same data.
 
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
+
+## Non-linear constraint decomposition, per gadget
+
+Measured 2026-08-06 — see
+[`2026-08-06-poseidon-constraint-decomposition.md`](2026-08-06-poseidon-constraint-decomposition.md)
+for the full methodology and raw output. Supersedes the informal claim in `EXPERIMENTS.md` (pre
+2026-08-06) that "four Poseidon instances dominate" `transfer.circom` and `compliance.circom`'s
+non-linear constraints — true for `withdraw.circom` (no Merkle proof), **not** true for the other
+two, where the 20-level Merkle-membership proof dominates instead.
+
+| Gadget | Non-linear | Linear |
+|---|---|---|
+| `Poseidon(2)` | 243 | 274 |
+| `Poseidon(3)` | 264 | 341 |
+| `Poseidon(4)` | 300 | 436 |
+| `Poseidon(5)` | 324 | 511 |
+| `MerkleProof(20)` (= 20×`Poseidon(2)` + `MultiMux1(2)` selectors) | 4,920 | 5,480 |
+| `Num2Bits(64)` | 64 | 1 |
+| `Num2Bits(8)` | 8 | 1 |
+| `LessEqThan(64)` / `GreaterThan(64)` / `GreaterEqThan(64)` | 65 | 3–4 |
+| `GreaterEqThan(8)` | 9 | 4 |
+
+**246 non-linear constraints per Merkle level** (243 hash + 3 selector overhead) — the number to
+use for costing any future Merkle-depth change (RR5, anonymity-set size vs. prover time).
+
+| Circuit | Dominant non-linear contributor | Share |
+|---|---|---|
+| `transfer.circom` | `MerkleProof(20)` | 76.05% |
+| `compliance.circom` | `MerkleProof(20)` | 81.26% |
+| `withdraw.circom` (no Merkle proof) | `Poseidon(4)`×3 + `Poseidon(2)`×1 | 78.02% |
+
+Reproduce: `bash scripts/bench/gadget-constraints.sh` (compiles the eleven isolated gadgets under
+`circuits/bench/`).
 
 ## Not yet measured
 
