@@ -5,32 +5,44 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **Poseidon2 at arity 2, isolated and measured, targeting the Merkle hasher specifically.**
+   2026-08-06's gadget decomposition (`BASELINE.md`, full writeup
+   [`2026-08-06-poseidon-constraint-decomposition.md`](2026-08-06-poseidon-constraint-decomposition.md))
+   found the informal claim below (four domain-tagged Poseidon calls dominate) is **only true for
+   `withdraw.circom`**. For `transfer.circom` and `compliance.circom`, the depth-20
+   `MerkleProof` — 20 chained `Poseidon(2)` calls — is 76–81% of all non-linear constraints, ~4x
+   the four top-level calls combined (14–18%). Re-ranked to #1: build an isolated Poseidon2
+   arity-2 gadget under `circuits/bench/` (same harness, `scripts/bench/gadget-constraints.sh`),
+   measure it standalone against the existing 243-non-linear-constraint `Poseidon(2)` baseline,
+   *before* committing to any production circuit rewrite. 246 non-linear constraints/Merkle-level
+   (243 hash + 3 selector) is the number this experiment moves.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Blocked a third time on
+   2026-08-06, this time with definitive evidence it's a network-policy decision, not a toolchain
+   gap: that session's egress proxy returned explicit `403` policy denials for `github.com`,
+   `crates.io`, *and* `fullnode.testnet.sui.io` (`$HTTPS_PROXY/__agentproxy/status` — "gateway
+   answered 403 to CONNECT (policy denial)"; the proxy's own docs say do not retry or route around
+   a 403, report it instead). **Do not spend another night's early effort re-searching for a
+   toolchain workaround** — the fix is an infrastructure change: add `fullnode.testnet.sui.io` to
+   this session type's egress allowlist (a read-only JSON-RPC call against a public testnet
+   fullnode, `suix_queryTransactionBlocks`, is low-risk to allowlist), or provide a prebuilt `sui`
+   CLI binary in the environment image. Re-attempt once either exists; until then this item is
+   blocked on someone outside the loop, not on tonight's agent.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
+   Depends on item 2 existing first (need a real per-verify gas number to know how much this would
    actually save).
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+   is the main lever available without redesigning the deposit flow). The proving-time side of this
+   trade-off no longer needs a fresh measurement for small depth changes: 2026-08-06 established
+   246 non-linear constraints per Merkle level (243 hash + 3 selector), so e.g. depth 20 → 26 for a
+   larger anonymity set is +1,476 non-linear constraints, computable directly. Batch-insertion cost
+   and indexer throughput at 10^5–10^7 commitments remain genuinely unmeasured.
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -68,8 +80,15 @@ what matters most — say why in the commit, don't just reorder silently.
     (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
     sender-relayer pairs under concurrent load) is unmeasured.
 
-12. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
-    papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
-    calls leave the Node process alive after the test file finishes printing results, which stalls
-    the `&&`-chained `npm test` script after the first file. Each file passes fine run
-    individually. Low priority; fold into whichever future night touches `circuits/test/`.
+12. **Check whether `scripts/test-compliance-utils.ts`'s slow depth-20 test shares a cause with the
+    now-fixed `circuits` test hang.** `circuits`' chained `npm test` hang (real `snarkjs.groth16`
+    calls leaving the Node process alive after printing results — noticed 2026-07-22) was fixed on
+    `main` between nights, outside this loop: PR #17 (`f942fca`) added an explicit
+    `process.exit(0)` to all three `circuits/test/*.test.mjs` files. That part of this item is
+    done. A related-looking but distinct symptom showed up 2026-08-06 in a different package:
+    `scripts/test-compliance-utils.ts`'s depth-20 real-Poseidon `getMerkleProof` verification ran
+    for several minutes without completing (killed, not diagnosed) — this one touches no
+    `snarkjs.groth16` call at all, so PR #17's fix can't apply; it's more likely genuine
+    2^20-scale-real-Poseidon-in-pure-JS slowness (`circomlibjs`), which would matter directly for
+    item 4's indexer-throughput question if so. Worth a real diagnosis, not assumed to be the same
+    bug. Low priority; fold into whichever future night touches `scripts/src/`.
