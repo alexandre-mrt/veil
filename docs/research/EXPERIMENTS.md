@@ -5,21 +5,24 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. **BLOCKED a third time
+   2026-08-11** (see LEDGER row and the item-#1 section of
+   [`2026-08-11-poseidon2-vs-poseidon.md`](2026-08-11-poseidon2-vs-poseidon.md)): JSON-RPC to
+   public fullnodes AND GitHub release-binary downloads are both confirmed egress-policy 403s in
+   this environment — those two paths are dead until the policy changes, stop re-probing them.
+   New 2026-08-11 finding: git-protocol access to `MystenLabs/sui` *works*, so the credible
+   remaining paths are (a) a from-source `sui` build budgeted across multiple nights (start it
+   early, let it run in the background, checkpoint the target dir), or (b) an environment/policy
+   change (allowlist a Sui fullnode, or provide a `sui` binary in the image). Stays #1 because
+   items 3 and 4 still need a real per-verify gas number as their own baseline.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Griffin (or other low-degree hash) vs Poseidon on the Merkle path.** Successor to the settled
+   Poseidon2 question (REJECT, 2026-08-11): the Merkle path is a measured 76–81% of
+   transfer/compliance non-linear constraints, so per-level hash cost is still the biggest single
+   lever. The same vendored repo (`scripts/bench/poseidon2/vendor/` source: bkomuves/hash-circuits)
+   ships a Griffin t=3 BN254 permutation whose design targets exactly the R1CS cost model Groth16
+   pays for. Reuse tonight's rig (`constraint-costs.mjs`, `merkle-prove-latency.mjs`) as-is; any
+   KEEP must also weigh Griffin's younger cryptanalysis record explicitly, not just the number.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -30,7 +33,10 @@ what matters most — say why in the commit, don't just reorder silently.
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+   is the main lever available without redesigning the deposit flow). New input from 2026-08-11:
+   per-instance costs are now measured (Poseidon(2) 243 / Poseidon(4) 300 non-linear), so the
+   arity trade-off is precisely computable before building — e.g. depth-10 arity-4 ≈ 3,000
+   non-linear in hashes vs today's 4,920 Merkle total for the same 2^20 set (wider muxes extra).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -68,8 +74,6 @@ what matters most — say why in the commit, don't just reorder silently.
     (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
     sender-relayer pairs under concurrent load) is unmeasured.
 
-12. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
-    papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
-    calls leave the Node process alive after the test file finishes printing results, which stalls
-    the `&&`-chained `npm test` script after the first file. Each file passes fine run
-    individually. Low priority; fold into whichever future night touches `circuits/test/`.
+12. ~~**Fix `circuits`' chained `npm test` hang.**~~ **RESOLVED** outside the loop by PR #17
+    (`fix(circuits): exit test runners explicitly after the last proof`). Confirmed 2026-08-11:
+    the chained `cd circuits && npm test` now runs all three files to completion (108/108).
