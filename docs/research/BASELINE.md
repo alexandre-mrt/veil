@@ -1,10 +1,11 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
-[`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
-methodology, raw command output, and what's still missing. Superseded rows should be replaced in
-place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
-reflects the current state of the protocol, not history.
+Circuit/proving numbers measured 2026-07-22; on-chain gas numbers measured 2026-08-12; both on one
+machine, in one run each. See [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md)
+and [`2026-08-12-onchain-gas-baseline.md`](2026-08-12-onchain-gas-baseline.md) for full methodology,
+raw command output, and what's still missing. Superseded rows should be replaced in place with a
+note in `LEDGER.md` pointing at the experiment that changed them — this file always reflects the
+current state of the protocol, not history.
 
 Toolchain: circom 2.2.2 (built from source, `iden3/circom` tag `v2.2.2`), snarkjs 0.7.6, Node
 v22.22.2, Chromium 141 (headless, via Playwright), pot15 Powers of Tau (Hermez, `2^15` — reused
@@ -36,14 +37,46 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point
+
+Measured 2026-08-12 against a local single-validator Sui network (`sui start --force-regenesis`)
+running `sui` 1.78.0 built from source — the deployed testnet package itself is unreachable from
+this sandbox (network policy blocks all outbound calls to `fullnode.*.sui.io`), but the gas
+*schedule* being measured is a property of the Sui binary, not of which network it's running
+against. Reference gas price on this network: 1,000 MIST. Full methodology, the two-round
+timelock dance the measurement required, and the computation-bucketing finding below:
+[`2026-08-12-onchain-gas-baseline.md`](2026-08-12-onchain-gas-baseline.md).
+
+| Entry point | Net MIST | Computation | Storage | Rebate |
+|---|---|---|---|---|
+| `pool::create_pool` | 8,518,680 | 1,000,000 | 8,496,800 | 978,120 |
+| `pool::propose_withdraw_vk` | 4,314,968 | 1,000,000 | 11,726,800 | 8,411,832 |
+| `pool::update_commitment_root` | 1,360,468 | 1,000,000 | 11,970,000 | 11,609,532 |
+| `compliance::create_compliance_config` | 7,321,300 | 1,000,000 | 18,171,600 | 11,850,300 |
+| `token_faucet::faucet` (mint) | 2,364,656 | 1,000,000 | 4,043,200 | 2,678,544 |
+| `pool::deposit_and_register` | 3,172,232 | 1,000,000 | 14,075,200 | 11,902,968 |
+| `pool::freeze_pool` / `unfreeze_pool` | 1,122,132 | 1,000,000 | 12,213,200 | 12,091,068 |
+| `pool::shielded_transfer` | 2,875,376 | 1,000,000 | 14,485,600 | 12,610,224 |
+| `pool::zk_withdraw` | 4,453,744 | 1,000,000 | 15,823,200 | 12,369,456 |
+| `compliance::compliant_transfer` (dual Groth16 verify) | 5,047,760 | 1,000,000 | 22,556,800 | 18,509,040 |
+
+Computation cost is identical (1,000,000 MIST = 1,000 computation units) across every entry point
+above, including the dual-proof `compliant_transfer` — Sui's computation cost is bucketed, not
+metered continuously, and every call measured here lands in the cheapest bucket. **Storage cost is
+what actually determines net gas.** See the report for what this implies for queue item #3
+(batched verification).
+
+Reproduce: `sui start --force-regenesis --with-faucet &` then
+`cd scripts && bun run bench/gas-bench.ts` (needs circuits compiled and a `sui` CLI on PATH — see
+`circuits/scripts/compile*.sh`).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
+| Real testnet/mainnet reference gas price vs. this run's local-network default | **NOT MEASURED** | This run's 1,000 MIST reference price is `sui start`'s development default, not a queried live value (still unreachable — see above). The MIST numbers above scale linearly with reference price; the computation/storage ratio does not. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Whatever comes out of a future measurement should replace the corresponding row above in place,
+not be appended as a separate table.
