@@ -1,0 +1,161 @@
+{
+  "packageId": "0x34a4997f92816e98fba3e4259dcc7a5a9e47040aa5d1be7917828300a3f5550e",
+  "poolId": "0xa05c7dc3398332170b275026809b0c318dba4f7b1a426d17cdfed9d131f213ac",
+  "configId": "0xae1991e284200889fcfc733a2d610b2f1045153f36bd6c41f28629535156c526",
+  "rows": [
+    {
+      "entryPoint": "pool::create_pool",
+      "digest": "H2WGWj4yYNuH1ZL9kNa8D8wrW9wrm1oTf7KWCgb8vZp7",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "8496800",
+        "storageRebate": "978120",
+        "nonRefundableStorageFee": "9880"
+      },
+      "netMist": "8518680"
+    },
+    {
+      "entryPoint": "pool::propose_withdraw_vk",
+      "digest": "8oYAYpBkYcinDsMgpgNc6rHTqzH1CUpB1n8Fdy8F7z3J",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11726800",
+        "storageRebate": "8411832",
+        "nonRefundableStorageFee": "84968"
+      },
+      "netMist": "4314968"
+    },
+    {
+      "entryPoint": "pool::update_commitment_root",
+      "digest": "4TFVESHsPdrbXdYLdxNe8hNpVaYq7Fdwi1c9ymX4bKw7",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11970000",
+        "storageRebate": "11609532",
+        "nonRefundableStorageFee": "117268"
+      },
+      "netMist": "1360468"
+    },
+    {
+      "entryPoint": "compliance::create_compliance_config",
+      "digest": "HMYxcuRVxSkXE11TLPi7B5MSCkGxQpRCD2YjoYhP5rQF",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "18171600",
+        "storageRebate": "11850300",
+        "nonRefundableStorageFee": "119700"
+      },
+      "netMist": "7321300"
+    },
+    {
+      "entryPoint": "token_faucet::faucet",
+      "digest": "CMobcZsLzYPXvzmyhzTPb3fx5hwd1wyw5nynpEy11sPF",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "4043200",
+        "storageRebate": "2678544",
+        "nonRefundableStorageFee": "27056"
+      },
+      "netMist": "2364656"
+    },
+    {
+      "entryPoint": "pool::deposit_and_register (transfer)",
+      "digest": "FsWXD9HfuZfCeKXbeJepmi7B8A7MZm2oYrYKHq8n1g7W",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "14075200",
+        "storageRebate": "11902968",
+        "nonRefundableStorageFee": "120232"
+      },
+      "netMist": "3172232"
+    },
+    {
+      "entryPoint": "pool::deposit_and_register (withdraw)",
+      "digest": "5udYdzGZCVL6PoF8LJzYmrFNcVjJ4p7AvtvwrvBKJvmY",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "14075200",
+        "storageRebate": "11902968",
+        "nonRefundableStorageFee": "120232"
+      },
+      "netMist": "3172232"
+    },
+    {
+      "entryPoint": "pool::deposit_and_register (compliant_transfer)",
+      "digest": "nsxTHNJRZE2uTv8kWa5aroBn6CsrtNgMrHAZzez8nZP",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "14075200",
+        "storageRebate": "11902968",
+        "nonRefundableStorageFee": "120232"
+      },
+      "netMist": "3172232"
+    },
+    {
+      "entryPoint": "pool::freeze_pool",
+      "digest": "49bo6bjmKNyctCgLoN2vK6Lre6HVMyFCpdsFZ2wtVMqk",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "12213200",
+        "storageRebate": "12091068",
+        "nonRefundableStorageFee": "122132"
+      },
+      "netMist": "1122132"
+    },
+    {
+      "entryPoint": "pool::unfreeze_pool",
+      "digest": "34etMgTRkYGFEnynq8j4XamPetoE1qn3WFUuVpYH2oPo",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "12213200",
+        "storageRebate": "12091068",
+        "nonRefundableStorageFee": "122132"
+      },
+      "netMist": "1122132"
+    },
+    {
+      "entryPoint": "pool::shielded_transfer",
+      "digest": "13GdkS2AGG7VNKECtNEE6TaNnNNocMhGdS3Tu9szLPcx",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "14485600",
+        "storageRebate": "12610224",
+        "nonRefundableStorageFee": "127376"
+      },
+      "netMist": "2875376"
+    },
+    {
+      "entryPoint": "pool::zk_withdraw",
+      "digest": "4FUNwXkUMWhdyim1EdzGa7w7mpYMZZcqJx8rPAKSCdWX",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "15823200",
+        "storageRebate": "12369456",
+        "nonRefundableStorageFee": "124944"
+      },
+      "netMist": "4453744"
+    },
+    {
+      "entryPoint": "pool::update_commitment_root (round 2)",
+      "digest": "67A34NL3LgrLGwHLYM1BUimA366BFYk9isj7tEW5bHwH",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "12213200",
+        "storageRebate": "11850300",
+        "nonRefundableStorageFee": "119700"
+      },
+      "netMist": "1362900"
+    },
+    {
+      "entryPoint": "compliance::compliant_transfer",
+      "digest": "H2cs62w7c2FdVfQmGZQLBZQubXUatcoM2vaSErknpV1n",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "22556800",
+        "storageRebate": "18509040",
+        "nonRefundableStorageFee": "186960"
+      },
+      "netMist": "5047760"
+    }
+  ]
+}
