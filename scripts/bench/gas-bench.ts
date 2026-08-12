@@ -21,7 +21,7 @@
  */
 
 import { execSync } from "child_process";
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
@@ -30,9 +30,7 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { fromBase64 } from "@mysten/sui/utils";
 import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
-import { buildPoseidon } from "circomlibjs";
 
-import { deployContract } from "../src/deploy.js";
 import {
   proofToSuiBytes,
   publicInputsToSuiBytes,
@@ -40,7 +38,6 @@ import {
   bigintToLE32,
 } from "../src/proof-converter.js";
 import type { SnarkjsProof, SnarkjsVK } from "../src/proof-converter.js";
-import { WITNESS_BUILDERS, setPoseidonField, stringifyInputs } from "./witnesses.mjs";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -55,7 +52,7 @@ const LOCAL_FAUCET_URL = process.env.VEIL_LOCAL_FAUCET ?? "http://127.0.0.1:9123
 const SUI_CLOCK_OBJECT_ID = "0x6";
 const GAS_BUDGET = 500_000_000;
 const EPOCH_DURATION_MS = 60_000; // minimum allowed by pool.move (assert!(epoch_duration_ms >= 60_000))
-const TRANSFER_THRESHOLD = 1_000_000_000_000n; // large enough that our tiny test amounts never trip it
+const TRANSFER_THRESHOLD = 1_000_000_000n; // must match witnesses.mjs buildTransferWitness's hardcoded `threshold` exactly
 const DENOM_SMALL = 100_000_000; // must match pool.move's DENOM_SMALL exactly (deposit_and_register requires standard amounts)
 
 const CIRCUITS = {
@@ -162,21 +159,27 @@ async function ensureBalance(client: SuiJsonRpcClient, address: string): Promise
 }
 
 // ---------------------------------------------------------------------------
-// Proof generation
+// Proof generation — shelled out to plain Node (see generate-proofs.mjs header for why: Bun's
+// spec-strict EventTarget crashes on snarkjs's Node worker-thread path).
 // ---------------------------------------------------------------------------
 
-function poseidonHash(poseidon: any, inputs: bigint[]): bigint {
-  return poseidon.F.toObject(poseidon(inputs));
+interface GeneratedProofs {
+  genesisCommitments: { transfer: string; withdraw: string; compliant_transfer: string };
+  transferMerkleRoot: string;
+  transfer2MerkleRoot: string;
+  complianceCredentialRoot: string;
+  proofs: {
+    transfer: { proof: SnarkjsProof; publicSignals: string[] };
+    withdraw: { proof: SnarkjsProof; publicSignals: string[] };
+    compliance: { proof: SnarkjsProof; publicSignals: string[] };
+    transfer2: { proof: SnarkjsProof; publicSignals: string[] };
+  };
 }
 
-async function proveCircuit(circuit: keyof typeof CIRCUITS, inputs: Record<string, unknown>) {
-  // @ts-expect-error snarkjs has no TypeScript declarations
-  const snarkjs = await import("snarkjs");
-  const { dir, name } = CIRCUITS[circuit];
-  const wasmPath = join(CIRCUITS_DIR, dir, `${name}_js`, `${name}.wasm`);
-  const zkeyPath = join(CIRCUITS_DIR, dir, `${name}_final.zkey`);
-  const { proof, publicSignals } = await snarkjs.groth16.fullProve(inputs, wasmPath, zkeyPath);
-  return { proof: proof as SnarkjsProof, publicSignals: publicSignals as string[] };
+function generateProofsViaNode(epoch: bigint): GeneratedProofs {
+  const scriptPath = join(__dirname, "generate-proofs.mjs");
+  const output = execSync(`node ${scriptPath} ${epoch}`, { encoding: "utf-8", maxBuffer: 20 * 1024 * 1024 });
+  return JSON.parse(output.trim().split("\n").pop()!);
 }
 
 function loadVk(circuit: keyof typeof CIRCUITS): SnarkjsVK {
@@ -186,6 +189,58 @@ function loadVk(circuit: keyof typeof CIRCUITS): SnarkjsVK {
 
 function sleepMs(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+// ---------------------------------------------------------------------------
+// Deploy (localnet-specific: `sui client publish` requires Move.toml to declare a matching
+// [environments] entry, which contracts/Move.toml doesn't for an ad-hoc localnet. `test-publish`
+// is the CLI's documented ephemeral-address path for exactly this case.)
+// ---------------------------------------------------------------------------
+
+function deployContractLocal(projectRoot: string, gasBudget: number): { packageId: string; treasuryCapId: string } {
+  const contractsDir = join(projectRoot, "contracts");
+  const pubfile = join(projectRoot, "scripts", "bench", ".local-pubfile.toml");
+  console.log(`[deploy] test-publish from ${contractsDir} (ephemeral local addresses, gas budget ${gasBudget})...`);
+
+  let output: string;
+  try {
+    output = execSync(
+      `sui client test-publish --build-env local --gas-budget ${gasBudget} --pubfile-path ${pubfile} --json`,
+      { cwd: contractsDir, encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 },
+    );
+  } catch (err: unknown) {
+    const execErr = err as { stdout?: string; stderr?: string; status?: number };
+    const combined = (execErr.stdout ?? "") + (execErr.stderr ?? "");
+    if (combined.includes('"objectChanges"') || combined.includes('"effects"')) {
+      output = combined;
+    } else {
+      throw new Error(`[deploy] test-publish failed (exit ${execErr.status}): ${combined.slice(0, 1000)}`);
+    }
+  }
+
+  const jsonStart = output.indexOf("{");
+  const result = JSON.parse(output.slice(jsonStart));
+  const status = result.effects?.status?.status;
+  if (status !== "success") {
+    throw new Error(`[deploy] Transaction failed: ${JSON.stringify(result.effects?.status)}`);
+  }
+
+  const changes = result.objectChanges ?? [];
+  const published = changes.find((c: any) => c.type === "published");
+  const treasuryCapChange = changes.find(
+    (c: any) => c.type === "created" && c.objectType?.includes("::coin::TreasuryCap"),
+  );
+  if (!published?.packageId) throw new Error("[deploy] No published package found in objectChanges");
+  if (!treasuryCapChange?.objectId) throw new Error("[deploy] No TreasuryCap found in objectChanges");
+
+  console.log(`[deploy] Package published: ${published.packageId}`);
+  return { packageId: published.packageId, treasuryCapId: treasuryCapChange.objectId };
+}
+
+async function currentEpoch(client: SuiJsonRpcClient): Promise<bigint> {
+  const clockObj = await client.getObject({ id: SUI_CLOCK_OBJECT_ID, options: { showContent: true } });
+  const timestampMs = BigInt((clockObj.data?.content as any).fields.timestamp_ms);
+  return timestampMs / BigInt(EPOCH_DURATION_MS);
 }
 
 /** Wait until the wall-clock epoch (timestamp_ms / EPOCH_DURATION_MS) advances past `fromEpoch`. */
@@ -217,41 +272,12 @@ async function main(): Promise<void> {
   const client = new SuiJsonRpcClient({ url: LOCAL_RPC_URL, network: "localnet" as any });
   await ensureBalance(client, address);
 
-  const poseidon = await buildPoseidon();
-  setPoseidonField(poseidon.F);
-
-  // ---- Build all three witnesses up front ----
-  const transferWitness = WITNESS_BUILDERS.transfer(poseidon);
-  const withdrawWitness = WITNESS_BUILDERS.withdraw(poseidon);
-  const complianceWitness = WITNESS_BUILDERS.compliance(poseidon);
-
-  // A second, distinct transfer witness (different userSecret) so compliant_transfer consumes
-  // its own genesis commitment rather than replaying the one shielded_transfer already spent.
-  const transferWitness2 = (() => {
-    const w = WITNESS_BUILDERS.transfer(poseidon);
-    // Rebuild with a different userSecret so oldCommitment/nullifier differ from transferWitness.
-    const DOMAIN_COMMITMENT = 1n, DOMAIN_NULLIFIER = 2n, DOMAIN_TX_AMOUNT = 3n;
-    const userSecret = 555444333n, cumulativeOld = 0n, txAmount = 100n, randomnessOld = 0n, randomnessNew = 67890n, epochId = 1n, salt = 42n;
-    const cumulativeNew = cumulativeOld + txAmount;
-    const oldCommitment = poseidonHash(poseidon, [DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]);
-    const newCommitment = poseidonHash(poseidon, [DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]);
-    const nullifier = poseidonHash(poseidon, [DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]);
-    const txAmountHash = poseidonHash(poseidon, [DOMAIN_TX_AMOUNT, txAmount, salt]);
-    return {
-      ...w,
-      oldCommitment, newCommitment, nullifier, txAmountHash,
-      cumulativeOld, cumulativeNew, txAmount, randomnessOld, randomnessNew, userSecret, salt,
-      merkleRoot: oldCommitment, // depth-20 all-zero path from a leaf equal to itself only holds when pathElements are 0 and node starts at leaf; recomputed below
-    };
-  })();
-  // recompute merkleRoot for transferWitness2 properly (all-zero Merkle path, depth 20)
-  {
-    let node = transferWitness2.oldCommitment;
-    for (let i = 0; i < 20; i++) node = poseidonHash(poseidon, [node, 0n]);
-    (transferWitness2 as any).merkleRoot = node;
-    (transferWitness2 as any).pathElements = Array.from({ length: 20 }, () => 0n);
-    (transferWitness2 as any).pathIndices = Array.from({ length: 20 }, () => 0n);
-  }
+  // ---- Genesis commitments + compliance credential root (epoch-independent, see
+  // generate-proofs.mjs) computed now so deposits/config creation can happen before we know the
+  // exact on-chain epoch the submitted proofs will need to target. ----
+  step("Computing genesis commitments + credential root via Node subprocess");
+  const early = generateProofsViaNode(0n);
+  info(`genesis commitments: transfer=${early.genesisCommitments.transfer.slice(0, 12)}... withdraw=${early.genesisCommitments.withdraw.slice(0, 12)}... compliant_transfer=${early.genesisCommitments.compliant_transfer.slice(0, 12)}...`);
 
   const vkBytes = {
     transfer: vkToSuiBytes(loadVk("transfer")),
@@ -261,9 +287,9 @@ async function main(): Promise<void> {
 
   // ---- Deploy ----
   step("Deploy package");
-  const deployResult = deployContract(PROJECT_ROOT, GAS_BUDGET);
+  const deployResult = deployContractLocal(PROJECT_ROOT, GAS_BUDGET);
   const packageId = deployResult.packageId;
-  const treasuryCapId = deployResult.treasuryCapId!;
+  const treasuryCapId = deployResult.treasuryCapId;
   info(`package: ${packageId}, treasuryCap: ${treasuryCapId}`);
   // deploy.ts doesn't capture publish gas today (JSON output from `sui client publish` lacks a
   // clean single digest to re-query without another RPC round-trip) -- explicitly out of scope
@@ -305,9 +331,25 @@ async function main(): Promise<void> {
     });
   });
 
+  // ---- update_commitment_root (admin op, timelocked): pool.commitment_root starts all-zero;
+  // shielded_transfer checks the transfer proof's Merkle root against it, so it must be switched
+  // to match transferWitness's single-leaf root before shielded_transfer can succeed. ----
+  step("update_commitment_root -> transfer witness root (admin op)");
+  await execAndRecord(client, keypair, "pool::update_commitment_root", (tx) => {
+    tx.moveCall({
+      target: `${packageId}::pool::update_commitment_root`,
+      arguments: [
+        tx.object(poolId),
+        tx.object(adminCapId),
+        tx.pure.vector("u8", Array.from(bigintToLE32(BigInt(early.transferMerkleRoot)))),
+        tx.object(SUI_CLOCK_OBJECT_ID),
+      ],
+    });
+  });
+
   // ---- create_compliance_config (admin op) ----
   step("create_compliance_config (admin op)");
-  const credentialRoot = bigintToLE32(complianceWitness.merkleRoot as bigint);
+  const credentialRoot = bigintToLE32(BigInt(early.complianceCredentialRoot));
   const auditorKey = new Uint8Array(33); // dummy, only length matters for MIN_AUDITOR_KEY_LENGTH
   auditorKey.fill(7);
   const createConfigRes = await execAndRecord(client, keypair, "compliance::create_compliance_config", (tx) => {
@@ -341,18 +383,16 @@ async function main(): Promise<void> {
 
   // ---- three deposits (one per genesis commitment we'll spend later) ----
   const genesisCommitments: [string, Uint8Array][] = [
-    ["transfer", bigintToLE32(transferWitness.oldCommitment as bigint)],
-    ["withdraw", bigintToLE32(withdrawWitness.commitment as bigint)],
-    ["compliant_transfer", bigintToLE32((transferWitness2 as any).oldCommitment as bigint)],
+    ["transfer", bigintToLE32(BigInt(early.genesisCommitments.transfer))],
+    ["withdraw", bigintToLE32(BigInt(early.genesisCommitments.withdraw))],
+    ["compliant_transfer", bigintToLE32(BigInt(early.genesisCommitments.compliant_transfer))],
   ];
 
   let currentCoinId = coinId;
   const depositEpochs: bigint[] = [];
   for (const [label, commitment] of genesisCommitments) {
     step(`deposit_and_register (${label} genesis commitment)`);
-    const clockObj = await client.getObject({ id: SUI_CLOCK_OBJECT_ID, options: { showContent: true } });
-    const timestampMs = BigInt((clockObj.data?.content as any).fields.timestamp_ms);
-    depositEpochs.push(timestampMs / BigInt(EPOCH_DURATION_MS));
+    depositEpochs.push(await currentEpoch(client));
 
     const tx = new Transaction();
     tx.setGasBudget(GAS_BUDGET);
@@ -389,19 +429,20 @@ async function main(): Promise<void> {
     tx.moveCall({ target: `${packageId}::pool::unfreeze_pool`, arguments: [tx.object(poolId), tx.object(adminCapId)] });
   });
 
-  // ---- wait for epoch to advance so deposits mature + withdraw VK timelock applies ----
+  // ---- ROUND 1: shielded_transfer + zk_withdraw. Generate proofs pinned to the actual deposit
+  // epoch (pool.move's epoch check needs proof_epoch == on_chain_epoch OR on_chain_epoch - 1;
+  // pinning to the deposit epoch and then waiting for on-chain epoch to advance past it satisfies
+  // that check, commitment maturity, the withdraw-VK timelock, and the commitment-root timelock
+  // all in the same wait, since all four were proposed/deposited in this same epoch window) ----
   const maxDepositEpoch = depositEpochs.reduce((a, b) => (b > a ? b : a));
-  step(`Waiting for epoch > ${maxDepositEpoch} (commitment maturity + VK timelock)`);
+  step(`Generating round-1 Groth16 proofs pinned to epoch ${maxDepositEpoch} via Node subprocess`);
+  const round1 = generateProofsViaNode(maxDepositEpoch);
+  const transferProof = round1.proofs.transfer;
+  const withdrawProof = round1.proofs.withdraw;
+
+  step(`Waiting for epoch > ${maxDepositEpoch} (commitment maturity + VK timelock + commitment-root timelock + proof epoch grace window)`);
   await waitForEpoch(client, maxDepositEpoch);
 
-  // ---- generate real proofs ----
-  step("Generating real Groth16 proofs (transfer, withdraw, compliance x2)");
-  const transferProof = await proveCircuit("transfer", stringifyInputs(transferWitness));
-  const withdrawProof = await proveCircuit("withdraw", stringifyInputs(withdrawWitness));
-  const complianceProof = await proveCircuit("compliance", stringifyInputs(complianceWitness));
-  const transferProof2 = await proveCircuit("transfer", stringifyInputs(transferWitness2));
-
-  // ---- shielded_transfer ----
   step("shielded_transfer");
   await execAndRecord(client, keypair, "pool::shielded_transfer", (tx) => {
     tx.moveCall({
@@ -415,7 +456,6 @@ async function main(): Promise<void> {
     });
   });
 
-  // ---- zk_withdraw ----
   step("zk_withdraw");
   await execAndRecord(client, keypair, "pool::zk_withdraw", (tx) => {
     tx.moveCall({
@@ -430,7 +470,31 @@ async function main(): Promise<void> {
     });
   });
 
-  // ---- compliant_transfer (dual-proof) ----
+  // ---- ROUND 2: compliant_transfer. Needs pool.commitment_root switched to transferWitness2's
+  // root (a different genesis commitment than round 1's), which is itself timelocked -- so this
+  // is its own propose -> wait -> submit cycle, with fresh proofs pinned to the new epoch. ----
+  step("update_commitment_root -> compliant_transfer witness root (admin op)");
+  const round2StartEpoch = await currentEpoch(client);
+  await execAndRecord(client, keypair, "pool::update_commitment_root (round 2)", (tx) => {
+    tx.moveCall({
+      target: `${packageId}::pool::update_commitment_root`,
+      arguments: [
+        tx.object(poolId),
+        tx.object(adminCapId),
+        tx.pure.vector("u8", Array.from(bigintToLE32(BigInt(early.transfer2MerkleRoot)))),
+        tx.object(SUI_CLOCK_OBJECT_ID),
+      ],
+    });
+  });
+
+  step(`Generating round-2 Groth16 proofs pinned to epoch ${round2StartEpoch} via Node subprocess`);
+  const round2 = generateProofsViaNode(round2StartEpoch);
+  const complianceProof = round2.proofs.compliance;
+  const transferProof2 = round2.proofs.transfer2;
+
+  step(`Waiting for epoch > ${round2StartEpoch} (round-2 commitment-root timelock + proof epoch grace window)`);
+  await waitForEpoch(client, round2StartEpoch);
+
   step("compliance::compliant_transfer (dual Groth16 verify)");
   const encryptedAmount = new Uint8Array(93);
   encryptedAmount.fill(9);
