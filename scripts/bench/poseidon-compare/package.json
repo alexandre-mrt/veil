@@ -1,0 +1,9 @@
+{
+  "name": "veil-poseidon2-bench",
+  "private": true,
+  "type": "module",
+  "description": "Poseidon vs Poseidon2 constraint-count and proving-time micro-benchmark (docs/research/2026-08-13-poseidon2-merkle-compression.md)",
+  "dependencies": {
+    "snarkjs": "0.7.6"
+  }
+}
