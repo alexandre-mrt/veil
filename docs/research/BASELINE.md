@@ -36,11 +36,49 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Non-linear constraint decomposition (per gadget)
+
+Measured 2026-08-14, same toolchain (circom 2.2.2, source-built; circomlib 2.0.5). See
+[`2026-08-14-poseidon-constraint-decomposition.md`](2026-08-14-poseidon-constraint-decomposition.md)
+for the full methodology and raw output. Every non-linear constraint below reconstructs the actual
+totals above **exactly** (delta 0 for all three circuits) — this is a verified decomposition, not an
+estimate.
+
+| Circuit | Merkle accumulator (depth 20) | Domain-tag Poseidon hashes | Range checks / comparators |
+|---|---|---|---|
+| `transfer.circom` | 4,920 (76.0%) | 1,164 (18.0%) | 386 (6.0%) |
+| `compliance.circom` | 4,920 (81.2%) | 852 (14.1%) | 285 (4.7%) |
+| `withdraw.circom` (no Merkle tree) | — | 1,143 (78.0%) | 322 (22.0%) |
+
+Per-gadget non-linear/linear constraint costs (isolated single-instance compilation):
+
+| Gadget | Non-linear | Linear |
+|---|---|---|
+| `Poseidon(2)` | 243 | 274 |
+| `Poseidon(3)` | 264 | 341 |
+| `Poseidon(4)` | 300 | 436 |
+| `Poseidon(5)` | 324 | 511 |
+| `Num2Bits(64)` | 64 | 1 |
+| `Num2Bits(8)` | 8 | 1 |
+| `LessEqThan(64)` / `GreaterThan(64)` / `GreaterEqThan(64)` | 65 | 3–4 |
+| `GreaterEqThan(8)` | 9 | 4 |
+| `MultiMux1(2)` | 2 | 0 |
+| One Merkle tree level (`Poseidon(2)` + `MultiMux1(2)` + boolean check) | 246 | 274 |
+
+Reproduce: `node scripts/bench/poseidon-constraint-decomposition.mjs` (needs a `circom` binary on
+`PATH` or `$CIRCOM_BIN`).
+
+**Headline correction to the "four Poseidon instances dominate" framing above:** three-quarters to
+four-fifths of that Poseidon cost in `transfer.circom`/`compliance.circom` is the depth-20 Merkle
+authentication path (20 identical `Poseidon(2)` calls), not the domain-tagged
+commitment/nullifier/credential hashes. Any future prover-time optimization (Poseidon2, shallower
+tree, etc.) should be sized against that split, not against "Poseidon" as an undifferentiated whole.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** (retried 2026-08-14, confirmed for two independent, non-retryable reasons) | Direct JSON-RPC to a public Sui testnet fullnode is denied by the session's egress proxy policy (403 on CONNECT, confirmed via the proxy's own status endpoint — not a transient failure). Building/fetching the `sui` CLI needs the `MystenLabs/sui` GitHub repo, which is out of this session's repo scope (`alexandre-mrt/veil` only) and returns an explicit access-not-enabled error, not a network error. Neither is fixable by retrying; see the 2026-08-14 report's Open Questions for what unblocking actually requires. Still top of the queue. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
