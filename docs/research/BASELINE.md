@@ -36,11 +36,31 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Poseidon / Merkle constraint decomposition
+
+Measured 2026-08-17. See
+[`2026-08-17-poseidon-merkle-constraint-breakdown.md`](2026-08-17-poseidon-merkle-constraint-breakdown.md).
+`transfer.circom`'s 13,611 constraints decompose *exactly* (0 delta) into the sum of its isolated
+gadgets:
+
+| Gadget | R1CS constraints | Share of `transfer.circom` |
+|---|---|---|
+| `MerkleProof(20)` (20x `Poseidon(2)` + `MultiMux1(2)` selectors) | 10,400 | 76.4% |
+| 3x `Poseidon(4)` (old/new commitment, nullifier) | 2,208 | 16.2% |
+| 1x `Poseidon(3)` (amount hash) | 605 | 4.4% |
+| Range-check scaffolding (`GreaterThan`/`Num2Bits`/`LessEqThan`) | 398 | 2.9% |
+
+`compliance.circom` instantiates the same `MerkleProof(20)` template for credential membership; by
+inspection those 10,400 constraints are 81.6% of its 12,743 total (not yet exactly reconciled the
+way `transfer.circom` was — see open questions in the report).
+
+Reproduce: `node scripts/bench/poseidon-constraint-breakdown.mjs`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** (still) | 2026-08-17 re-attempt: direct JSON-RPC to a public Sui fullnode is denied by sandbox network policy (`403`, confirmed via the proxy's own status endpoint — a hard policy block, not a transient failure). Building `sui` from source *is* possible here (unlike previously assumed) — `git clone`+`cargo build` both work even though raw `curl` to `github.com`/`crates.io` doesn't — but is multi-hour, not multi-minute; a background build was ~1,140/~unknown crates in after 45 minutes and didn't finish within the session. See [`2026-08-17-poseidon-merkle-constraint-breakdown.md`](2026-08-17-poseidon-merkle-constraint-breakdown.md) for the procedural fix (start the build in the first five minutes of a future session). Top of the queue for the next run. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
