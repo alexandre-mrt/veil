@@ -47,3 +47,24 @@ Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
 place, not be appended as a separate table.
+
+## Poseidon2 candidate (measured, not yet deployed)
+
+Measured 2026-08-18, same machine, same toolchain versions as above plus `@taceo/circom-lib@0.6.0`
+/ `@taceo/poseidon2@0.2.0`. See
+[`2026-08-18-poseidon2-vs-poseidon.md`](2026-08-18-poseidon2-vs-poseidon.md) for the full
+methodology, soundness/leakage analysis, and raw output. **This is a recommendation, not a
+migration** — the rows above (the deployed circuits, real testnet verifying keys) are unchanged.
+`transfer_poseidon2.circom` / `compliance_poseidon2.circom` swap only the 20-level Merkle-membership
+node hash (circomlib `Poseidon(2)` sponge → `Poseidon2(2)` compression mode); every other constraint
+is byte-for-byte identical to the deployed circuit.
+
+| Circuit | R1CS constraints | Δ vs. deployed | zkey (bytes) | Δ zkey | Node proving time (mean, 20 runs) | Δ proving time |
+|---|---|---|---|---|---|---|
+| `transfer_poseidon2.circom` | 12,951 | −4.85% (−660) | 5,742,717 | −4.31% | 860.10 ms (σ 25.91) | −4.64% |
+| `compliance_poseidon2.circom` | 12,083 | −5.18% (−660) | 5,423,441 | −4.55% | 828.17 ms (σ 20.18) | −5.62% |
+
+Adopting this for real requires a new circuit version, a fresh production-grade (multi-party)
+trusted setup, new on-chain verifying keys, and a pool migration — not attempted tonight. Tonight's
+zkeys for these two circuits are the same dev-only single-contributor setup as every other circuit
+in this repo (not production-safe, see `docs/threat-model.md` RR2).

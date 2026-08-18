@@ -3,7 +3,8 @@
  * prove-latency.mjs — Node-side Groth16 proving-time benchmark for Veil's three circuits.
  *
  * Measures wall-clock time for snarkjs groth16.fullProve (witness generation + proving)
- * against the compiled wasm/zkey artifacts in circuits/build{,-withdraw,-compliance}/.
+ * against the compiled wasm/zkey artifacts in
+ * circuits/build{,-withdraw,-compliance,-transfer-poseidon2,-compliance-poseidon2}/.
  *
  * Usage:
  *   node scripts/bench/prove-latency.mjs [--runs N]
@@ -13,6 +14,8 @@
  *   circom transfer.circom --r1cs --wasm --sym --output build -l node_modules
  *   circom withdraw.circom --r1cs --wasm --sym --output build-withdraw -l node_modules
  *   circom compliance.circom --r1cs --wasm --sym --output build-compliance -l node_modules
+ *   circom transfer_poseidon2.circom --r1cs --wasm --sym --output build-transfer-poseidon2 -l node_modules
+ *   circom compliance_poseidon2.circom --r1cs --wasm --sym --output build-compliance-poseidon2 -l node_modules
  *   curl -L -o build/pot15_final.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_15.ptau
  *   # then snarkjs groth16 setup + zkey contribute + export verificationkey per circuit
  *   # (see circuits/scripts/compile*.sh for the exact sequence)
@@ -36,6 +39,8 @@ const CIRCUITS = [
   { name: "transfer", dir: "build" },
   { name: "withdraw", dir: "build-withdraw" },
   { name: "compliance", dir: "build-compliance" },
+  { name: "transfer_poseidon2", dir: "build-transfer-poseidon2" },
+  { name: "compliance_poseidon2", dir: "build-compliance-poseidon2" },
 ];
 
 function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }

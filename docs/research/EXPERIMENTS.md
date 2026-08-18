@@ -10,16 +10,26 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). Blocked three times now for different reasons (see LEDGER 2026-07-22, 2026-08-18) —
+   2026-08-18 confirmed it's a hard organization egress-policy/repo-scope denial this time
+   (`github.com`, `fullnode.{testnet,devnet}.sui.io`, `static.crates.io` all 403;
+   `api.github.com` reachable but scoped to `alexandre-mrt/veil` only), not a missing toolchain, so
+   re-attempting without a policy or scope change is unlikely to succeed. Still top of the queue in
+   case that changes; otherwise this may need gas data supplied directly by the user from outside
+   this sandbox.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+> **Settled 2026-08-18 — KEEP (experimental, not deployed):** Poseidon2 vs current Poseidon for the
+> Merkle-membership node hash (arity 2). See `2026-08-18-poseidon2-vs-poseidon.md`. Swapping the
+> 20-level Merkle node hash to Poseidon2 compression mode measured −4.85%/−5.18% R1CS constraints
+> and −4.6%/−5.6% Node proving time on `transfer`/`compliance`. This was formerly ranked #2; item 2
+> below is its natural, not-yet-attempted follow-up (the leaf hashes, not the Merkle node hash).
+
+2. **Poseidon2 for the leaf hashes too** (commitment `Poseidon(4)`, credential leaf `Poseidon(5)`),
+   and a from-first-principles domain-tag collision analysis across all eight tags now that a
+   Poseidon2 circom template is proven out in this repo (`circuits/templates/merkle_proof_poseidon2.circom`,
+   `@taceo/circom-lib`). Cheap follow-up using the same harness (`scripts/bench/witnesses.mjs`,
+   `prove-latency.mjs` already support the pattern); promoted here since 2026-08-18 de-risked the
+   toolchain and KAT-verification approach.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
