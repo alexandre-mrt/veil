@@ -1,0 +1,11 @@
+{
+  "name": "veil-poseidon2-crosscheck",
+  "private": true,
+  "type": "module",
+  "description": "Cross-checks the vendored circom Poseidon2 permutation (../vendor/poseidon2.circom, from @taceo/circom-lib) against an independent TypeScript implementation, @zkpassport/poseidon2, for fixed test vectors at every state size the vendored circuit supports (t = 2, 3, 4, 8, 12, 16). Two independently-authored implementations agreeing on raw permutation output for the same inputs is the correctness evidence cited in docs/research/2026-08-19-poseidon2-arity-benchmark.md.",
+  "dependencies": {
+    "@zkpassport/poseidon2": "0.6.2",
+    "circom_tester": "0.0.24",
+    "snarkjs": "0.7.6"
+  }
+}
