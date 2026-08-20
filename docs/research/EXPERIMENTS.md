@@ -5,59 +5,72 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **Merkle accumulator at scale (10^5–10^7 commitments).** Promoted to top of the queue
+   2026-08-20: the 2026-08-20 constraint-attribution experiment measured the Merkle membership
+   proof at exactly 243 non-linear constraints per level (`Poseidon(2)`, `MerkleProof(20)` =
+   4,920 non-linear / 20 levels), and it's 75–80% of `transfer.circom`'s and `compliance.circom`'s
+   non-linear constraint count — so depth-vs-anonymity-set is now a *quantified* trade-off, not
+   just a named one, and this is the item that spends that number. Covers: batch insertion cost,
+   depth-20 vs. a deeper tree (each extra level costs exactly 243 non-linear constraints, from
+   tonight's measurement), and indexer throughput for reconstructing the tree client-side. Directly
+   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability). Also the right place to
+   measure Poseidon2's *actual* efficiency claim (see item 9) — native hash throughput in an
+   off-chain indexer rebuilding a large tree, as opposed to R1CS constraint count, which 2026-08-20
+   ruled out as a target.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis, and the dependency for item
+   3 below. Re-attempted 2026-08-20 and reclassified: every path this session found to a `sui`
+   binary or a testnet RPC — `fullnode.testnet.sui.io`, `github.com` releases, `crates.io` (API and
+   binary CDN) — returns `403` from the sandbox's egress proxy, confirmed by the proxy's own
+   diagnostics as an **organization policy denial**, not a transient failure or a budget decision.
+   Do not spend another night re-attempting the network path alone — it will not change without
+   either a policy exception for one of those hosts or a `sui` binary preinstalled in the sandbox
+   image. Worth revisiting only if the sandbox environment changes, or if someone can grant one of
+   those exceptions ahead of a run.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+   Still depends on item 2 (a real per-verify gas number to know how much this would actually
+   save) — blocked transitively on the same network wall until item 2 unblocks.
 
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
-
-5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
+4. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
    across the three circuits' eight domain tags, proof malleability. Adversarial, not a redesign —
    the existing test suites are thorough but self-referential; worth a pass that tries to break the
-   circuits rather than confirm they work as documented.
+   circuits rather than confirm they work as documented. Needs no blocked toolchain — a good
+   candidate if item 1 turns out to need more than one night.
 
-6. **Threshold auditing (t-of-n) vs the single auditor key.** `docs/threat-model.md` asset #6 and
+5. **Threshold auditing (t-of-n) vs the single auditor key.** `docs/threat-model.md` asset #6 and
    the ECDH auditor-key design (`docs/auditor-guide.md`) currently assume one auditor keypair.
    A t-of-n threshold scheme (or even measuring the cost of a naive N-of-N re-encryption) changes
    the trust model for compliance data meaningfully and is a natural fit for the "confidential
    payroll with a t-of-n auditor board" use case named in the 2026-07-22 report.
 
-7. **Revocation-friendly accumulators vs the depth-20 credential Merkle tree.** Today, revoking a
+6. **Revocation-friendly accumulators vs the depth-20 credential Merkle tree.** Today, revoking a
    KYC credential means rebuilding the credential root (`compliance.move`, 1-epoch timelock). An
    RSA or Merkle-based revocation accumulator could make single-credential revocation cheaper
    without a full root rebuild — worth a real cost comparison, not just a design note.
 
-8. **Mobile WASM proving latency.** Cheap extension of the 2026-07-22 browser-proving harness
+7. **Mobile WASM proving latency.** Cheap extension of the 2026-07-22 browser-proving harness
    (`scripts/bench/browser-latency.mjs`) — same script, add a mobile Chromium device-emulation
    profile (`page.emulate(...)`) and compare against the desktop-headless numbers already in
-   `BASELINE.md`. Good "spend an hour, get a real number" candidate for a lighter night.
+   `BASELINE.md`. Good "spend an hour, get a real number" candidate for a lighter night. Needs no
+   blocked toolchain.
 
-9. **Trusted-setup elimination (PLONK / Halo2 / Nova-folding).** Directly addresses
+8. **Trusted-setup elimination (PLONK / Halo2 / Nova-folding).** Directly addresses
    `docs/threat-model.md` RR2 (dev-only single-contributor ceremony). Large lift — a full circuit
-   port, not a parameter change — so this should wait until items 1–2 give a clearer picture of
-   what's actually worth optimizing before committing a multi-night effort to a proof-system swap.
+   port, not a parameter change — so this should wait until items 1–2 (now blocked) or item 4 give a
+   clearer picture of what's actually worth optimizing before committing a multi-night effort to a
+   proof-system swap.
+
+9. **Poseidon2 — native hashing throughput, not R1CS constraints.** Re-scoped 2026-08-20: the
+   original framing ("swap Poseidon for Poseidon2 to cut circuit constraints") is **REJECT**ed —
+   see the 2026-08-20 report — because R1CS doesn't charge for the linear/MDS layer Poseidon2 makes
+   cheaper, only for the S-box, which is unchanged. The real claim left to test is native (off-circuit)
+   hashing speed in a large-scale indexer (item 1's Merkle-at-scale experiment). Blocked on the same
+   network wall as item 2: every Poseidon2 reference implementation found lives behind `github.com`,
+   and fabricating round constants/matrices without one to verify against is not a measurement.
+   Revisit once item 2's network block lifts, folded into item 1's scope rather than run standalone.
 
 10. **Post-quantum exposure.** BN254 discrete log breaks under a sufficiently large quantum
     computer; Groth16 on BN254 has no PQ story. Likely a design-only, UNMEASURED-labelled

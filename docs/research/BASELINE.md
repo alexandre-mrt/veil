@@ -10,7 +10,10 @@ Toolchain: circom 2.2.2 (built from source, `iden3/circom` tag `v2.2.2`), snarkj
 v22.22.2, Chromium 141 (headless, via Playwright), pot15 Powers of Tau (Hermez, `2^15` — reused
 for all three circuits per the existing `compile*.sh` scripts), single dev-only Groth16
 contribution (matches `circuits/scripts/compile*.sh` — **not** a production ceremony; see
-`ceremony.sh` and `docs/threat-model.md` RR2).
+`ceremony.sh` and `docs/threat-model.md` RR2). The gadget-attribution numbers below (2026-08-20)
+were compiled with `circom2` 0.2.23 (circom compiler 2.2.3, installed via `circuits/`'s
+`devDependencies` from npm) instead — verified byte-identical to the native 2.2.2 build on
+`transfer.circom` before being trusted for anything (see that report's "attempt #1").
 
 ## Constraint counts, artifact sizes
 
@@ -36,11 +39,39 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Non-linear constraint attribution (per gadget)
+
+Where the constraint counts above actually come from, measured by compiling each gadget alone
+(2026-08-20). See
+[`2026-08-20-poseidon-constraint-attribution.md`](2026-08-20-poseidon-constraint-attribution.md)
+for the full reconciliation and the derivation of why this rules out a same-arity Poseidon2 swap
+as a constraint-count win.
+
+| Gadget | Non-linear constraints |
+|---|---|
+| `Poseidon(2)` | 243 |
+| `Poseidon(3)` | 264 |
+| `Poseidon(4)` | 300 |
+| `Poseidon(5)` | 324 |
+| `Num2Bits(8)` | 8 |
+| `Num2Bits(64)` | 64 |
+| `GreaterThan(64)` | 65 |
+| `GreaterEqThan(8)` | 9 |
+| `GreaterEqThan(64)` | 65 |
+| `LessEqThan(64)` | 65 |
+| `MerkleProof(20)` (20x `Poseidon(2)` + 20x `MultiMux1(2)` + 20 bit checks) | 4,920 (243/level) |
+
+Poseidon calls (including inside `MerkleProof`) account for 93.1% of `transfer.circom`'s and 94.3%
+of `compliance.circom`'s non-linear constraints; the Merkle membership proof alone is 75–80% of
+each. `withdraw.circom` has no Merkle proof and is 78.0% Poseidon.
+
+Reproduce: `bash scripts/bench/constraint-attribution.sh`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** (confirmed structural, 2026-08-20) | No `sui` CLI binary, and every path this session found to get one — `fullnode.testnet.sui.io` RPC, `github.com` release binaries, `crates.io`'s API and binary CDN — returns `403` from the sandbox's egress proxy, which its own diagnostics identify as an organization policy denial, not a transient failure. See the 2026-08-20 report's "On-chain gas, attempt #2" section for the raw output. Needs a policy exception or a `sui` binary preinstalled in the sandbox image; not worth another night's budget on the network side alone. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
