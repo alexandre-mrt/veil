@@ -5,11 +5,18 @@
   "type": "module",
   "scripts": {
     "compile": "bash scripts/compile.sh",
-    "test": "node --experimental-vm-modules test/transfer.test.mjs && node --experimental-vm-modules test/compliance.test.mjs && node --experimental-vm-modules test/withdraw.test.mjs"
+    "test": "node --experimental-vm-modules test/transfer.test.mjs && node --experimental-vm-modules test/compliance.test.mjs && node --experimental-vm-modules test/withdraw.test.mjs",
+    "test:poseidon2-kat": "node test/poseidon2-kat/kat_check.mjs",
+    "test:poseidon2": "node --experimental-vm-modules test/poseidon2.test.mjs"
   },
   "dependencies": {
+    "@taceo/circom-lib": "^0.6.0",
+    "@taceo/poseidon2": "^0.2.0",
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "snarkjs": "0.7.6"
+  },
+  "devDependencies": {
+    "circom2": "^0.2.23"
   }
 }

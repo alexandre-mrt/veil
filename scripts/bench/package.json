@@ -5,9 +5,11 @@
   "type": "module",
   "description": "Reusable benchmark scripts for Veil's nightly research loop (proving time, R1CS, browser latency).",
   "scripts": {
-    "prove-latency": "node prove-latency.mjs --runs 10"
+    "prove-latency": "node prove-latency.mjs --runs 10",
+    "poseidon2-prove-latency": "node poseidon2-prove-latency.mjs --runs 10"
   },
   "dependencies": {
+    "@taceo/poseidon2": "^0.2.0",
     "circomlibjs": "^0.1.7",
     "playwright": "^1.56.1",
     "snarkjs": "0.7.6"
