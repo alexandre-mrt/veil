@@ -5,6 +5,8 @@
 # Requires: circom 2.1.x, snarkjs 0.7.x (global or via npx)
 # Output artifacts go to circuits/build-withdraw/
 #
+# --O2 (full constraint simplification): see docs/research/2026-08-22-poseidon2-hash-swap.md.
+#
 # NOTE: This uses a single dev contributor for the trusted setup.
 # For production, use ceremony.sh with multiple contributors.
 
@@ -50,6 +52,7 @@ circom "$CIRCUIT_NAME.circom" \
   --r1cs \
   --wasm \
   --sym \
+  --O2 \
   --output "$BUILD_DIR"
 
 echo "Constraint count:"

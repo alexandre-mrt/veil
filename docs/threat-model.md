@@ -5,7 +5,7 @@
 Veil is a privacy payment protocol on Sui that hides transaction amounts using zero-knowledge proofs while enforcing cumulative spending limits. The system consists of:
 
 - **Sui Move contracts** (5 modules + 1 testnet): pool, compliance, verifier, token, multisig, token_faucet
-- **ZK circuits** (3 Circom circuits): transfer (13,611 R1CS constraints), compliance (12,743), withdraw (3,058) — counts from `snarkjs r1cs info`
+- **ZK circuits** (3 Circom circuits): transfer (6,384 R1CS constraints), compliance (5,979), withdraw (1,439) — counts from `snarkjs r1cs info`, compiled with `circom --O2` (full constraint simplification) as of 2026-08-22; see `docs/research/2026-08-22-poseidon2-hash-swap.md`
 - **Frontend** (Next.js 14): client-side proof generation via snarkjs WASM, encrypted local state
 - **Relayer** (Bun HTTP server): sponsored transaction submission. It moves the gas payer, not the transaction sender — it does not provide sender privacy (PRIV-002 remains open).
 

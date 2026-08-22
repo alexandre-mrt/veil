@@ -4,6 +4,11 @@
 #
 # Requires: circom 2.1.x, snarkjs 0.7.x (global or via npx)
 # Output artifacts go to circuits/build/
+#
+# --O2 (full constraint simplification, vs circom's --O1 default): measured
+# 2026-08-22 to roughly halve total R1CS constraints and cut proving time
+# ~23% with no semantic/soundness change — see
+# docs/research/2026-08-22-poseidon2-hash-swap.md.
 
 set -euo pipefail
 
@@ -46,6 +51,7 @@ circom "$CIRCUIT_NAME.circom" \
   --r1cs \
   --wasm \
   --sym \
+  --O2 \
   --output "$BUILD_DIR"
 
 echo "Constraint count:"

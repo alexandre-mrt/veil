@@ -20,7 +20,7 @@ Veil is a confidential compliance protocol on Sui. It combines Circom ZK circuit
 └──────────┬─────────────────────────────────────────────────────────────┘
            │
            │  Generate Groth16 proof (snarkjs WASM, ~2s)
-           │  13,611 R1CS constraints, 7 public + 47 private inputs
+           │  6,384 R1CS constraints, 7 public + 47 private inputs
            │
            ▼
 ┌──────────────────────┐
@@ -346,12 +346,12 @@ Tier 3 extends Veil with a second ZK circuit (`compliance.circom`) that proves c
 │  │   (v2 -- unchanged)     │   │   • merkleRoot                   │    │
 │  │                         │   │   • currentEpoch                 │    │
 │  │   BN254 Groth16         │   │   • contextId (pool_id)          │    │
-│  │   13,611 R1CS           │   │   • requiredKycLevel             │    │
+│  │    6,384 R1CS           │   │   • requiredKycLevel             │    │
 │  │                         │   │   • nullifier (tag 5)            │    │
 │  │                         │   │   • validCredential (must = 1)   │    │
 │  │                         │   │                                  │    │
 │  │                         │   │   BN254 Groth16                  │    │
-│  │                         │   │   12,743 R1CS constraints        │    │
+│  │                         │   │    5,979 R1CS constraints        │    │
 │  └────────────┬────────────┘   └──────────────┬───────────────────┘    │
 │               │                               │                        │
 │               │    + auditor ciphertext        │                        │

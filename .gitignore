@@ -7,6 +7,9 @@ node_modules/
 build/
 build-withdraw/
 build-compliance/
+build-o1/
+build-o2/
+build-poseidon2-o2/
 dist/
 .next/
 target/
