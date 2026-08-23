@@ -1,0 +1,10 @@
+{
+  "name": "veil-poseidon2-bench",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@taceo/poseidon2": "^0.2.0",
+    "circomlibjs": "^0.1.7",
+    "snarkjs": "0.7.6"
+  }
+}
