@@ -1,7 +1,7 @@
-pragma circom 2.1.0;
+pragma circom 2.2.2;
 
-include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/mux1.circom";
+include "poseidon2_hash2.circom";
 
 template MerkleProof(depth) {
     signal input leaf;
@@ -25,7 +25,7 @@ template MerkleProof(depth) {
         mux[i].c[1][1] <== nodes[i];
         mux[i].s <== pathIndices[i];
 
-        hashers[i] = Poseidon(2);
+        hashers[i] = Poseidon2Hash2();
         hashers[i].inputs[0] <== mux[i].out[0];
         hashers[i].inputs[1] <== mux[i].out[1];
         nodes[i + 1] <== hashers[i].out;

@@ -23,9 +23,19 @@
  */
 
 import { buildPoseidon } from "circomlibjs";
+import { bn254 } from "@taceo/poseidon2";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+
+/**
+ * Poseidon2 sponge, arity 2, capacity-first — matches
+ * circuits/templates/poseidon2_hash2.circom exactly. templates/merkle_proof.circom's node
+ * hash now uses this instead of circomlib's Poseidon(2) (research/2026-08-24 experiment).
+ */
+function poseidon2Hash2(a, b) {
+  return bn254.t3.permutation([0n, BigInt(a), BigInt(b)])[0];
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // compile-compliance.sh outputs to build-compliance/, but check build/ as fallback
@@ -82,10 +92,10 @@ function buildMerkleTree(poseidon, leaf, depth) {
     pathIndices.push(0n); // leaf is always on the left (index 0)
 
     // Parent = Poseidon(current, zeroHash) since pathIndex=0 means current is left child
-    current = toBI(poseidon([current, zeroHash]));
+    current = poseidon2Hash2(current, zeroHash);
 
     // Next level zero hash = Poseidon(zeroHash, zeroHash)
-    zeroHash = toBI(poseidon([zeroHash, zeroHash]));
+    zeroHash = poseidon2Hash2(zeroHash, zeroHash);
   }
 
   return { root: current, pathElements, pathIndices };
@@ -196,7 +206,7 @@ function simulateCompliance(poseidon, inputs) {
     }
     const left = idx === 0n ? current : pathElements[i];
     const right = idx === 0n ? pathElements[i] : current;
-    current = toBI(poseidon([left, right]));
+    current = poseidon2Hash2(left, right);
   }
   if (current !== merkleRoot) {
     errors.push(`C2: Merkle root mismatch (expected ${merkleRoot}, computed ${current})`);

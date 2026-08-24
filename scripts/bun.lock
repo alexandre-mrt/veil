@@ -8,9 +8,10 @@
         "@mysten/sui": "^2.16.2",
         "circomlibjs": "^0.1.7",
         "fast-check": "^4.8.0",
-        "snarkjs": "^0.7.6",
+        "snarkjs": "0.7.6",
       },
       "devDependencies": {
+        "@taceo/poseidon2": "0.2.0",
         "@types/node": "^20.0.0",
         "typescript": "^5.0.0",
       },
@@ -112,6 +113,8 @@
     "@scure/bip32": ["@scure/bip32@2.2.0", "", { "dependencies": { "@noble/curves": "2.2.0", "@noble/hashes": "2.2.0", "@scure/base": "2.2.0" } }, "sha512-zFr7t2F+a9+5tB7QbarF2HQNYrgjCNaoLAupZdKkrFMYMozJf5zqH2WJCQibMzm1qQ0QogrxVGO3qXfQDYMaQg=="],
 
     "@scure/bip39": ["@scure/bip39@2.2.0", "", { "dependencies": { "@noble/hashes": "2.2.0", "@scure/base": "2.2.0" } }, "sha512-T/Bj/YvYMNkIPq6EENO6/rcs2e7qTNuyoUXf0KBFDmp0ZDu0H2X4Lq6yC3i0c8PcWkov5EbW+yQZZbdMmk154A=="],
+
+    "@taceo/poseidon2": ["@taceo/poseidon2@0.2.0", "", { "dependencies": { "@noble/curves": "^2.0.1" } }, "sha512-+EyFO7zaRrlsdzNEvzTLELDkrgjUgZgSlxGUSQghmmtlZ14nZklYX7D+gecyOkVe/47AGDtA+uZ9sdXiNB8rng=="],
 
     "@types/node": ["@types/node@20.19.41", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-ECymXOukMnOoVkC2bb1Vc/w/836DXncOg5m8Xj1RH7xSHZJWNYY6Zh7EH477vcnD5egKNNfy2RpNOmuChhFPgQ=="],
 

@@ -25,9 +25,19 @@
  */
 
 import { buildPoseidon } from "circomlibjs";
+import { bn254 } from "@taceo/poseidon2";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+
+/**
+ * Poseidon2 sponge, arity 2, capacity-first — matches
+ * circuits/templates/poseidon2_hash2.circom exactly. withdraw.circom's recipHash (C9)
+ * now uses this instead of circomlib's Poseidon(2) (research/2026-08-24 experiment).
+ */
+function poseidon2Hash2(a, b) {
+  return bn254.t3.permutation([0n, BigInt(a), BigInt(b)])[0];
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // withdraw compile script outputs to build-withdraw/, but check build/ as fallback
@@ -86,7 +96,7 @@ function buildValidWitness(poseidon, {
   const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
 
   // C9: recipientHash = Poseidon(8, recipient)
-  const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+  const recipientHash = poseidon2Hash2(DOMAIN_RECIPIENT_HASH, recipient);
 
   return {
     // Public inputs (5)
@@ -192,7 +202,7 @@ function simulateWithdraw(poseidon, inputs) {
   }
 
   // C9: recipientHash = Poseidon(8, recipient)
-  const expectedRecipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+  const expectedRecipientHash = poseidon2Hash2(DOMAIN_RECIPIENT_HASH, recipient);
   if (recipientHash !== expectedRecipientHash) {
     errors.push(`C9: recipientHash mismatch (expected ${expectedRecipientHash}, got ${recipientHash})`);
   }
@@ -345,7 +355,7 @@ async function main() {
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
-    const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    const recipientHash = poseidon2Hash2(DOMAIN_RECIPIENT_HASH, recipient);
     // remainingBalance would be negative, but we compute the commitment anyway for the witness
     const remainingBalance = cumulativeOld - withdrawAmount;
     const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
@@ -368,7 +378,7 @@ async function main() {
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
-    const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    const recipientHash = poseidon2Hash2(DOMAIN_RECIPIENT_HASH, recipient);
     const remainingBalance = cumulativeOld - withdrawAmount;
     const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
 
@@ -442,7 +452,7 @@ async function main() {
       withdrawAmount: 100n,
       recipient: 0xEEEn,
     });
-    const wrongRecipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, 0xFFFn]));
+    const wrongRecipientHash = poseidon2Hash2(DOMAIN_RECIPIENT_HASH, 0xFFFn);
     const tampered = { ...w, recipientHash: wrongRecipientHash };
     await assertRejected(groth16, vk, poseidon, tampered, "C9:", "W12");
   });
@@ -509,7 +519,7 @@ async function main() {
   // W17: recipientHash uses domain tag 8
   await test("W17: recipientHash correctly uses domain tag 8", async () => {
     const recipient = 0xDEADBEEFCAFEn;
-    const expected = toBI(poseidon([8n, recipient]));
+    const expected = poseidon2Hash2(8n, recipient);
     const w = buildValidWitness(poseidon, {
       cumulativeOld: 500n, randomnessOld: 42n, userSecret: 1717n,
       withdrawAmount: 100n, recipient,
@@ -600,7 +610,7 @@ async function main() {
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
-    const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    const recipientHash = poseidon2Hash2(DOMAIN_RECIPIENT_HASH, recipient);
     const remainingBalance = cumulativeOld - withdrawAmount;
     const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
 
@@ -622,7 +632,7 @@ async function main() {
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
-    const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    const recipientHash = poseidon2Hash2(DOMAIN_RECIPIENT_HASH, recipient);
     const remainingBalance = cumulativeOld - withdrawAmount;
     const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
 
@@ -662,7 +672,7 @@ async function main() {
 
     const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
     const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
-    const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+    const recipientHash = poseidon2Hash2(DOMAIN_RECIPIENT_HASH, recipient);
     const remainingBalance = cumulativeOld - withdrawAmount;
     const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
 

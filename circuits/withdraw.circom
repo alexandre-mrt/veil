@@ -2,11 +2,12 @@
 // on-chain). The Merkle accumulator provides anonymity for transfers but not
 // withdrawals. This is an inherent design choice — the exit path is identifiable.
 
-pragma circom 2.1.0;
+pragma circom 2.2.2;
 
 include "node_modules/circomlib/circuits/poseidon.circom";
 include "node_modules/circomlib/circuits/comparators.circom";
 include "node_modules/circomlib/circuits/bitify.circom";
+include "templates/poseidon2_hash2.circom";
 
 // Withdrawal circuit for Veil privacy protocol.
 //
@@ -111,7 +112,7 @@ template Withdraw() {
 
     // --- C9: Recipient hash binds the withdrawal to a specific address ---
     // Prevents front-running: attacker cannot redirect withdrawal to another address
-    component recipHash = Poseidon(2);
+    component recipHash = Poseidon2Hash2();
     recipHash.inputs[0] <== 8;
     recipHash.inputs[1] <== recipient;
     recipientHash === recipHash.out;

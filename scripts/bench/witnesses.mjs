@@ -5,7 +5,20 @@
  * (same domain tags, same field names) so bench proofs exercise the real constraint set.
  * Used by both prove-latency.mjs (Node) and browser-latency.mjs (Chromium, via witness JSON
  * computed at request time — see serveWitness()).
+ *
+ * research/2026-08-24-poseidon2-merkle-hasher: templates/merkle_proof.circom and withdraw.circom's
+ * recipHash now use Poseidon2Hash2 (Poseidon2, t=3) instead of circomlib's Poseidon(2). Every
+ * 2-input hash site below (Merkle node hashing, recipientHash) must match that in-circuit change
+ * or the witness fails the corresponding `=== ` constraint. All other (domain-tagged, arity >= 3)
+ * hash sites are untouched and still use circomlib's Poseidon.
  */
+import { bn254 } from "@taceo/poseidon2";
+
+/** Poseidon2 sponge, arity 2, capacity-first — matches templates/poseidon2_hash2.circom exactly. */
+function poseidon2Hash2(a, b) {
+  return bn254.t3.permutation([0n, a, b])[0];
+}
+
 const DOMAIN_COMMITMENT = 1n;
 const DOMAIN_NULLIFIER = 2n;
 const DOMAIN_TX_AMOUNT = 3n;
@@ -32,7 +45,7 @@ function merkleRootFromPath(poseidon, leaf, pathElements, pathIndices) {
   for (let i = 0; i < pathElements.length; i++) {
     const sibling = pathElements[i];
     const [left, right] = pathIndices[i] === 0n ? [node, sibling] : [sibling, node];
-    node = toBI(poseidon([left, right]));
+    node = poseidon2Hash2(left, right);
   }
   return node;
 }
@@ -62,7 +75,7 @@ export function buildWithdrawWitness(poseidon) {
   const remainingBalance = cumulativeOld - withdrawAmount;
   const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
   const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
-  const recipientHash = toBI(poseidon([DOMAIN_RECIPIENT_HASH, recipient]));
+  const recipientHash = poseidon2Hash2(DOMAIN_RECIPIENT_HASH, recipient);
   return {
     commitment, withdrawAmount, nullifier, recipientHash, newCommitment,
     cumulativeOld, randomnessOld, userSecret, recipient, randomnessNew,
@@ -79,7 +92,7 @@ export function buildComplianceWitness(poseidon) {
   for (let i = 0; i < MERKLE_DEPTH; i++) {
     pathElements.push(0n);
     pathIndices.push(0n);
-    current = toBI(poseidon([current, 0n]));
+    current = poseidon2Hash2(current, 0n);
   }
   const merkleRoot = current;
   const contextId = toBI(poseidon([DOMAIN_CONTEXT_BINDING, transferNullifier, userSecret]));

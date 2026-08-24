@@ -92,6 +92,11 @@ async function main() {
 
   console.log("=== Summary (JSON) ===");
   console.log(JSON.stringify(results, null, 2));
+
+  // snarkjs' bn128 curve keeps worker handles open after the last proof
+  // (see circuits/test/*.test.mjs), which otherwise leaves this process
+  // hanging indefinitely even though every benchmark above completed.
+  process.exit(0);
 }
 
 main().catch((err) => {

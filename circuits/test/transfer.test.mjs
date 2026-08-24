@@ -16,9 +16,19 @@
  */
 
 import { buildPoseidon } from "circomlibjs";
+import { bn254 } from "@taceo/poseidon2";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+
+/**
+ * Poseidon2 sponge, arity 2, capacity-first — matches
+ * circuits/templates/poseidon2_hash2.circom exactly. templates/merkle_proof.circom's node
+ * hash now uses this instead of circomlib's Poseidon(2) (research/2026-08-24 experiment).
+ */
+function poseidon2Hash2(a, b) {
+  return bn254.t3.permutation([0n, BigInt(a), BigInt(b)])[0];
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BUILD_DIR = join(__dirname, "..", "build");
@@ -60,7 +70,7 @@ function merkleRootFromPath(poseidon, leaf, pathElements, pathIndices) {
   for (let i = 0; i < MERKLE_DEPTH; i++) {
     const sibling = pathElements[i];
     const [left, right] = pathIndices[i] === 0n ? [node, sibling] : [sibling, node];
-    node = toBI(poseidon([left, right]));
+    node = poseidon2Hash2(left, right);
   }
   return node;
 }
@@ -1181,6 +1191,21 @@ async function main() {
         "T43: witness must contain a non-boolean index",
       );
     }
+  });
+
+  // T44: a Merkle root computed with the OLD Poseidon(2) node hash is rejected —
+  // proves the circuit actually enforces Poseidon2 and isn't silently accepting
+  // both hash functions (e.g. because the swap only touched one of the two
+  // MerkleProof(20) call sites, or a stale build was picked up).
+  await test("T44: C0 — root computed with legacy Poseidon(2) (not Poseidon2) rejected", async () => {
+    const w = buildValidWitness(poseidon, { cumulativeOld: 10n, txAmount: 5n, userSecret: 4444n });
+    let legacyRoot = w.oldCommitment;
+    for (let i = 0; i < MERKLE_DEPTH; i++) {
+      legacyRoot = toBI(poseidon([legacyRoot, w.pathElements[i]]));
+    }
+    assert(legacyRoot !== w.merkleRoot, "sanity: legacy Poseidon(2) root must differ from the Poseidon2 root");
+    const tampered = { ...w, merkleRoot: legacyRoot };
+    await assertRejected(groth16, vk, poseidon, tampered, "C0", "T44");
   });
 
   // ── Summary ───────────────────────────────────────────────────────────────
