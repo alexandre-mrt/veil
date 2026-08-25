@@ -36,6 +36,38 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Constraint attribution (by gadget)
+
+Measured 2026-08-25 — see
+[`2026-08-25-poseidon-constraint-attribution.md`](2026-08-25-poseidon-constraint-attribution.md).
+Every gadget below is an isolated single-component circuit compiled with `circom2`; the "predicted"
+row for each real circuit is `sum(gadget non-linear/linear × call count)`, cross-checked against the
+constraint totals above (both fully independent measurements — not just re-parsing the same number).
+
+| Gadget | Non-linear | Linear | Total |
+|---|---|---|---|
+| `Poseidon(2)` | 243 | 274 | 517 |
+| `Poseidon(3)` | 264 | 341 | 605 |
+| `Poseidon(4)` | 300 | 436 | 736 |
+| `Poseidon(5)` | 324 | 511 | 835 |
+| One Merkle-tree level (`MultiMux1(2)` + boolean check + `Poseidon(2)`) | 246 | 274 | 520 |
+| `Num2Bits(64)` | 64 | 1 | 65 |
+| `Num2Bits(8)` | 8 | 1 | 9 |
+| `GreaterThan(64)` | 65 | 3 | 68 |
+| `LessEqThan(64)` | 65 | 4 | 69 |
+| `GreaterEqThan(64)` | 65 | 4 | 69 |
+| `GreaterEqThan(8)` | 9 | 4 | 13 |
+
+| Circuit | Merkle path (20 levels) | Direct Poseidon hashes | All Poseidon | Range checks + comparators | Reconstruction error |
+|---|---|---|---|---|---|
+| `transfer.circom` | 4,920 (76.0%) | 1,164 (18.0%) | 6,084 (94.0%) | 386 (6.0%) | 0 non-linear / -1 linear |
+| `compliance.circom` | 4,920 (81.2%) | 852 (14.1%) | 5,772 (95.3%) | 282 (4.7%) | -3 non-linear / 0 linear |
+| `withdraw.circom` (no Merkle tree) | — | 1,143 (78.0%) | 1,143 (78.0%) | 322 (22.0%) | 0 non-linear / -1 linear |
+
+The Merkle-membership path alone — not the fixed-arity commitment/nullifier/credential hashes — is
+the single largest constraint block in both circuits that have one, bigger than every direct
+Poseidon call combined. Reproduce: `node scripts/bench/gadget-attribution.mjs [--prove]`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
