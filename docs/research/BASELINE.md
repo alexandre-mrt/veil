@@ -47,3 +47,28 @@ Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
 place, not be appended as a separate table.
+
+## Alternative constructions (research only — not deployed)
+
+Not part of the current protocol. These are measured numbers for variant circuits that exist
+only under `circuits/bench/poseidon2/full/` for benchmarking — no trusted setup for them was
+ever deployed, `pool.move`'s VKs are unchanged, and the frontend still proves against the
+circuits in the main table above. See
+[`2026-08-27-poseidon2-hash-swap.md`](2026-08-27-poseidon2-hash-swap.md) for the full
+methodology, soundness argument, and negative test.
+
+### Poseidon (current) vs Poseidon2 (`@taceo/circom-lib`, tag moved from rate to capacity)
+
+| Circuit | Poseidon constraints | Poseidon2 constraints | Δ constraints | Poseidon proving (Node, mean of 10) | Poseidon2 proving (Node, mean of 10) | Δ proving |
+|---|---|---|---|---|---|---|
+| `transfer` | 13,611 | 15,194 | +11.6% | 788.3 ms | 745.7 ms | **-5.4%** |
+| `withdraw` | 3,058 | 3,372 | +10.3% | 272.6 ms | 236.4 ms | **-13.3%** |
+| `compliance` (partial swap — leaf hash unchanged, no Poseidon2 t=5 parameters published) | 12,743 | 13,953 | +9.5% | 762.1 ms | 763.0 ms | +0.1% (noise) |
+
+Reproduce: `node scripts/bench/poseidon2-full-circuit.mjs --runs 10` (full circuits) and
+`node scripts/bench/poseidon2-constraint-delta.mjs --runs 10` (isolated per-shape
+microbenchmark). Total R1CS constraints go up for every shape/circuit despite proving time
+going down — the swap's non-linear (S-box) constraint count drops while linear-layer
+constraints grow faster than they shrink, but proving time is driven by non-linear
+(witness-generation) cost, not total count, as long as the swap doesn't push a circuit over
+its next power-of-two constraint boundary (it doesn't, for any of the three circuits here).
