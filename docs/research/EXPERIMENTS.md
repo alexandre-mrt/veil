@@ -10,16 +10,30 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). **Blocked three nights running for three different reasons** (see LEDGER
+   2026-07-22, 2026-08-28) — the 2026-08-28 run confirmed the block is the outbound network
+   policy itself (`fullnode.testnet.sui.io` and `github.com` both return a proxy-level 403), not a
+   missing binary or a one-off tool-approval denial. Worth putting to the user directly: is a
+   scoped allowlist exception for one public Sui fullnode RPC endpoint available, since
+   building `sui` from source is not realistic within a single night's budget (large Rust
+   workspace, no warm build cache).
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Poseidon2 for the arity-4/5 domain-tagged hashes (commitment, nullifier, credential leaf).**
+   2026-08-28 measured and PARKed the *arity-2 Merkle-node* half of this (see
+   [`2026-08-28-poseidon2-merkle-hash.md`](2026-08-28-poseidon2-merkle-hash.md)): swapping
+   `MerkleProof(20)`'s node hash to a Poseidon2 compression (`@taceo/circom-lib`, audited t=2
+   parameters) cuts 660 R1CS constraints from both `transfer.circom` (−4.85%) and
+   `compliance.circom` (−5.18%), and ~7.1% mean Node proving time — but is not yet in production,
+   pending an off-chain tree-builder migration (`frontend/src/lib/merkle-tree.ts`,
+   `scripts/src/compliance-utils.ts`), a new timelocked VK, and a commitment-migration path. The
+   remaining, larger piece is still open: the four `Poseidon(4)`/`Poseidon(5)` domain-tagged
+   hashes together outweigh the Merkle sub-circuit's own constraint count in both circuits, and no
+   audited Poseidon2 parameter set exists at those widths (`@taceo/circom-lib` and
+   `@zkpassport/poseidon2` both jump from t=4 straight to t=8/12/16). Two paths worth a real
+   measurement before choosing one: (a) measure the isolated per-instance cost of a single
+   `Poseidon(4)`/`Poseidon(5)` call at the current baseline to see whether (b) chaining 2–3
+   sequential arity-2 Poseidon2 compressions to replace one wide call is actually a net win, not
+   just an assumed one.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -30,7 +44,9 @@ what matters most — say why in the commit, don't just reorder silently.
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+   is the main lever available without redesigning the deposit flow). Now synergistic with item 2:
+   if the Merkle-node hash is ever swapped to Poseidon2, a deeper tree amplifies the same
+   per-level saving — worth deciding together rather than measuring twice.
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -72,4 +88,7 @@ what matters most — say why in the commit, don't just reorder silently.
     papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
-    individually. Low priority; fold into whichever future night touches `circuits/test/`.
+    individually. Reproduced again on 2026-08-28 in a new bench script (worked around locally with
+    an explicit `process.exit(0)` there) — confirms it's a general `snarkjs`/`circom_runtime`
+    pattern, not circuit-specific. Low priority; fold into whichever future night touches
+    `circuits/test/`.
