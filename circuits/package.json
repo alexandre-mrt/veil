@@ -8,8 +8,13 @@
     "test": "node --experimental-vm-modules test/transfer.test.mjs && node --experimental-vm-modules test/compliance.test.mjs && node --experimental-vm-modules test/withdraw.test.mjs"
   },
   "dependencies": {
+    "@taceo/circom-lib": "^0.7.0",
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "snarkjs": "0.7.6"
+  },
+  "devDependencies": {
+    "@taceo/poseidon2": "^0.2.0",
+    "circom2": "^0.2.23"
   }
 }
