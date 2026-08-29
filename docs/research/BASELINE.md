@@ -47,3 +47,31 @@ Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
 place, not be appended as a separate table.
+
+## Poseidon vs Poseidon2 — primitive-level benchmark (not deployed)
+
+Measured 2026-08-29, same machine/toolchain versions as above. **This is not a production number**:
+`transfer.circom`, `compliance.circom`, and `withdraw.circom` are unchanged and still use circomlib's
+`Poseidon` exclusively — the circuits below live only in `circuits/bench/`, never wired into the
+protocol. Included here because it's the reference point any future Poseidon2 discussion should cite
+instead of re-deriving. Full methodology, correctness cross-check, and negative test:
+[`2026-08-29-poseidon2-primitive-delta.md`](2026-08-29-poseidon2-primitive-delta.md).
+
+| Comparison | Poseidon constraints (`--O1`) | Poseidon2 constraints (`--O1`) | Δ | Poseidon proving (mean, 10 runs) | Poseidon2 proving (mean, 10 runs) |
+|---|---|---|---|---|---|
+| `Poseidon(2)` vs `Poseidon2(t=3)` | 517 | 580 | +12.2% | 132.5 ms | 102.2 ms |
+| `Poseidon(3)` vs `Poseidon2(t=4)` | 605 | 852 | +40.8% | 137.6 ms | 106.5 ms |
+| `Poseidon(4)` vs `Poseidon2(t=8)`\* | 736 | 1,663 | +126.0% | 145.1 ms | 145.7 ms |
+| `Poseidon(5)` vs `Poseidon2(t=8)`\* | 835 | 1,663 | +99.2% | 155.1 ms | 151.4 ms |
+
+\*Poseidon2 has no state width t=5 or t=6; both round up to the next defined width, t=8.
+
+Reproduce: `bash circuits/scripts/compile-poseidon-bench.sh` then
+`node scripts/bench/poseidon2-delta.mjs --runs 10` (constraints); `--O2` variant via
+`bash circuits/scripts/compile-poseidon-bench.sh --O2 --skip-ptau` (see the report for why `--O1`,
+matching `compile*.sh`, is the number that actually applies to Veil today).
+
+**Takeaway:** Poseidon2 does not reduce constraints or proving time at the narrow, single-call
+arities Veil's circuits actually use — a full protocol migration is not justified by these numbers.
+See `docs/research/EXPERIMENTS.md` for the two narrower follow-ups (`--O2` on the production
+circuits; Poseidon2 at wide sponge-mode state) this result motivates instead.
