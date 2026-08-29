@@ -5,21 +5,26 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Blocked three times now, for
+   three *different* reasons (see LEDGER 2026-07-22, 2026-08-29) — the 2026-08-29 attempt confirmed
+   this is an organization egress-policy boundary, not a tooling gap: `fullnode.testnet.sui.io` and
+   `github.com` (both a prebuilt `sui` CLI binary and the source repo) return `403` at the proxy, and
+   no real `sui` crate exists on crates.io to `cargo install` instead. A fourth silent retry with the
+   same toolchain approach will not change this — this needs either an explicit egress-policy
+   exception for one of those two hosts, or a different fullnode/CLI source, decided by whoever
+   configures this session's network policy, not solved by another night of trying. Still ranked
+   first because items 3 and 4 below need a real gas number as their own baseline, but do not
+   re-attempt it without a new angle — ask instead.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Does `--O2` compilation help the production circuits, independent of any primitive change?**
+   The 2026-08-29 Poseidon2 experiment (see item 9, below, now settled) found `--O1` (what
+   `compile*.sh` actually uses) leaves real constraint-reducing linear simplification on the table —
+   `--O2` collapsed away 100% of it for the Poseidon benchmark circuits, at zero cost to correctness
+   (same permutation, smaller R1CS). This is a much smaller, better-isolated experiment than any
+   primitive swap: recompile `transfer.circom`/`compliance.circom`/`withdraw.circom` with `--O2`,
+   diff constraint counts and proving time against `BASELINE.md`, confirm the existing 108/108
+   circuit tests still pass unchanged against the `--O2` artifacts (same circuit semantics, different
+   R1CS — but that equivalence should be verified, not assumed) before ever re-baselining on it.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -54,22 +59,39 @@ what matters most — say why in the commit, don't just reorder silently.
    profile (`page.emulate(...)`) and compare against the desktop-headless numbers already in
    `BASELINE.md`. Good "spend an hour, get a real number" candidate for a lighter night.
 
-9. **Trusted-setup elimination (PLONK / Halo2 / Nova-folding).** Directly addresses
-   `docs/threat-model.md` RR2 (dev-only single-contributor ceremony). Large lift — a full circuit
-   port, not a parameter change — so this should wait until items 1–2 give a clearer picture of
-   what's actually worth optimizing before committing a multi-night effort to a proof-system swap.
+9. **Does Poseidon2 win at wide state (t=8/12/16) in genuine multi-element sponge mode?** The
+   2026-08-29 experiment (item below, settled) only tested narrow, single-permutation-call fixed
+   hashing — Veil's actual current use, where Poseidon2 turned out to cost *more* constraints than
+   circomlib's Poseidon, not fewer. Poseidon2's own literature targets wide sponge/tree hashing
+   absorbing many elements per call, which Veil doesn't do today. Only worth measuring if item 4
+   (Merkle accumulator at scale) ever changes the accumulator's per-node hash arity to something wide
+   enough to test it honestly.
 
-10. **Post-quantum exposure.** BN254 discrete log breaks under a sufficiently large quantum
+10. **Trusted-setup elimination (PLONK / Halo2 / Nova-folding).** Directly addresses
+    `docs/threat-model.md` RR2 (dev-only single-contributor ceremony). Large lift — a full circuit
+    port, not a parameter change — so this should wait until items 1–2 give a clearer picture of
+    what's actually worth optimizing before committing a multi-night effort to a proof-system swap.
+
+11. **Post-quantum exposure.** BN254 discrete log breaks under a sufficiently large quantum
     computer; Groth16 on BN254 has no PQ story. Likely a design-only, UNMEASURED-labelled
     experiment (no PQ-SNARK toolchain is likely to install cleanly here either) assessing what a
     migration path would cost, not a benchmark.
 
-11. **Relayer throughput and leakage under load.** `scripts/src/relayer.ts` — real load-testing
+12. **Relayer throughput and leakage under load.** `scripts/src/relayer.ts` — real load-testing
     (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
     sender-relayer pairs under concurrent load) is unmeasured.
 
-12. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
-    papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
-    calls leave the Node process alive after the test file finishes printing results, which stalls
-    the `&&`-chained `npm test` script after the first file. Each file passes fine run
-    individually. Low priority; fold into whichever future night touches `circuits/test/`.
+## Settled (kept for history, no longer ranked)
+
+- ~~Poseidon2 vs current Poseidon (arity, domain-tag collisions).~~ **Measured 2026-08-29** — see
+  LEDGER and
+  [`2026-08-29-poseidon2-primitive-delta.md`](2026-08-29-poseidon2-primitive-delta.md). At Veil's
+  actual arities (2/3/4/5) and actual compile flags (no `--O2`), Poseidon2 costs *more* R1CS
+  constraints than circomlib's Poseidon (+12% to +126%, worst for the dominant `Poseidon(4)` call
+  since Poseidon2 has no t=5 and pads to t=8); proving time doesn't clearly favor either at this
+  scale. A full protocol migration is not justified by this result. Replaced above by two narrower
+  follow-ups the same data motivates (items 2 and 9).
+
+- ~~Fix `circuits`' chained `npm test` hang.~~ **Fixed** outside this loop — `f942fca`
+  ("fix(circuits): exit test runners explicitly after the last proof", PR #17) — no longer a
+  papercut for future nights.
