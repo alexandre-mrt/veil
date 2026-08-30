@@ -12,6 +12,14 @@ for all three circuits per the existing `compile*.sh` scripts), single dev-only 
 contribution (matches `circuits/scripts/compile*.sh` — **not** a production ceremony; see
 `ceremony.sh` and `docs/threat-model.md` RR2).
 
+**Reproduction update (2026-08-30):** the original `cargo build --release` against a cloned
+`iden3/circom` no longer works in every environment this loop runs in (GitHub source access isn't
+always available). `circom2` (`npm install --save-dev circom2` in `circuits/`) is a WASM build of
+circom compiler **2.2.3**, distributed on the npm registry, and reproduces every number below
+bit-for-bit on a clean recompile — use `npx circom2 <circuit>.circom --r1cs --wasm --sym -o build
+-l node_modules` in place of a native `circom` binary wherever one isn't available. It's now a
+committed `devDependency`, so `npm install` in `circuits/` is sufficient.
+
 ## Constraint counts, artifact sizes
 
 | Circuit | R1CS constraints | Non-linear | Linear | Wires | Public / private inputs | zkey (bytes) | vk (bytes) | Compressed on-chain proof (bytes) |
@@ -36,11 +44,29 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Constraint attribution (measured 2026-08-30)
+
+What fraction of each circuit's non-linear constraints is Poseidon, vs. everything else (range
+checks, comparators, the Merkle-membership template's own bookkeeping) — measured by compiling every
+gadget in isolation and reconciling the sum against a fresh full-circuit compile (exact to within
+0–3 constraints for all three circuits). This is the ceiling on what any future hash-function swap
+(Poseidon2 or otherwise) could ever save; see
+[`2026-08-30-poseidon-constraint-attribution.md`](2026-08-30-poseidon-constraint-attribution.md) for
+the full per-gadget table and reconciliation.
+
+| Circuit | Non-linear constraints | Poseidon share |
+|---|---|---|
+| `transfer.circom` | 6,470 | **93.1%** |
+| `compliance.circom` | 6,057 | **94.3%** |
+| `withdraw.circom` | 1,465 | **78.0%** (no Merkle proof — lower-leverage target) |
+
+Reproduce: `node scripts/bench/constraint-breakdown.mjs`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** (structural, confirmed 2026-08-30) | `sui` CLI is gated by this session's GitHub access being scoped to one repo; direct JSON-RPC to six different Sui fullnode providers all get an identical network-policy denial. Needs a human to grant GitHub access or a network-policy exception — see `EXPERIMENTS.md` item #2 and the 2026-08-30 report. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |

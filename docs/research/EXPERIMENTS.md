@@ -5,26 +5,43 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+**Status note (2026-08-30):** items #1 and #2 are both currently **BLOCKED on human action**
+(GitHub access scoped to this one repo, and a network-policy block on blockchain RPC hosts — see
+each item). They stay ranked first because they're genuinely the highest-value items once unblocked,
+but a run should not re-spend a whole night rediscovering the same wall — confirm nothing has changed
+(a quick check, not a full re-investigation) and move to #4, #5, or #8, all fully actionable with the
+current toolchain.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+1. **Poseidon2: the actual swap, measured.** 2026-08-30 answered "how much could this ever save" —
+   `transfer.circom` is 93.1% Poseidon, `compliance.circom` 94.3%, `withdraw.circom` 78.0%
+   (`scripts/bench/constraint-breakdown.mjs`, exact reconciliation against a fresh compile). What's
+   still missing is the swap itself: a *verified* Poseidon2 `.circom` gadget (round constants,
+   external/internal round structure, linear layer — not a from-memory reimplementation) ported into
+   at least `transfer.circom`, with a real before/after constraint-count and proving-time delta.
+   Currently **blocked on the same root cause as item #2 below**: no verified Poseidon2 circom source
+   is reachable from a GitHub-scoped session. If GitHub access to a Poseidon2 reference repo (e.g.
+   `HorizenLabs/poseidon2`) is granted, or a peer-reviewed `.circom` gadget becomes available another
+   way, this becomes the single highest-leverage night left in the queue — it moves prover time
+   directly, for every circuit, on every transfer, and the ceiling is now known precisely enough to
+   tell in advance whether it's worth doing.
+
+2. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. As of 2026-08-30, confirmed
+   **structurally blocked**, not a toolchain gap: this session's GitHub access is scoped to
+   `alexandre-mrt/veil` only, so `sui` CLI release binaries (served via `github.com/MystenLabs/sui/...`)
+   are gated at 403 by the access layer itself (not a network failure) — `add_repo` access to
+   `MystenLabs/sui` would unblock it. Separately, direct JSON-RPC to *six* different Sui fullnode
+   providers (`fullnode.testnet.sui.io`, `fullnode.mainnet.sui.io`, `sui-testnet-rpc.publicnode.com`,
+   `sui-testnet.blockvision.org`, `rpc.ankr.com`, `explorer-rpc.testnet.sui.io`) all got an identical
+   `connect_rejected`/403 network-policy denial — reads as a category-level block on blockchain RPC
+   hosts, not a per-provider issue. **Demoted below item #1** because, unlike the Poseidon2 gap, no
+   in-session workaround exists at all here — this needs a human to either grant the GitHub access or
+   add a network-policy exception before another night's attempt would produce anything but the same
+   result. Re-promote to #1 immediately once either changes.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+   Depends on item 2 (gas) existing first (need a real per-verify gas number to know how much this
+   would actually save).
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
@@ -58,6 +75,11 @@ what matters most — say why in the commit, don't just reorder silently.
    `docs/threat-model.md` RR2 (dev-only single-contributor ceremony). Large lift — a full circuit
    port, not a parameter change — so this should wait until items 1–2 give a clearer picture of
    what's actually worth optimizing before committing a multi-night effort to a proof-system swap.
+   **Likely to hit the same GitHub-scoping wall as item #1's Poseidon2 gadget** (2026-08-30): PLONK/
+   Halo2/Nova-folding tooling for circom-style circuits is distributed almost entirely as GitHub
+   source (e.g. `zkonduit`, `microsoft/Nova`, `privacy-scaling-explorations/halo2`), not as npm/cargo
+   packages. Worth a five-minute reachability check at the start of whichever night takes this on,
+   before committing the multi-night budget.
 
 10. **Post-quantum exposure.** BN254 discrete log breaks under a sufficiently large quantum
     computer; Groth16 on BN254 has no PQ story. Likely a design-only, UNMEASURED-labelled
