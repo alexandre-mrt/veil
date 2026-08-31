@@ -1,5 +1,7 @@
 import { describe, test, expect } from "vitest";
+// @ts-expect-error — no type declarations (same pattern as src/lib/dynamicRequire.ts)
 import { buildPoseidon } from "circomlibjs";
+// @ts-expect-error — no type declarations (same pattern as src/lib/dynamicRequire.ts)
 import type { PoseidonFunction } from "circomlibjs";
 
 import { MerkleTree } from "@/lib/merkle-tree";
