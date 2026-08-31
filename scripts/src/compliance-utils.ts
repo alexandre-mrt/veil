@@ -162,6 +162,14 @@ export function buildMerkleTree(
     );
   }
 
+  // zeroHashes[d] = the node value of an all-ZERO_LEAF subtree of height d.
+  // zeroHashes[0] = ZERO_LEAF, zeroHashes[d] = Poseidon(zeroHashes[d-1], zeroHashes[d-1]).
+  const zeroHashes: bigint[] = [ZERO_LEAF];
+  for (let d = 1; d <= depth; d++) {
+    const z = zeroHashes[d - 1];
+    zeroHashes.push(F.toObject(poseidon([z, z])));
+  }
+
   // Build leaf layer padded to 2^depth
   const leafLayer: bigint[] = Array.from({ length: capacity }, (_, i) =>
     i < leaves.length ? leaves[i] : ZERO_LEAF,
@@ -169,17 +177,28 @@ export function buildMerkleTree(
 
   const layers: bigint[][] = [leafLayer];
   let current = leafLayer;
+  // Every position >= realWidth at the current layer is provably ZERO_LEAF /
+  // zeroHashes[level] (leaves are a zero-padded prefix), so only the first
+  // `realWidth` positions can ever differ from the cached zero-subtree hash.
+  // This turns tree construction from O(2^depth) Poseidon calls into
+  // O(leaves.length + depth), while producing byte-for-byte the same
+  // fully-padded `layers` this function has always returned.
+  let realWidth = leaves.length;
 
   for (let d = 0; d < depth; d++) {
-    const next: bigint[] = [];
-    for (let i = 0; i < current.length; i += 2) {
-      const left = current[i];
-      const right = current[i + 1];
-      const nodeResult = poseidon([left, right]);
-      next.push(F.toObject(nodeResult));
+    const next: bigint[] = new Array(current.length / 2);
+    const activePairs = realWidth === 0 ? 0 : Math.ceil(realWidth / 2);
+    for (let i = 0; i < activePairs; i++) {
+      const left = current[2 * i];
+      const right = current[2 * i + 1];
+      next[i] = F.toObject(poseidon([left, right]));
+    }
+    if (activePairs < next.length) {
+      next.fill(zeroHashes[d + 1], activePairs);
     }
     layers.push(next);
     current = next;
+    realWidth = activePairs;
   }
 
   const root = layers[depth][0];

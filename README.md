@@ -84,8 +84,8 @@ Every number below is the output of the command next to it, run on this commit. 
 | `compliance.circom` (real Groth16) | **30 pass** | `cd circuits && node test/compliance.test.mjs` |
 | `withdraw.circom` (real Groth16) | **35 pass** | `cd circuits && node test/withdraw.test.mjs` |
 | Proof converter (snarkjs JSON → arkworks bytes) | **109 pass** | `cd scripts && bun run src/test-converter.ts` |
-| Compliance utils (credential leaf, Merkle builder) | **67 pass** | `cd scripts && bun run src/test-compliance-utils.ts` |
-| Frontend (vitest) | **19 pass** | `cd frontend && bunx vitest run` |
+| Compliance utils (credential leaf, Merkle builder) | **101 pass** | `cd scripts && bun run src/test-compliance-utils.ts` |
+| Frontend (vitest) | **23 pass** | `cd frontend && bunx vitest run` |
 | Property-based fuzz (fast-check) | 6 properties × 500 cases | `cd scripts && bun run src/fuzz-tests.ts` |
 
 The circuit tests have two modes. With a compiled wasm + zkey in `circuits/build/` they run a real `groth16.fullProve` + `verify` per case; otherwise they fall back to simulating the constraints in JS with circomlibjs. **The counts above are full-proof mode** (`bash circuits/scripts/compile.sh` first — it downloads a ~85 MB ptau). The fallback mode is a linting aid, not evidence.
