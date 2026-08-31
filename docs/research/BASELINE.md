@@ -36,6 +36,30 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Off-chain Merkle tree build/proof time (depth 20, the deployed circuit depth)
+
+Measured 2026-08-31. `scripts/src/compliance-utils.ts` and `frontend/src/lib/merkle-tree.ts` build
+the depth-20 credential/commitment tree in `O(leaves + depth)` Poseidon calls (zero-hash pruning of
+the always-zero padding), not `O(2^depth)`. Both real leaf count are re-measured against a naive
+full-width reference in `scripts/bench/merkle-scale.mjs`; the two implementations agree bit-for-bit.
+The current anonymity-set ceiling this tree imposes is `2^20 = 1,048,576` commitments — a circuit
+parameter (`MerkleProof(20)`), unaffected by this fix.
+
+| Real leaves (n) | Build time |
+|---|---:|
+| 1 (today's actual usage) | 43.8 ms |
+| 1,000 | 198.2 ms |
+| 100,000 | 10,497.9 ms |
+| 1,048,576 (full tree) | 108,763.1 ms |
+
+For comparison, the previous (still-correct, just naive) implementation cost ~101,358 ms
+**regardless of leaf count** — the `n=1` row above is a ~2,315x reduction for the actual real-world
+call pattern (`seed-credential-tree.ts`, `useProofGeneration.ts`, both single-leaf today). Full
+table, depth-24 numbers, and raw command output:
+[`2026-08-31-merkle-zero-hash-pruning.md`](2026-08-31-merkle-zero-hash-pruning.md).
+
+Reproduce: `bun run scripts/bench/merkle-scale.mjs`.
+
 ## Not yet measured
 
 | Metric | Status | Why |

@@ -444,6 +444,78 @@ section("getMerkleProof — error cases");
 }
 
 // ---------------------------------------------------------------------------
+// T5: buildMerkleTree — pruned build matches a naive full-width reference
+//
+// buildMerkleTree only ever hashes the real leaf prefix; every position past it
+// is filled from cached zero-subtree hashes instead of a real Poseidon call
+// (see scripts/bench/merkle-scale.mjs for why). This section is the
+// correctness gate for that: for a range of n (including non-power-of-two
+// and odd counts, where the "last real pair has a zero sibling" boundary
+// case actually triggers), the pruned output must be byte-for-byte identical
+// to hashing every pair for real, at every layer.
+// ---------------------------------------------------------------------------
+
+section("buildMerkleTree — pruned output matches naive full-width reference");
+
+function buildMerkleTreeNaiveReference(
+  poseidon: PoseidonFunction,
+  F: PoseidonFunction["F"],
+  leaves: bigint[],
+  depth: number,
+) {
+  const capacity = 1 << depth;
+  const leafLayer: bigint[] = Array.from({ length: capacity }, (_, i) => (i < leaves.length ? leaves[i] : 0n));
+  const layers: bigint[][] = [leafLayer];
+  let current = leafLayer;
+  for (let d = 0; d < depth; d++) {
+    const next: bigint[] = [];
+    for (let i = 0; i < current.length; i += 2) {
+      next.push(F.toObject(poseidon([current[i], current[i + 1]])));
+    }
+    layers.push(next);
+    current = next;
+  }
+  return { root: layers[depth][0], layers };
+}
+
+{
+  const DEPTH = 8; // capacity 256 — large enough to exercise multiple pruning levels, cheap enough for a naive reference build every case
+  for (const n of [0, 1, 2, 3, 7, 8, 9, 63, 64, 65, 127, 128, 129, 255, 256]) {
+    const leaves = Array.from({ length: n }, (_, i) => BigInt(1000 + i));
+    const naive = buildMerkleTreeNaiveReference(poseidon, F, leaves, DEPTH);
+    const pruned = buildMerkleTree(poseidon, F, leaves, DEPTH);
+    assertEqual(pruned.root, naive.root, `pruned vs naive root match, n=${n}`);
+    const layersEqual =
+      pruned.layers.length === naive.layers.length &&
+      pruned.layers.every(
+        (layer, d) => layer.length === naive.layers[d].length && layer.every((v, i) => v === naive.layers[d][i]),
+      );
+    assert(layersEqual, `pruned vs naive all layers match, n=${n}`);
+  }
+}
+
+{
+  // Proofs extracted from a pruned tree must still verify against the root,
+  // for a leaf inside the real prefix and one that falls in the zero-padded region.
+  const leaves = [10n, 20n, 30n, 40n, 50n]; // n=5, depth=4 → capacity 16, indices 5..15 are zero padding
+  const tree = buildMerkleTree(poseidon, F, leaves, 4);
+  for (const index of [0, 4, 5, 15]) {
+    const proof = getMerkleProof(tree.layers, index, 4);
+    let node = index < leaves.length ? leaves[index] : 0n;
+    let idx = index;
+    for (let d = 0; d < 4; d++) {
+      const sibling = proof.pathElements[d];
+      node =
+        proof.pathIndices[d] === 0
+          ? F.toObject(poseidon([node, sibling]))
+          : F.toObject(poseidon([sibling, node]));
+      idx = Math.floor(idx / 2);
+    }
+    assertEqual(node, tree.root, `pruned tree: proof for index ${index} (leaf-region=${index < leaves.length}) verifies`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Summary
 // ---------------------------------------------------------------------------
 

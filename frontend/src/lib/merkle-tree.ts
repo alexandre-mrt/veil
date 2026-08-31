@@ -87,31 +87,25 @@ export class MerkleTree {
       throw new Error(`Leaf index ${index} out of range [0, ${this.leaves.length})`);
     }
 
+    const layers = this.buildPrunedLayers();
     const pathElements: bigint[] = [];
     const pathIndices: number[] = [];
 
-    // Build tree level by level, collecting sibling hashes
-    let currentLevel = this.padToDepthLevel(this.leaves);
-
+    let currentIndex = index;
     for (let level = 0; level < DEPTH; level++) {
-      const siblingIndex = index % 2 === 0 ? index + 1 : index - 1;
-      pathElements.push(currentLevel[siblingIndex]);
-      pathIndices.push(index % 2);
-
-      // Move up one level
-      const nextLevel: bigint[] = [];
-      for (let i = 0; i < currentLevel.length; i += 2) {
-        nextLevel.push(this.hash(currentLevel[i], currentLevel[i + 1]));
-      }
-      currentLevel = nextLevel;
-      index = Math.floor(index / 2);
+      const isRight = currentIndex % 2 === 1;
+      const siblingIndex = isRight ? currentIndex - 1 : currentIndex + 1;
+      const layer = layers[level];
+      const sibling = siblingIndex < layer.length ? layer[siblingIndex] : this.zeroHashes[level];
+      pathElements.push(sibling);
+      pathIndices.push(isRight ? 1 : 0);
+      currentIndex = Math.floor(currentIndex / 2);
     }
 
-    return {
-      root: currentLevel[0],
-      pathElements,
-      pathIndices,
-    };
+    const last = layers[DEPTH];
+    const root = last.length > 0 ? last[0] : this.zeroHashes[DEPTH];
+
+    return { root, pathElements, pathIndices };
   }
 
   // -------------------------------------------------------------------------
@@ -139,30 +133,42 @@ export class MerkleTree {
   }
 
   /**
-   * Pad the leaves array to the full width at level 0 (2^DEPTH)
-   * using precomputed zero hashes.
+   * Build the tree layer by layer, keeping only the real (non-padding)
+   * prefix at each level instead of materializing the full 2^DEPTH width.
+   *
+   * Leaves occupy a contiguous prefix [0, leaves.length), so every position
+   * at or beyond a level's real width is provably the cached zero-subtree
+   * hash for that level (`zeroHashes[level]`) — it never needs to be
+   * recomputed. This turns root/proof computation from O(2^DEPTH) Poseidon
+   * calls into O(leaves.length + DEPTH), while producing the exact same
+   * root and proofs the old full-width computation did.
    */
-  private padToDepthLevel(leaves: readonly bigint[]): bigint[] {
-    const width = 2 ** DEPTH;
-    const padded = new Array<bigint>(width);
-    for (let i = 0; i < width; i++) {
-      padded[i] = i < leaves.length ? leaves[i] : ZERO_VALUE;
+  private buildPrunedLayers(): bigint[][] {
+    const layers: bigint[][] = [this.leaves.slice()];
+    let realWidth = this.leaves.length;
+
+    for (let level = 0; level < DEPTH; level++) {
+      const current = layers[level];
+      const activePairs = realWidth === 0 ? 0 : Math.ceil(realWidth / 2);
+      const next: bigint[] = new Array(activePairs);
+      for (let i = 0; i < activePairs; i++) {
+        const left = current[2 * i];
+        const right = 2 * i + 1 < realWidth ? current[2 * i + 1] : this.zeroHashes[level];
+        next[i] = this.hash(left, right);
+      }
+      layers.push(next);
+      realWidth = activePairs;
     }
-    return padded;
+
+    return layers;
   }
 
   /**
-   * Compute the root by hashing all levels bottom-up.
+   * Compute the root by hashing only the real leaves bottom-up.
    */
   private computeRootFromLeaves(): bigint {
-    let currentLevel = this.padToDepthLevel(this.leaves);
-    for (let level = 0; level < DEPTH; level++) {
-      const nextLevel: bigint[] = [];
-      for (let i = 0; i < currentLevel.length; i += 2) {
-        nextLevel.push(this.hash(currentLevel[i], currentLevel[i + 1]));
-      }
-      currentLevel = nextLevel;
-    }
-    return currentLevel[0];
+    const layers = this.buildPrunedLayers();
+    const last = layers[DEPTH];
+    return last.length > 0 ? last[0] : this.zeroHashes[DEPTH];
   }
 }

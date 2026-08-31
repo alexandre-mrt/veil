@@ -10,8 +10,13 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) and reconfirmed a
+   third time 2026-08-31 (JSON-RPC to a public testnet fullnode: `403`; `cargo`/crates.io crate
+   content for a from-source build: `403` — only crates.io index *metadata* and `api.github.com` are
+   reachable, though git-protocol clones of GitHub repos do work). This now looks like a stable
+   property of the current network policy, not something worth re-attempting per session — worth
+   escalating to whoever configures this environment's network policy rather than re-testing it on
+   every run.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
@@ -26,11 +31,17 @@ what matters most — say why in the commit, don't just reorder silently.
    Depends on item 1 existing first (need a real per-verify gas number to know how much this would
    actually save).
 
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+4. **Merkle accumulator at scale (10^5–10^7 commitments) — on-chain half remaining.** The
+   off-chain build-cost half is done (2026-08-31, KEEP): `compliance-utils.ts` and
+   `frontend/lib/merkle-tree.ts` build/prove the depth-20 tree in `O(n + depth)` Poseidon calls now,
+   not `O(2^depth)`, and depth-24 (~16.8M capacity) builds in seconds, not the ~27 minutes a naive
+   rebuild would need there. What's still open: raising the *on-chain* depth itself, which is a
+   circuit parameter (`MerkleProof(depth)` in `templates/merkle_proof.circom`) — needs a constraint-
+   count delta for `MerkleProof(24)` vs `MerkleProof(20)`, a new trusted-setup ceremony, and the real
+   anonymity-set-vs-proving-time tradeoff curve. Still directly relevant to `docs/threat-model.md`
+   RR5 (a bigger anonymity set is the main lever available without redesigning the deposit flow) —
+   this is now purely a "spend the ceremony + circuit-change budget" question, not an "is this even
+   buildable off-chain" one.
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -68,8 +79,7 @@ what matters most — say why in the commit, don't just reorder silently.
     (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
     sender-relayer pairs under concurrent load) is unmeasured.
 
-12. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
-    papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
-    calls leave the Node process alive after the test file finishes printing results, which stalls
-    the `&&`-chained `npm test` script after the first file. Each file passes fine run
-    individually. Low priority; fold into whichever future night touches `circuits/test/`.
+~~12. Fix `circuits`' chained `npm test` hang.~~ **Done**, outside this loop — PRs #16/#17 added an
+    explicit `process.exit(0)` to each test runner after the CI job that spotted the same symptom
+    (it was timing out at 6h). Confirmed fixed 2026-08-31: the three-file `&&` chain now completes
+    cleanly in one run.
