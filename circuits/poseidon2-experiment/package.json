@@ -1,0 +1,10 @@
+{
+  "name": "veil-circuits-poseidon2-experiment",
+  "version": "0.0.0",
+  "private": true,
+  "description": "EXPERIMENTAL — not wired into the app or Move contracts. Benchmark-only Poseidon2 variants of transfer/compliance/withdraw for docs/research/2026-09-01-poseidon2-constraint-delta.md. See that file and README.md before touching this directory.",
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "@taceo/circom-lib": "0.9.0"
+  }
+}

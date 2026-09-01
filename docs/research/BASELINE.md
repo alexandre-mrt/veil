@@ -25,6 +25,29 @@ Groth16 proofs are three fixed-size group elements (2×G1 + 1×G2) regardless of
 constant across all three circuits. snarkjs's own JSON proof encoding (decimal-string field
 elements) runs ~721–726 bytes for the same data.
 
+## Poseidon constraint breakdown
+
+Measured 2026-09-01 as a byproduct of the Poseidon2 constraint-delta experiment
+([`2026-09-01-poseidon2-constraint-delta.md`](2026-09-01-poseidon2-constraint-delta.md))
+— included here because it decomposes the constraint counts above (doesn't
+change them) and answers 2026-07-22's own open question about where
+`transfer`/`compliance`'s non-linear constraints actually come from. Verdict
+on that night's Poseidon2 swap itself was **REJECT**; this breakdown stands
+independent of that verdict, it's a fact about the current, unchanged
+circuits.
+
+| Circuit | Total non-linear | Poseidon-instance-attributable | Everything else (range checks, comparators, Merkle-path muxes) |
+|---|---|---|---|
+| `transfer.circom` | 6,470 | 6,024 — **93.1%** | 446 — 6.9% |
+| `compliance.circom` | 6,057 | 5,712 — **94.3%** | 345 — 5.7% |
+| `withdraw.circom` | 1,465 | 1,143 — **78.0%** | 322 — 22.0% |
+
+The depth-20 `MerkleProof` path alone (20 × `Poseidon(2)`, 243 non-linear
+constraints each = 4,860) is **75.1%** of `transfer`'s and **80.2%** of
+`compliance`'s total non-linear constraints by itself — the single biggest
+lever in either circuit. `withdraw.circom` has no Merkle proof, hence its
+lower Poseidon share.
+
 ## Proving time (mean of 10 runs, includes witness generation)
 
 | Circuit | Node.js (this machine) | Chromium (headless, this machine) | Browser / Node ratio |
@@ -40,7 +63,7 @@ Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** (3rd time, 2026-09-01) | No `sui` CLI installable: no prebuilt binary reachable, and `crates.io`'s `sui`/`sui-sdk` crates are unrelated name-squatted placeholders (0 deps, v0.0.1/v0.0.0), not the Mysten Labs CLI. The JSON-RPC fallback against the deployed testnet package is a confirmed hard organizational egress-policy block (proxy 403 to `fullnode.testnet.sui.io:443`), not transient. Re-ranked down in `EXPERIMENTS.md` — needs either a multi-night from-source Sui build or a policy change, not another single-night unblock attempt. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
