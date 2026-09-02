@@ -22,3 +22,5 @@ target/
 
 # Sui
 contracts/Published.toml
+contracts/Pub.*.toml
+scripts/bench/.local-pubfile.toml

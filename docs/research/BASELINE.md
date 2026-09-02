@@ -1,10 +1,12 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
-[`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
-methodology, raw command output, and what's still missing. Superseded rows should be replaced in
-place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
-reflects the current state of the protocol, not history.
+Measured 2026-07-22 (constraints, artifact sizes, proving time) and 2026-09-02 (on-chain gas, Move
+test suite), on one machine, in one run each. See
+[`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) and
+[`2026-09-02-onchain-gas.md`](2026-09-02-onchain-gas.md) for full methodology and raw command
+output. Superseded rows should be replaced in place with a note in `LEDGER.md` pointing at the
+experiment that changed them — this file always reflects the current state of the protocol, not
+history.
 
 Toolchain: circom 2.2.2 (built from source, `iden3/circom` tag `v2.2.2`), snarkjs 0.7.6, Node
 v22.22.2, Chromium 141 (headless, via Playwright), pot15 Powers of Tau (Hermez, `2^15` — reused
@@ -36,14 +38,46 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point (2026-09-02, real local-network transactions)
+
+Toolchain: `sui` 1.79.0-46f18562f1f5, built from source (`cargo install --locked --git
+https://github.com/MystenLabs/sui.git --branch testnet sui`, rustc 1.96.1 — the branch's own pinned
+version; the system default 1.94.1 hit a real compile error in `consensus-core`). Measured against
+a local Sui validator (`sui start --with-faucet --force-regenesis`), not testnet — see
+[`2026-09-02-onchain-gas.md`](2026-09-02-onchain-gas.md) for why a local network is a legitimate
+stand-in (same binary, same protocol version, same gas-pricing formulas) and why testnet itself
+remains unreachable from this sandbox. Reference gas price: 1000 MIST/unit. "Net" =
+`computationCost + storageCost − storageRebate`.
+
+| Entry point | Net gas (MIST) | Net gas (SUI) |
+|---|---:|---:|
+| `pool::create_pool` | 8,518,680 | 0.008519 |
+| `compliance::create_compliance_config` | 7,529,768 | 0.007530 |
+| `pool::propose_withdraw_vk` | 4,317,400 | 0.004317 |
+| `pool::propose_vk_update` | 4,836,100 | 0.004836 |
+| `pool::cancel_vk_update` | −2,559,536 | −0.002560 |
+| `pool::freeze_pool` / `pool::unfreeze_pool` | 1,119,700 each | 0.001120 |
+| `pool::propose_withdrawal` | 1,423,700 | 0.001424 |
+| `pool::cancel_withdrawal` | 818,740 | 0.000819 |
+| `token_faucet::faucet` | 2,364,656 | 0.002365 |
+| `pool::deposit_and_register` | 1,832,200 | 0.001832 |
+| `pool::update_commitment_root` | 1,362,900 | 0.001363 |
+| `pool::shielded_transfer` | 2,875,376 | 0.002875 |
+| `pool::zk_withdraw` | 4,453,744 | 0.004454 |
+| `compliance::compliant_transfer` (2 Groth16 verifications) | 5,050,192 | 0.005050 |
+
+Reproduce: `sui start --with-faucet --force-regenesis &`, `sui client switch --env local`, then
+`node scripts/bench/onchain-gas.mjs` (requires circuits compiled: `bash
+circuits/scripts/compile{,-withdraw,-compliance}.sh`).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
-| Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
-| Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
+| Mobile WASM proving latency | **NOT MEASURED** | The browser harness (`scripts/bench/browser-latency.mjs`) runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). Queue item #7. |
+| Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope so far; queued (item #10). |
+| Batched/aggregated proof verification savings | **NOT MEASURED** | Now unblocked by the per-entry-point gas numbers above; queue item #2. |
+| Merkle accumulator at 10^5–10^7 commitments | **NOT MEASURED** | Queue item #3; `update_commitment_root`'s single-call cost above is its starting baseline. |
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
 place, not be appended as a separate table.
