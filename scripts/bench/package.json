@@ -5,11 +5,15 @@
   "type": "module",
   "description": "Reusable benchmark scripts for Veil's nightly research loop (proving time, R1CS, browser latency).",
   "scripts": {
-    "prove-latency": "node prove-latency.mjs --runs 10"
+    "prove-latency": "node prove-latency.mjs --runs 10",
+    "constraint-attribution": "node constraint-attribution.mjs"
   },
   "dependencies": {
     "circomlibjs": "^0.1.7",
     "playwright": "^1.56.1",
     "snarkjs": "0.7.6"
+  },
+  "devDependencies": {
+    "circom2": "^0.2.23"
   }
 }
