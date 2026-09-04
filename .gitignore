@@ -7,6 +7,7 @@ node_modules/
 build/
 build-withdraw/
 build-compliance/
+build-bench/
 dist/
 .next/
 target/
