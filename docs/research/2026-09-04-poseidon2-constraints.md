@@ -177,8 +177,8 @@ Reproduce: `cd circuits && bash scripts/compile-poseidon2-bench.sh` (or run each
 | transfer | poseidon2 (SAFE, tag in capacity) | 5,892 | 8,904 | **14,796** | _TBD_ |
 | compliance | current | 5,772 | 6,673 | **12,445** | _TBD_ |
 | compliance | poseidon2 | 5,703 | 8,780 | **14,483** | _TBD_ |
-| withdraw | current | 1,143 | 1,583 | **2,726** | _TBD_ |
-| withdraw | poseidon2 | 1,008 | 2,032 | **3,040** | _TBD_ |
+| withdraw | current | 1,143 | 1,583 | **2,726** | 1,238,784 |
+| withdraw | poseidon2 | 1,008 | 2,032 | **3,040** | 1,327,384 |
 
 Delta (poseidon2 − current):
 
