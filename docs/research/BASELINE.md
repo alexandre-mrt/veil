@@ -36,6 +36,50 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Poseidon / range-check constraint decomposition (2026-09-05)
+
+Isolated per-component R1CS cost (single-component circom fixtures, real compile — not inferred),
+reconciled against the constraint counts above. See
+[`2026-09-05-poseidon-constraint-decomposition.md`](2026-09-05-poseidon-constraint-decomposition.md)
+for methodology and full raw output.
+
+| Component | Non-linear | Linear |
+|---|---|---|
+| `Poseidon(2)` | 243 | 274 |
+| `Poseidon(3)` | 264 | 341 |
+| `Poseidon(4)` | 300 | 436 |
+| `Poseidon(5)` | 324 | 511 |
+| `Num2Bits(64)` | 64 | 1 |
+| `GreaterThan(64)` | 65 | 3 |
+| `MerkleProof(20)` (real template, incl. path selectors) | 4,920 | 5,480 |
+
+| Circuit | Merkle path (`MerkleProof(20)`) | Identity/domain Poseidon | Range checks | Unattributed residual |
+|---|---|---|---|---|
+| `transfer.circom` | 76.0% (4,920 / 6,470) | 18.0% (1,164 / 6,470) | 5.0% (321 / 6,470) | 1.0% (65) |
+| `compliance.circom` | 81.2% (4,920 / 6,057) | 14.1% (852 / 6,057) | 3.2% (192 / 6,057) | 1.5% (93) |
+| `withdraw.circom` | n/a (no Merkle proof) | 78.0% (1,143 / 1,465) | 17.5% (257 / 1,465) | 4.4% (65) |
+
+**Takeaway:** in the two circuits with a Merkle inclusion proof, the 20-level Merkle path — not
+the identity-binding Poseidon calls — is the dominant non-linear cost by 4–5.7x. A same-arity hash
+swap (e.g. Poseidon2) can only ever move the "identity/domain Poseidon" column; shrinking the
+Merkle path itself (depth or arity) is the higher-leverage lever. See the report's "Open questions"
+for the (unmeasured) wider-arity projection.
+
+Reproduce: `node scripts/bench/poseidon-constraint-cost.mjs`.
+
+## Toolchain note (2026-09-05)
+
+`circom` (native binary) was unavailable and uninstallable in that night's sandbox — both
+`github.com` (source) and `static.crates.io` (no published `circom` crate exists there anyway) were
+network-policy-denied. **`circom2`** (`registry.npmjs.org`, a WASM build of the same compiler) is a
+verified drop-in substitute: `circuits && npm install circom2` reproduces `transfer.circom`'s
+constraint counts exactly (`circom2 npm package 0.2.23` → `circom compiler 2.2.3`, one patch above
+the `2.2.2` used for the original 2026-07-22 baseline). Powers-of-tau can be generated fully
+offline (`snarkjs powersoftau new` → `contribute` → `prepare phase2`) when
+`storage.googleapis.com` is also denied, without touching any circuit's trust assumptions (still a
+single dev-only contribution, same as `compile*.sh` already documents). Useful for any future night
+that hits the same missing-`circom` wall.
+
 ## Not yet measured
 
 | Metric | Status | Why |
