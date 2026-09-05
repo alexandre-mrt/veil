@@ -10,27 +10,37 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). Blocked three times now (2026-07-22, 2026-09-05) for the same class of reason: this
+   sandbox's network policy denies `github.com`, `static.crates.io`, and a direct
+   `fullnode.testnet.sui.io` JSON-RPC read, all with a `403`. This is not a tooling gap this loop
+   can code its way around — it may need a human to explicitly allowlist
+   `fullnode.testnet.sui.io` (read-only RPC, no CLI needed) before this axis can ever close
+   autonomously.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Wider-arity Merkle accumulator (re-ranked up from old #4 — now the queue's top measurable
+   item).** The 2026-09-05 decomposition found the 20-level Merkle path is 76–81% of
+   `transfer.circom`'s and `compliance.circom`'s non-linear constraints — 4–5.7x the identity-
+   binding Poseidon calls, and the actual dominant cost neither this queue nor the original
+   baseline had isolated before. A `Poseidon(4)`-based depth-10 tree at the same 2^20 leaf capacity
+   floors (measured `Poseidon(4)` cost only, ignoring the necessarily larger 4-way selector) at
+   ≥39% fewer Merkle-path constraints — UNMEASURED, needs a real `QuaternaryMerkleProof` template,
+   a soundness pass on the wider selector, and a negative malformed-path test (this **is** a
+   circuit change, unlike the decomposition experiment). Also the natural place to measure
+   10^5–10^7-scale batch-insertion cost and indexer throughput, and directly relevant to
+   `docs/threat-model.md` RR5 (deposit-commitment linkability / anonymity-set size).
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
+3. **Poseidon2 vs current Poseidon, for real this time.** The 2026-09-05 decomposition confirmed
+   Poseidon dominates what it touches, but a real port was blocked on verified BN254 round
+   constants (the reference Grain-LFSR generator lives on GitHub, denied this session). Worth
+   retrying if a future session's network policy allows GitHub, or finding an already-audited
+   external BN254 Poseidon2 constant set to build from instead of generating one by hand. Lower
+   ceiling than item 2 above: it can only ever move the ~14–18% "identity/domain Poseidon" share of
+   `transfer`/`compliance`'s constraints, per the 2026-09-05 numbers.
+
+4. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
    Depends on item 1 existing first (need a real per-verify gas number to know how much this would
    actually save).
-
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -73,3 +83,11 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **Teach `circuits/scripts/compile*.sh` to fall back to `circom2` (npm) when no native `circom`
+    binary is on `PATH`.** Not a research experiment — a tooling papercut found 2026-09-05: this
+    sandbox has no installable native `circom` (GitHub and `static.crates.io` both policy-denied),
+    which blocked the entire circuit toolchain until `circom2` was found and verified as an
+    exact-output substitute (see `BASELINE.md`'s toolchain note). A one-line fallback in the three
+    `compile*.sh` scripts would save a future night from rediscovering this. Low priority; fold in
+    whenever a future night already touches those scripts.
