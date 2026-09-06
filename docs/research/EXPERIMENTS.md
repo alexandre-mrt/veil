@@ -5,13 +5,28 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
+0. **Clear the merge backlog before running anything else.** As of 2026-09-06, `main` has not
+   merged a single research finding since 2026-07-22 — 35 open PRs (#18–#54) are sitting unmerged
+   because CI has been red on all of them (see LEDGER 2026-09-06). This is *why* items 1 and 2
+   below have each been independently re-run and re-blocked/re-rejected many nights in a row: every
+   night starts from the same un-updated `main`. A CI fix (the `oven-sh/setup-bun` pin) is in
+   flight in the 2026-09-06 PR; the `sui`-release/`storage.googleapis.com` `403`s are a separate,
+   likely-infra-policy block still needing a maintainer decision. Before picking up item 1 or 2
+   again: check whether the 2026-09-06 PR (and #54, the last non-duplicate finding) have merged. If
+   they haven't, say so again rather than opening PR #56 with a 7th duplicate Poseidon2 result or a
+   4th duplicate gas-BLOCKED finding — a repeated "still not merged" note is more useful than a
+   repeated experiment.
+
 1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). Blocked repeatedly now; 2026-09-06 traced the exact cause to two `403`s (the `sui`
+   release download and its `api.github.com` release-listing lookup — plausibly anonymous
+   rate-limiting, fixable with the workflow's own `GITHUB_TOKEN`) rather than a per-session fluke —
+   see LEDGER 2026-09-06 for the concrete fix, not yet applied. Don't re-attempt until item 0 is
+   resolved one way or another.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
@@ -19,7 +34,12 @@ what matters most — say why in the commit, don't just reorder silently.
    Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
    swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
    instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+   directly, for every circuit, on every transfer. **Already independently REJECTed at least 6
+   times** across unmerged branches (naive same-arity swap loses; see 2026-09-05's decomposition
+   PR #54 for why — the 20-level Merkle path, not the identity-binding Poseidon calls, dominates).
+   Don't re-run the naive-swap version again; if this is picked up next, it should be the
+   Merkle-arity/depth angle #54 actually pointed at, and only once item 0 confirms #54 itself
+   landed (so this note is visible from a `main` that has it, not rediscovered from scratch).
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
