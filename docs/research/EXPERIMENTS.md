@@ -22,10 +22,11 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked repeatedly now, most recently traced to a likely Actions-runner network
-   allowlist rather than a per-session fluke (see LEDGER 2026-09-06) — the fix is a maintainer
-   decision (widen the allowlist, or vendor the `sui` binary), not something a research night can
-   resolve alone. Don't re-attempt until item 0 is resolved one way or another.
+   permitted). Blocked repeatedly now; 2026-09-06 traced the exact cause to two `403`s (the `sui`
+   release download and its `api.github.com` release-listing lookup — plausibly anonymous
+   rate-limiting, fixable with the workflow's own `GITHUB_TOKEN`) rather than a per-session fluke —
+   see LEDGER 2026-09-06 for the concrete fix, not yet applied. Don't re-attempt until item 0 is
+   resolved one way or another.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22

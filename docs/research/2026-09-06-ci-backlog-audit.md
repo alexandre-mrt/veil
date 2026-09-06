@@ -56,15 +56,41 @@ that introduced them (`e37ecd6`) — every CI run on main since then has failed.
 run on `main` for over a month, diagnosed correctly once already, and still broken tonight because
 the fix never landed.
 
-The `sui` CLI and `pot15.ptau` downloads are a different failure mode: `github.com` itself is
-reachable (checkout, and the `oven-sh/setup-bun` action-metadata fetch, both succeed) but a
-release-asset download from `github.com/MystenLabs/sui/releases/download/...` and a
-`storage.googleapis.com` object both come back `403`. That reads like a runner-level network
-allowlist that permits `github.com` API/git traffic but not release-asset or GCS object fetches —
-i.e., an infrastructure/policy setting, not a bug in this repo's code. (This matches what three
-separate nights already reported as "on-chain gas BLOCKED, no `sui` CLI" — they were hitting the
-same wall and, lacking visibility into `main`'s CI logs, treated it as a local-sandbox limitation
-each time rather than a shared, fixable-or-not-fixable-by-us CI setting.)
+The `sui` CLI and `pot15.ptau` downloads are a different failure mode. Reproduced both directly
+from this session's own sandbox (a network path with nothing in common with the GitHub Actions
+runner fleet, other than both eventually reaching the public internet):
+
+```
+$ curl -fsSL -o /dev/null -w "ptau: HTTP %{http_code}\n" --max-time 20 \
+    https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_15.ptau
+curl: (22) The requested URL returned error: 403
+ptau: HTTP 403
+
+$ curl -fsSL -o /dev/null -w "sui-releases-api: HTTP %{http_code}\n" --max-time 20 \
+    https://api.github.com/repos/MystenLabs/sui/releases
+curl: (22) The requested URL returned error: 403
+sui-releases-api: HTTP 403
+```
+
+Getting the identical `403` from a second, unrelated network path rules out "this org's Actions
+runners are on a restrictive allowlist" as the sole explanation (that theory doesn't survive
+reproducing it from a sandbox with a completely different egress policy) and points instead at the
+resources themselves: **unauthenticated `api.github.com` calls are rate-limited to 60 requests/hour
+per source IP**, and shared runner/proxy IP pools exhaust that constantly — the workflow's own
+`GITHUB_TOKEN` (available for free in every run, unauthenticated calls don't use it) would raise
+that to 5,000/hour scoped to the repo, so this specific `403` is plausibly a one-line fix
+(`-H "Authorization: Bearer $GITHUB_TOKEN"`), not left in this PR because it touches a job (
+`move-tests`) already blocked on the separate `sui`-binary-download `403` even if the API call
+succeeds, so fixing only half of it wouldn't turn the job green — worth doing together. The
+`storage.googleapis.com` object is a different kind of fragility: a public anonymous GCS bucket
+that a third party (`zkevm`) controls, with no SLA to this repo; `403` there more likely means the
+bucket's read grant lapsed or the object moved, which no auth header fixes — the durable answer is
+to stop depending on it (vendor `pot15_final.ptau`, ~85 MB, into this repo's own storage or
+generate it offline the way the `circom2`/local powers-of-tau approach in the 2026-09-05 report
+already demonstrated is possible). Either way: not a bug introduced by any research PR, and not
+fixed by re-running the same blocked experiment a 4th time. (This matches what three separate
+nights already reported as "on-chain gas BLOCKED, no `sui` CLI" — each treated it as a fresh
+local-sandbox limitation, because none could see a prior night's diagnosis on `main`.)
 
 ## Approach
 
@@ -105,13 +131,17 @@ this repo:
    human pass to pick any distinct findings out of them (e.g. #49's Merkle zero-hash pruning, #40's
    `circom --O2` adoption) before closing the rest, rather than this PR closing 30+ others
    unilaterally.
-2. **Decide on the `sui`-release / GCS network block.** Either widen whatever Actions network
-   policy is blocking `github.com/*/releases/download/*` and `storage.googleapis.com`, or accept
-   the block and vendor `pot15_final.ptau` (checked into the repo or an internal artifact store —
-   it's ~85 MB, git-LFS territory) and a pinned `sui` binary (or build it via `cargo install`
-   the way `circom` already is, from source, since raw git clones over `github.com` do appear to
-   work). Either fix unblocks `move-tests`, `circuit-tests`, and the recurring "on-chain gas
-   BLOCKED" queue item in one shot.
+2. **Fix the two external-download `403`s properly** (not attempted in this PR — scope discipline,
+   and the `move-tests` job needs both fixed together to go green):
+   - Add `-H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"` to the `api.github.com` call in
+     `move-tests` — plausibly just anonymous rate-limiting on a shared runner IP pool, reproduced
+     from an unrelated network path (this session's own sandbox), so not likely an intentional
+     block.
+   - Stop depending on the third-party `storage.googleapis.com/zkevm/...` bucket for
+     `pot15_final.ptau`: vendor it (internal artifact store / repo release asset) or generate
+     powers-of-tau offline, as the 2026-09-05 report already showed is possible.
+   Either fix unblocks `move-tests`/`circuit-tests` and the recurring "on-chain gas BLOCKED" queue
+   item; both together get the whole CI matrix green.
 
 ## Where this could be used
 
@@ -133,8 +163,7 @@ merges stall for any reason (red CI, missing review capacity, low-priority backl
   contract unilaterally in the same PR that reports the bug).
 - Who reviews/merges these PRs, and on what cadence? If the answer is "nobody, currently," that's
   the actual root cause, and the CI fix in this PR only helps once someone is merging again.
-- Is the `github.com` release-asset / `storage.googleapis.com` block in the Actions runner network
-  policy intentional (a deliberate egress allowlist) or incidental? This determines whether the
-  right fix is "widen the allowlist" or "vendor the two blocked downloads."
+- Confirm the `GITHUB_TOKEN`-auth fix actually clears the `api.github.com` `403` (plausible from
+  the rate-limit theory, not yet tested against a live CI run) before treating that half as done.
 - Of the 34 other open PRs, which (if any) besides #54 contain a distinct, non-duplicate finding
   worth cherry-picking before the branches are cleaned up?
