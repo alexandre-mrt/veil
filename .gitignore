@@ -19,6 +19,7 @@ target/
 *.r1cs
 *.wtns
 *.sym
+scripts/bench/constraint-decomposition-out/
 
 # Sui
 contracts/Published.toml

@@ -36,14 +36,47 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Constraint decomposition (which gadgets cost what)
+
+Measured 2026-09-07 by isolating each circomlib template used by the three circuits behind its own
+`component main` and compiling each in isolation with the same `circom` binary — see
+[`2026-09-07-poseidon-constraint-decomposition.md`](2026-09-07-poseidon-constraint-decomposition.md).
+The sum of isolated gadget costs plus each circuit's own top-level arithmetic/boolean assertions
+("glue") reproduces the exact totals above, constraint for constraint.
+
+| Gadget (one instance) | Non-linear | Linear | Total |
+|---|---|---|---|
+| `Poseidon(2)` | 243 | 274 | 517 |
+| `Poseidon(3)` | 264 | 341 | 605 |
+| `Poseidon(4)` | 300 | 436 | 736 |
+| `Poseidon(5)` | 324 | 511 | 835 |
+| `MerkleProof(20)` (20×`Poseidon(2)` + path-selection mux) | 4,920 | 5,480 | 10,400 |
+| `Num2Bits(64)` | 64 | 1 | 65 |
+| `Num2Bits(8)` | 8 | 1 | 9 |
+| `GreaterThan(64)` / `GreaterEqThan(64)` / `LessEqThan(64)` | 65 | 3–4 | 68–69 |
+| `GreaterEqThan(8)` | 9 | 4 | 13 |
+
+Each additional Merkle-tree level costs exactly 517 constraints (one `Poseidon(2)` plus 3 non-linear
+mux/boolean constraints, 0 extra linear) — a real per-level price for anonymity-set-size trade-offs.
+
+| Circuit | Poseidon share of total constraints | Of which: the depth-20 Merkle path alone |
+|---|---|---|
+| `transfer.circom` | 97.1% (13,213 / 13,611) | 76.4% (10,400 / 13,611) |
+| `compliance.circom` | 97.7% (12,445 / 12,743) | 81.6% (10,400 / 12,743) |
+| `withdraw.circom` (no Merkle path) | 89.1% (2,725 / 3,058) | — |
+
+Reproduce: `bash scripts/bench/constraint-decomposition.sh` (needs `circom` 2.2.x on `PATH` and
+`circuits/node_modules` installed).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** (re-confirmed 2026-09-07) | No `sui` CLI binary reachable (GitHub access is scoped to this repo only, and building the full Sui workspace from source remains impractical within one night's budget), and direct JSON-RPC to a public Sui fullnode is denied by this session's egress policy (`connect_rejected`, confirmed via the proxy status endpoint — a clean policy denial, not a flaky error). Needs an environment-level change (network/GitHub-scope policy), not another in-session attempt. See the 2026-09-07 report for full evidence. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
-| Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
+| Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). Currently also blocked by the ptau-hosting issue below (no zkey can be produced to prove with). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
+| Reproducing this file's own proving-time numbers via `circuits/scripts/compile*.sh` | **BLOCKED** (new, 2026-09-07) | The documented ptau URL (`storage.googleapis.com/zkevm/ptau/...`) now returns `403 AccessDenied` from Google Cloud Storage itself (confirmed reproducible, not a network-policy block); two alternate mirrors also failed. This file's existing proving-time figures are unaffected (measured 2026-07-22 while the bucket worked), but nobody can currently regenerate a zkey by following `README.md`'s documented steps. See the 2026-09-07 report. |
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
 place, not be appended as a separate table.
