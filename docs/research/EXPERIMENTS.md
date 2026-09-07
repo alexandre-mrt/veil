@@ -92,13 +92,23 @@ what matters most — say why in the commit, don't just reorder silently.
     (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
     sender-relayer pairs under concurrent load) is unmeasured.
 
-13. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
+13. **CI is red on `main` for two of four jobs (new, found 2026-09-07 while opening the
+    decomposition PR).** `Frontend (vitest + biome + tsc)` and `Proof converter + compliance utils`
+    both fail at job setup — `Unable to resolve action oven-sh/setup-bun@735343b6...`, the pinned
+    commit SHA in `.github/workflows/ci.yml` can no longer be resolved by GitHub Actions. Confirmed
+    failing identically on `main`'s own HEAD run (not something #56 introduced). Proposed fix posted
+    on PR #56: swap the two `oven-sh/setup-bun@<sha>` lines for `oven-sh/setup-bun@v2`. Not pushed
+    there since `ci.yml` is outside that PR's scope — a small, standalone fix PR the next night (or
+    a human) can land in one commit. Worth doing before any future PR needs green frontend/script CI
+    to merge.
+
+14. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
     papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
 
-14. **`scripts/src/test-compliance-utils.ts` is slow (multiple minutes).** Noticed 2026-09-07: its
+15. **`scripts/src/test-compliance-utils.ts` is slow (multiple minutes).** Noticed 2026-09-07: its
     depth-20 `buildMerkleTree` tests (`section("buildMerkleTree — depth 20")` and the depth-20
     `getMerkleProof` test) pad the leaf layer to the full `2^20` width and hash the whole tree with
     JS-side `circomlibjs` Poseidon — roughly 2^20 Poseidon calls, taking minutes where the rest of
