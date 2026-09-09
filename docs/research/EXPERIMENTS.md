@@ -5,21 +5,33 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Blocked a third time on
+   2026-09-09: direct JSON-RPC to a public fullnode (`fullnode.testnet.sui.io:443`) is refused at
+   the network-egress-proxy level (`403` on the `CONNECT`) — this is now confirmed to be a network
+   policy, not the one-off tool-approval denial first read on 2026-07-22. `git clone` access to
+   `github.com` *does* work (git protocol, unlike plain HTTPS `GET`s, which also 403), so a
+   from-source `sui` CLI build is possible — one was started 2026-09-09 (`cargo build --release
+   --bin sui -p sui` against a shallow clone) but stopped partway through when it started starving
+   a same-night experiment's own CPU budget; a 690-crate workspace, the `sui` binary alone pulls in
+   most of the Move VM/RPC/indexer graph, not a thin CLI. **Do this in a dedicated session with
+   nothing else competing for CPU** — budget the whole night for the build alone, verify it
+   actually produces a working `sui` binary, then spend a second session on the gas measurements
+   themselves. Don't combine it with another experiment again; it's twice now cost a night without
+   a number.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Confirm the Poseidon2-Merkle-only partial swap with a real compile.** 2026-09-09 measured
+   (real `circom --r1cs` compiles, cross-validated three independent ways) that swapping Veil's
+   Poseidon calls for Poseidon2 makes every circuit *worse* overall (+17.4%/+5.2%/+93.0% for
+   transfer/compliance/withdraw) because the dominant 4- and 5-input identity-binding hashes have
+   no supported Poseidon2 width — but the depth-20 Merkle accumulator hasher alone, swapped to
+   Poseidon2's t=2 compression mode, is a real, isolated -6.3% win. Applied only to
+   `transfer.circom`/`compliance.circom` (leave the commitment/nullifier hashes on classic
+   Poseidon), that's a computed (not yet independently compiled) -4.85%/-5.18% whole-circuit
+   number. Cheap: build `transfer3.circom`/`compliance3.circom` reusing
+   `circuits/experiments/poseidon2/templates/merkle_proof2.circom` as-is, everything else
+   unchanged, and confirm the arithmetic holds against a real compile before deciding whether the
+   ~5% is worth a second hash family in the codebase (plus a new trusted-setup ceremony for both
+   circuits). See [`2026-09-09-poseidon2-merkle-arity.md`](2026-09-09-poseidon2-merkle-arity.md).
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -30,7 +42,11 @@ what matters most — say why in the commit, don't just reorder silently.
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+   is the main lever available without redesigning the deposit flow). 2026-09-09 measured that the
+   per-level hash cost itself drops ~6.3% under Poseidon2 compression mode
+   (`circuits/experiments/poseidon2/templates/merkle_proof2.circom`) — a depth-vs-cost analysis for
+   a deeper tree should factor that in (it moves the depth/anonymity-set trade-off curve, however
+   slightly, independent of item 2 above's own verdict).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
