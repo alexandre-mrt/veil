@@ -5,32 +5,43 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **Merkle depth vs anonymity-set trade-off (depth-20 → depth-16, or similar) — measured
+   constraint/proving-time delta.** Re-ranked to the top tonight (2026-09-10): the gadget-cost
+   breakdown showed the 20-deep Merkle path is 76-81% of `transfer.circom`'s and
+   `compliance.circom`'s non-linear constraints — by far the largest lever either circuit has, and
+   unlike item 2 below, it needs no new dependency, just recompiling with a different `MerkleProof`
+   depth parameter and re-measuring (same toolchain as tonight and 2026-07-22). Directly relevant to
+   `docs/threat-model.md` RR5 (deposit-commitment linkability — depth is the anonymity-set-size
+   knob). Absorbs the old item 4 below, re-scoped with tonight's number attached.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Poseidon2 for the Merkle-path `Poseidon(2)` specifically — blocked on a missing dependency, not
+   a bad idea.** Re-scoped tonight from "swap the four domain-tagged Poseidon calls" (the framing in
+   `README.md` and the 2026-07-22 baseline) to "swap the 20×-repeated Merkle-path `Poseidon(2)`",
+   since the 2026-09-10 gadget-cost breakdown shows that call is the actual dominant cost (76.0% /
+   81.2% of non-linear constraints in `transfer.circom` / `compliance.circom`), not the four
+   domain-tagged calls (14-18%). **PARK, not attempted tonight**: no audited Poseidon2 circom
+   implementation exists to vendor — `circomlib` npm is at `2.0.5` with no `poseidon2.circom`, and no
+   suitable package exists on npm (checked directly). Before the next attempt: check
+   `iden3/circomlib`'s unreleased `main` branch, or another audited ZK-hash library, for a
+   maintained Poseidon2 circuit — hand-deriving round constants without a reference to verify
+   against is a real cryptographic-implementation risk, not a parameter tweak, and shouldn't be
+   attempted inside one session without one.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
+3. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Blocked three nights running
+   now, for three different specific reasons (see LEDGER 2026-07-22, 2026-09-10): a denied
+   tool-approval (2026-07-22), then — confirmed tonight, not inferred — this session's GitHub access
+   being scoped to `alexandre-mrt/veil` only (blocks `github.com`/`api.github.com`/
+   `codeload.github.com` for `MystenLabs/sui`, closing off both the prebuilt-binary and
+   from-source paths) plus the Sui testnet fullnode RPC being blocked by egress policy. Demoted
+   below items 1-2 since neither of those needs broader network/GitHub access to attempt — this one
+   does, and that access hasn't been available in any of the three attempts so far. Next attempt
+   should open with a quick recheck of GitHub scope / egress policy rather than assuming the same
+   blockers still apply, since the specific reason has changed each time.
+
+4. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
+   Depends on item 3 existing first (need a real per-verify gas number to know how much this would
    actually save).
-
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -56,7 +67,7 @@ what matters most — say why in the commit, don't just reorder silently.
 
 9. **Trusted-setup elimination (PLONK / Halo2 / Nova-folding).** Directly addresses
    `docs/threat-model.md` RR2 (dev-only single-contributor ceremony). Large lift — a full circuit
-   port, not a parameter change — so this should wait until items 1–2 give a clearer picture of
+   port, not a parameter change — so this should wait until items 1–3 give a clearer picture of
    what's actually worth optimizing before committing a multi-night effort to a proof-system swap.
 
 10. **Post-quantum exposure.** BN254 discrete log breaks under a sufficiently large quantum

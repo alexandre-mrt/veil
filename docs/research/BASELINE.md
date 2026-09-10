@@ -25,6 +25,44 @@ Groth16 proofs are three fixed-size group elements (2×G1 + 1×G2) regardless of
 constant across all three circuits. snarkjs's own JSON proof encoding (decimal-string field
 elements) runs ~721–726 bytes for the same data.
 
+## Constraint cost by gadget
+
+Measured 2026-09-10 (see
+[`2026-09-10-poseidon-constraint-breakdown.md`](2026-09-10-poseidon-constraint-breakdown.md)) by
+compiling every circomlib template Veil's circuits instantiate as its own one-line circuit and
+reading `snarkjs r1cs info`. Reproduce: `bash scripts/bench/circuit-gadget-cost/run.sh`.
+
+| Gadget | Non-linear | Linear | Total |
+|---|---|---|---|
+| `Poseidon(2)` | 243 | 274 | 517 |
+| `Poseidon(3)` | 264 | 341 | 605 |
+| `Poseidon(4)` | 300 | 436 | 736 |
+| `Poseidon(5)` | 324 | 511 | 835 |
+| `Num2Bits(8)` | 8 | 1 | 9 |
+| `Num2Bits(64)` | 64 | 1 | 65 |
+| `GreaterThan(64)` | 65 | 3 | 68 |
+| `GreaterEqThan(8)` | 9 | 4 | 13 |
+| `GreaterEqThan(64)` | 65 | 4 | 69 |
+| `LessEqThan(64)` | 65 | 4 | 69 |
+| `MultiMux1(2)` | 2 | 0 | 2 |
+| `MerkleProof(20)` (20× `Poseidon(2)` + 20× `MultiMux1(2)` + 20 boolean checks) | 4,920 | 5,480 | 10,400 |
+
+These reconstruct each circuit's total constraint count exactly (component sum + a fixed, explained
+correction for circom's default `--O1` signal-elimination behavior — see the report for the full
+arithmetic). The headline finding: the 20-deep Merkle authentication path, not the domain-tagged
+commitment/nullifier/context hashes, dominates non-linear constraints in the two circuits that have
+one:
+
+| Circuit | Total non-linear | From the Merkle path | From domain-tagged Poseidon calls |
+|---|---|---|---|
+| `transfer.circom` | 6,470 | 4,920 (**76.0%**) | 1,164 (18.0%) |
+| `compliance.circom` | 6,057 | 4,920 (**81.2%**) | 852 (14.1%) |
+| `withdraw.circom` (no Merkle path) | 1,465 | — | 1,143 (**78.0%**) |
+
+This supersedes the "four Poseidon instances dominate" framing in `README.md`'s constraint-count
+section for `transfer.circom`/`compliance.circom` specifically — that framing holds for
+`withdraw.circom`, which has no Merkle path, but not for the two circuits that do.
+
 ## Proving time (mean of 10 runs, includes witness generation)
 
 | Circuit | Node.js (this machine) | Chromium (headless, this machine) | Browser / Node ratio |
