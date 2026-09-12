@@ -167,6 +167,7 @@ for CIRCUIT in "${CIRCUITS[@]}"; do
     echo "[*] Generating WASM for $CIRCUIT..."
     circom "$CIRCUIT.circom" \
       --wasm \
+      --O2 \
       --output "$BUILD_DIR"
     echo "  -> $WASM_FILE created"
   else

@@ -59,7 +59,7 @@ jobs:
           curl -fsSL -o build/pot15_final.ptau \
             https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_15.ptau
           for c in transfer compliance withdraw; do
-            circom "$c.circom" --r1cs --wasm --sym -o build -l node_modules
+            circom "$c.circom" --r1cs --wasm --sym --O2 -o build -l node_modules
             npx snarkjs r1cs info "build/$c.r1cs"
             npx snarkjs groth16 setup "build/$c.r1cs" build/pot15_final.ptau "build/${c}_0000.zkey"
             echo "ci-entropy-$GITHUB_SHA" | npx snarkjs zkey contribute \
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: oven-sh/setup-bun@735343b667d3e6f658f44e0a462d63b48e3324cb # v2.0.1
+      - uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5 # v2.0.1
         with:
           bun-version: latest
       - run: cd scripts && bun install --frozen-lockfile
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: oven-sh/setup-bun@735343b667d3e6f658f44e0a462d63b48e3324cb # v2.0.1
+      - uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5 # v2.0.1
         with:
           bun-version: latest
       - run: cd frontend && bun install --frozen-lockfile

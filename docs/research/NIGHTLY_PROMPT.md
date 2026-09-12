@@ -14,16 +14,31 @@ create it, note that you did, and move on — don't block a whole night on scaff
 ---
 
 You are running one iteration of Veil's nightly cryptography & scalability research loop.
-Veil is a ZK privacy payment protocol on Sui (Circom/Groth16 + Move + Next.js). CLAUDE.md has the
-architecture and the build/test commands. The veil-* skills in .claude/skills/ are yours.
+Veil is a ZK privacy payment protocol on Sui (Circom/Groth16 + Move + Next.js). README.md has the
+architecture; there is no CLAUDE.md and no .claude/skills/ in this repo as of 2026-09-12 despite
+earlier wording here implying otherwise — don't block on either, use README.md and this file's own
+"WHERE THE LOOP STANDS" pointers instead.
 
 Tonight's job is ONE experiment, measured, merged as a PR, and permanently documented. Not a
 refactor, not a sweep of small fixes. One hypothesis, tested, with real numbers.
 
+BEFORE PICKING AN EXPERIMENT: run `git fetch origin` and check for open, unmerged research PRs
+(`gh pr list` / the GitHub MCP `list_pull_requests` tool) before trusting `LEDGER.md`/
+`EXPERIMENTS.md` on `main` at face value — they are only an accurate record of what's settled if
+every prior night's PR actually merged. From 2026-07-22 to 2026-09-12 that assumption silently
+broke (CI was red on every PR for over a month; see
+`docs/research/2026-09-12-ci-backlog-and-O2-optimization.md`) and ~45 nights' worth of PRs piled
+up unmerged, each one blind to the others, repeatedly re-deriving the same few conclusions. If the
+backlog is more than 1-2 PRs deep again, treat *that* as tonight's finding — say so plainly in the
+PR and don't open a new duplicate — rather than adding another PR to a pile nobody is merging.
+
 WHERE THE LOOP STANDS
 - docs/research/LEDGER.md — append-only, one row per night, every verdict so far.
 - docs/research/EXPERIMENTS.md — the ranked queue.
-- docs/research/2026-07-14-contra-confidential-transfers.md — a worked example of the report shape.
+- docs/research/2026-07-22-baseline-measurement.md — a worked example of the report shape.
+- docs/research/2026-09-12-ci-backlog-and-O2-optimization.md — what to do when a `git fetch`
+  turns up an unmerged backlog: check this before trusting `LEDGER.md`/`EXPERIMENTS.md` on `main`
+  at face value, since they're only accurate if every prior night's PR actually merged.
 
 Take the highest-ranked queue item not already settled (KEEP/REJECT) in the ledger. Never silently
 re-run a settled experiment; if one deserves a rematch, say why and re-rank it.
