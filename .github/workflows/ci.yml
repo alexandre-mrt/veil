@@ -49,15 +49,27 @@ jobs:
       - name: Install deps
         run: cd circuits && npm ci
       - name: Compile circuits + dev trusted setup
-        # Downloads pot15 (~85MB), compiles the 3 circuits and produces zkeys, so the
-        # test suites run in full-proof mode (groth16.fullProve + verify) rather than
-        # the JS constraint-simulation fallback.
+        # Compiles the 3 circuits and produces zkeys, so the test suites run in
+        # full-proof mode (groth16.fullProve + verify) rather than the JS
+        # constraint-simulation fallback.
+        #
+        # The Powers of Tau is generated locally (snarkjs powersoftau new/contribute/
+        # prepare phase2) instead of downloaded from storage.googleapis.com/zkevm/ptau/
+        # — that host returns 403 to GitHub Actions runners (confirmed directly in this
+        # job's own logs: every run since at least 2026-09-12 failed on this exact curl,
+        # which is why zero circuit-touching PRs have been able to merge since — see
+        # docs/research/2026-09-14-ci-ptau-blocker-and-constraint-attribution.md).
+        # This is no less trustworthy than the downloaded file: both are dev-only,
+        # single/few-contributor ceremonies (see docs/threat-model.md RR2) never intended
+        # for production use — ceremony.sh is the real multi-party ceremony script.
         run: |
           set -euo pipefail
           cd circuits
           mkdir -p build
-          curl -fsSL -o build/pot15_final.ptau \
-            https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_15.ptau
+          npx snarkjs powersoftau new bn128 15 build/pot15_0000.ptau -v
+          echo "ci-ptau-entropy-$GITHUB_SHA" | npx snarkjs powersoftau contribute \
+            build/pot15_0000.ptau build/pot15_0001.ptau --name="veil-ci" -v
+          npx snarkjs powersoftau prepare phase2 build/pot15_0001.ptau build/pot15_final.ptau -v
           for c in transfer compliance withdraw; do
             circom "$c.circom" --r1cs --wasm --sym -o build -l node_modules
             npx snarkjs r1cs info "build/$c.r1cs"
@@ -74,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: oven-sh/setup-bun@735343b667d3e6f658f44e0a462d63b48e3324cb # v2.0.1
+      - uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5 # v2.0.1
         with:
           bun-version: latest
       - run: cd scripts && bun install --frozen-lockfile
@@ -87,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: oven-sh/setup-bun@735343b667d3e6f658f44e0a462d63b48e3324cb # v2.0.1
+      - uses: oven-sh/setup-bun@4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5 # v2.0.1
         with:
           bun-version: latest
       - run: cd frontend && bun install --frozen-lockfile

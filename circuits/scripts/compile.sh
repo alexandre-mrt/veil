@@ -59,7 +59,21 @@ done
 
 if [ ! -f "$PTAU_FILE" ] && [ "$SKIP_PTAU" = "false" ]; then
   echo "[3/5] Downloading Powers of Tau (pot15, ~85MB)..."
-  curl -L --progress-bar -o "$PTAU_FILE" "$PTAU_URL"
+  if ! curl -fL --progress-bar -o "$PTAU_FILE" "$PTAU_URL"; then
+    # $PTAU_URL has been observed returning 403 from some networks (including GitHub
+    # Actions runners as of 2026-09 — see docs/research/2026-09-14-ci-ptau-blocker-and-
+    # constraint-attribution.md). Fall back to generating our own dev-only ptau locally
+    # — no less trustworthy than the download: both are single/few-contributor
+    # ceremonies, neither production-safe (docs/threat-model.md RR2). Real production
+    # deployment must use ceremony.sh with independent contributors, not either of these.
+    echo "  Download failed (blocked network or dead host) — generating pot15 locally instead."
+    rm -f "$PTAU_FILE"
+    snarkjs powersoftau new bn128 15 "$BUILD_DIR/pot15_0000.ptau" -v
+    echo "veil-dev-ptau-$(date +%s)" | snarkjs powersoftau contribute \
+      "$BUILD_DIR/pot15_0000.ptau" "$BUILD_DIR/pot15_0001.ptau" --name="veil-dev" -v
+    snarkjs powersoftau prepare phase2 "$BUILD_DIR/pot15_0001.ptau" "$PTAU_FILE" -v
+    rm -f "$BUILD_DIR/pot15_0000.ptau" "$BUILD_DIR/pot15_0001.ptau"
+  fi
 elif [ -f "$PTAU_FILE" ]; then
   echo "[3/5] Powers of Tau already present."
 else
