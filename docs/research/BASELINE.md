@@ -36,14 +36,43 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point
+
+Measured 2026-09-15 against a fully local single-validator `sui` network (`sui 1.79.0-46f18562f1f5`,
+`sui start --with-faucet`) — public Sui RPC/fullnode hosts are blocked by this environment's egress
+policy for every provider tried, so this is not (and cannot currently be) a testnet measurement.
+Full methodology, raw output, and the toolchain-unblock story:
+[`2026-09-15-onchain-gas-baseline.md`](2026-09-15-onchain-gas-baseline.md).
+
+| Entry point | Computation (MIST) | Storage (MIST) | Rebate (MIST) | Net (MIST) | Net (SUI) |
+|---|---:|---:|---:|---:|---:|
+| `pool::create_pool` | 1,000,000 | 8,496,800 | 978,120 | 8,518,680 | 0.00852 |
+| `pool::deposit_and_register` | 1,000,000 | 10,358,800 | 8,223,732 | 3,135,068 | 0.00314 |
+| `pool::shielded_transfer` | 1,000,000 | 14,242,400 | 12,369,456 | 2,872,944 | 0.00287 |
+| `pool::zk_withdraw` | 1,000,000 | 15,580,000 | 12,128,688 | 4,451,312 | 0.00445 |
+| `compliance::create_compliance_config` | 1,000,000 | 18,171,600 | 11,609,532 | 7,562,068 | 0.00756 |
+| `compliance::compliant_transfer` | 1,000,000 | 22,800,000 | 18,749,808 | 5,050,192 | 0.00505 |
+| `pool::freeze_pool` / `unfreeze_pool` | 1,000,000 | 11,970,000 | 11,850,300 | 1,119,700 | 0.00112 |
+| *(package `publish`, one-time)* | 1,370,000 | 156,415,600 | 978,120 | 156,807,480 | 0.15681 |
+
+**Computation cost is flat at 1,000,000 MIST across every entry point above, proof verification
+included** — Groth16 verification gas is bound by public-input count (5–7 for all three circuits),
+not by constraint count, so it never leaves Sui's cheapest computation bucket regardless of circuit
+size. Gas differences between entry points are entirely a storage story (dynamic-field writes for
+nullifiers/commitments, new shared objects). See the linked report for the full breakdown and what
+this means for `EXPERIMENTS.md`'s batched-verification item.
+
+Reproduce: `node scripts/bench/gas-baseline.mjs` against a local network (see that file's header
+comment for the two `sui genesis`/`sui start` setup commands).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| Move contract test suite (124 tests, `sui move test`) | **124/124 PASS** (2026-09-15) | Unblocked alongside the gas measurement — see `2026-09-15-onchain-gas-baseline.md`. |
+| Gas under concurrent load / shared-object contention | **NOT MEASURED** | 2026-09-15's numbers are from a single-validator network processing one transaction at a time — no contention on the shared `Pool` object. Queued. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
-| Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
+| Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope so far; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
+Whatever comes out of a future gas/contention run should replace the corresponding row above in
 place, not be appended as a separate table.

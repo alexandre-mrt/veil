@@ -22,3 +22,7 @@ target/
 
 # Sui
 contracts/Published.toml
+contracts/Pub.*.toml
+
+# Regenerable bench output
+scripts/bench/gas-baseline-results.json

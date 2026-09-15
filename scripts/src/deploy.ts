@@ -6,6 +6,7 @@
  */
 
 import { execSync } from "child_process";
+import { existsSync, unlinkSync } from "fs";
 import { join } from "path";
 
 // ---------------------------------------------------------------------------
@@ -28,6 +29,7 @@ interface ObjectChange {
 }
 
 interface PublishResult {
+  readonly digest?: string;
   readonly objectChanges?: readonly ObjectChange[];
   readonly effects?: { readonly status?: { readonly status: string } };
 }
@@ -76,6 +78,27 @@ export function deployContract(
       output = combined;
     } else if (combined.includes('"effects"')) {
       output = combined;
+    } else if (combined.includes("does not define an") && combined.includes("environment")) {
+      // Sui CLI >= ~1.5x's package-management feature requires Move.toml to declare a named
+      // [environments] entry matching the active env before a persistent `publish` is allowed.
+      // veil's Move.toml predates that feature, so fall back to an ephemeral test-publish
+      // against whatever env is currently active (works for localnet and testnet alike).
+      const activeEnv = execSync("sui client active-env", { encoding: "utf-8" }).trim();
+      console.log(`[deploy] publish requires a declared environment; falling back to test-publish --build-env ${activeEnv}`);
+      // test-publish records the new package in an ephemeral Pub.<env>.toml; a stale one from a
+      // prior run (e.g. a repeated bench run against the same local network) makes it refuse to
+      // publish again ("You have to manually remove the publication entry"), so clear it first —
+      // each run deploys a fresh package instance, so the stale entry carries no useful state.
+      const pubfilePath = join(contractsDir, `Pub.${activeEnv}.toml`);
+      if (existsSync(pubfilePath)) unlinkSync(pubfilePath);
+      output = execSync(
+        `sui client test-publish --build-env ${activeEnv} --gas-budget ${gasBudget} --json`,
+        {
+          cwd: contractsDir,
+          encoding: "utf-8",
+          maxBuffer: 10 * 1024 * 1024,
+        },
+      );
     } else {
       throw new Error(`[deploy] Publish failed (exit ${execErr.status}): ${combined.slice(0, 500)}`);
     }
@@ -125,9 +148,10 @@ export function deployContract(
   );
   const adminCapId = adminCapChange?.objectId ?? null;
 
-  // Extract digest from the publish output
-  // The digest isn't directly in objectChanges; we'll use the published change's digest field
-  const digest = (published as ObjectChange & { digest?: string }).digest ?? "unknown";
+  // Extract the transaction digest (top-level `digest` field — NOT the published package
+  // object's own `digest`, which is an object digest, not a transaction digest, and would
+  // 404 against getTransactionBlock).
+  const digest = result.digest ?? "unknown";
 
   console.log(`[deploy] Package published: ${packageId}`);
   console.log(`[deploy] Pool: ${poolId ?? "not created (call create_pool separately)"}`);
