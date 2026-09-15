@@ -242,6 +242,40 @@ re-run it to reproduce or re-baseline after a circuit or contract change. The `d
 this experiment, and now unblock any future night that needs to deploy and measure on-chain
 behavior — which is most of the remaining queue (items #3, #4, #11).
 
+## Addendum (same night, discovered while driving this PR's CI to green)
+
+This PR's CI came back red on 3 of 4 jobs immediately after opening — not from anything in this
+diff, but from two pre-existing, base-branch failures (a corrupted `oven-sh/setup-bun` action pin;
+a `storage.googleapis.com` ptau download now returning 403). Both are fixed in
+`.github/workflows/ci.yml` as part of this PR (see the commit), reusing fixes already independently
+derived and verified on two other unmerged branches (PR #55, PR #62) rather than re-deriving them.
+
+Tracing why those fixes existed but were never merged surfaced something much more important than
+a CI flake: **this repo has 60+ open, unmerged research/CI PRs, and nothing has landed since
+2026-07-22** — the exact process failure `docs/research/2026-09-06-ci-backlog-audit.md` (PR #55)
+already diagnosed. Two direct consequences for *this* PR:
+
+1. **This experiment duplicates PR #59** (2026-09-11, `onchain-gas-baseline`) — same hypothesis,
+   same headline finding (verification computation gas is flat; storage dominates), independently
+   re-derived because PR #59 was never visible from the `main` this session started from. The
+   measurement above is still real and independently verified, and the specific reusable script and
+   two `deploy.ts` bugs are this session's own, but the *finding* is not new as of tonight.
+2. **PR #59 also contains a Critical, unfixed vulnerability this session had not found on its
+   own**: `pool::zk_withdraw` never checks its `recipient` argument against the proof's
+   `recipientHash` public input — a relayer or front-runner can redirect any pending withdrawal's
+   payout to their own address using someone else's valid proof. Verified directly against current
+   `main` (`contracts/sources/pool.move:571-632`) rather than taken on faith from an unmerged PR's
+   description. Documented here as `docs/threat-model.md` **RR10** and the **E7** STRIDE entry
+   corrected (it previously, incorrectly, said this was "Mitigated"), and promoted to #1 in
+   `EXPERIMENTS.md`. **Not fixed in this PR** — that needs a decided address-to-field-element
+   encoding, an on-chain check, a soundness argument, and a negative test, which don't belong in a
+   CI-triage/gas-measurement PR, and the person merging this should treat it as the actual priority
+   over anything else in the queue.
+
+This changes the verdict framing above: **KEEP** still stands for the gas numbers, the reusable
+script, and the `deploy.ts`/CI fixes — but the highest-value output of tonight's run turned out to
+be re-surfacing a stuck Critical security finding and a 60-PR merge backlog, not new research.
+
 ## Where this could be used
 
 - **Any Circom/Groth16-on-Sui protocol's gas-cost documentation** — the finding that Groth16
@@ -276,12 +310,17 @@ behavior — which is most of the remaining queue (items #3, #4, #11).
    single-validator network processing transactions one at a time, no contention on the shared
    `Pool` object. Real mainnet gas (and, more importantly, transaction *latency* under contention)
    for concurrent transfers against the same pool is still unmeasured.
-3. **Does the local-ptau-vs-downloaded-Hermez-ptau substitution matter for anything beyond this
-   run?** Both are single-contributor dev setups with the same trust profile, but it's worth a note
-   in `circuits/scripts/compile.sh` (or a follow-up) that the Hermez ptau URL is not reliably
-   reachable in this environment — a from-scratch `snarkjs powersoftau` fallback should probably be
-   documented there directly rather than rediscovered each blocked night.
+3. ~~Does the local-ptau-vs-downloaded-Hermez-ptau substitution matter for anything beyond this
+   run?~~ **Resolved same night** (see Addendum): the Hermez URL is unreachable for the CI runner
+   too, not just this session's sandbox, and PR #62 (2026-09-14, unmerged before tonight) already
+   made `circuits/scripts/compile.sh` fall back to local `snarkjs powersoftau` generation. This PR
+   ports the same fix into `.github/workflows/ci.yml`.
 4. **`deploy.ts`'s `test-publish` fallback leaves an ephemeral `Pub.<env>.toml` per run** (now
    `.gitignore`d and cleaned automatically before each publish attempt) — fine for a one-shot bench
    script, but worth confirming this doesn't surprise a human running `deploy.ts` interactively and
    expecting a persistent `Published.toml`-style record.
+5. **The merge backlog itself is now the single highest-leverage thing anyone could fix** (see
+   Addendum) — every other open question in every unmerged report, this one included, stays
+   theoretical until something merges. Who reviews/merges these PRs, and on what cadence? If the
+   honest answer is "no one, currently," fixing CI (this PR, #55, #62) doesn't fix the actual
+   bottleneck.
