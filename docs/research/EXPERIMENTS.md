@@ -10,27 +10,48 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). **Blocked a third time, more conclusively, on 2026-09-16**: no `sui` crate on
+   crates.io (checked directly against `index.crates.io`), this session's GitHub access is scoped
+   to `alexandre-mrt/veil` only (so no release-binary download or clone of `MystenLabs/sui` via
+   `github.com`/`api.github.com` — though plain `git clone` over the native git protocol to *this*
+   repo still works, which is how `circom` got built from source), and every Sui JSON-RPC host
+   tried (testnet + mainnet, 3 different providers) was rejected by the egress proxy with an
+   explicit `organization policy` denial, not a timeout — reads as a deliberate categorical
+   blockchain-RPC block in this sandbox, not a fixable gap. A local Sui network (`sui start` +
+   local deploy, no RPC egress needed) would still work *if* the CLI itself were obtainable — that
+   remains the one path not yet fully closed off, if a future session has broader repo access.
+   Worth a `git clone`-only attempt (skip crates.io/GitHub-API entirely) before declaring this
+   permanently blocked.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** ~~Four Poseidon instances
+   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints~~ **SETTLED,
+   REJECT, 2026-09-16** — see `LEDGER.md` and
+   [`2026-09-16-poseidon2-microbench.md`](2026-09-16-poseidon2-microbench.md). Measured: constraint
+   count is a wash (Poseidon2 doesn't reduce Groth16 constraints — its saving is in native
+   witness-generation arithmetic, not S-box count), proving time drops 24-29% at a single hash but
+   only ~5% at realistic depth-20-Merkle-proof scale, and half of Veil's Poseidon calls (t=5, t=6)
+   have no standard Poseidon2 parameterization at all. Not worth the migration cost. Do not
+   re-attempt without a new reason (e.g. an audited Poseidon2 circom library appearing, or Veil
+   becoming proving-time-bound after a batching change).
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
+3. **Merkle accumulator at scale (10^5–10^7 commitments).** *Re-ranked above item 4 (now item 4)
+   on 2026-09-16*: item 4 (batching) is stuck behind the still-BLOCKED item 1, while this one has
+   no such dependency and is now the most actionable next number. It's also where tonight's
+   Poseidon2 finding actually points: Poseidon2's real advantage is *native* hashing throughput
+   (see `2026-09-16-poseidon2-microbench.md`), which matters for an indexer rebuilding/batch-
+   inserting into a large tree client-side, not for the in-circuit proving this repo already
+   measured and rejected Poseidon2 for. Batch insertion cost, depth-20 vs a deeper tree
+   (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a circuit
+   parameter), and indexer throughput for reconstructing the tree client-side (worth comparing
+   Poseidon vs. Poseidon2 native hashing speed here specifically, now that the in-circuit
+   comparison is settled). Directly relevant to `docs/threat-model.md` RR5 (deposit-commitment
+   linkability — a bigger anonymity set is the main lever available without redesigning the
+   deposit flow).
+
+4. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
    Depends on item 1 existing first (need a real per-verify gas number to know how much this would
    actually save).
-
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis

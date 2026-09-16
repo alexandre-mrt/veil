@@ -5,11 +5,16 @@
   "type": "module",
   "scripts": {
     "compile": "bash scripts/compile.sh",
-    "test": "node --experimental-vm-modules test/transfer.test.mjs && node --experimental-vm-modules test/compliance.test.mjs && node --experimental-vm-modules test/withdraw.test.mjs"
+    "test": "node --experimental-vm-modules test/transfer.test.mjs && node --experimental-vm-modules test/compliance.test.mjs && node --experimental-vm-modules test/withdraw.test.mjs",
+    "bench:poseidon2": "bash bench/compile-bench.sh && node --experimental-vm-modules test/poseidon2-microbench.test.mjs && node ../scripts/bench/poseidon2-microbench.mjs"
   },
   "dependencies": {
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "snarkjs": "0.7.6"
+  },
+  "devDependencies": {
+    "@taceo/poseidon2": "^0.2.0",
+    "@zkpassport/poseidon2": "^0.6.2"
   }
 }
