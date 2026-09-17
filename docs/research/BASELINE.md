@@ -47,3 +47,14 @@ Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
 place, not be appended as a separate table.
+
+## Research candidates (measured, not adopted)
+
+Real, reproducible measurements that are **not** reflected in the protocol-state tables above
+because the corresponding circuit change has not been adopted into `transfer.circom` /
+`compliance.circom` / `withdraw.circom`. Each row names the report with the full methodology and
+raw output.
+
+| Candidate | Measured delta | Status | Report |
+|---|---|---|---|
+| Poseidon2-compression Merkle hash (`transfer_poseidon2.circom`, `MerkleProof2`) in place of circomlib `Poseidon(2)` sponge for the depth-20 Merkle-membership check | -4.9% total constraints, -4.3% zkey size, -5.9% Groth16 proving time (844.35ms → 794.15ms, 15 runs) | Not adopted — architecturally partial (no official Poseidon2 params for the identity/credential hash sites) and needs a VK-rotation ceremony to ship | [`2026-09-17-poseidon2-merkle-compression.md`](2026-09-17-poseidon2-merkle-compression.md) |

@@ -214,7 +214,13 @@ async function main() {
   });
 
   console.log(`\n${passed} passed, ${failed} failed`);
-  if (failed > 0) process.exitCode = 1;
+  // snarkjs' bn128 curve keeps worker handles open after the last proof, which otherwise
+  // leaves this process hanging indefinitely even though every test passed (same issue
+  // noted in test/transfer.test.mjs).
+  process.exit(failed > 0 ? 1 : 0);
 }
 
-main();
+main().catch((err) => {
+  console.error("Unexpected error:", err);
+  process.exit(1);
+});

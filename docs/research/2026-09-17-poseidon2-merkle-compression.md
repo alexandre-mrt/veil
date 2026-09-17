@@ -258,13 +258,154 @@ $ circom transfer_poseidon2.circom --r1cs --wasm --sym --output build-poseidon2 
 non-linear constraints: 5930   linear constraints: 7021   wires: 12972
 ```
 
-<!-- PENDING: zkey sizes + Groth16 proving-time A/B (20 runs each, same pot14 setup) inserted here
-     once the background `snarkjs groth16 setup` for both circuits finishes on this machine. -->
+Groth16 setup (local pot14, single dev contribution — same dev-only caveat as every zkey this
+repo has ever produced, RR2) and artifact sizes:
+
+```
+$ snarkjs groth16 setup build/transfer.r1cs bench-build/pot14_final.ptau build/transfer_0000.zkey
+$ snarkjs zkey contribute build/transfer_0000.zkey build/transfer_final.zkey --name="veil-research"
+$ stat -c %s build/transfer_final.zkey build/transfer_vk.json
+6001427
+4025
+
+$ snarkjs groth16 setup build-poseidon2/transfer_poseidon2.r1cs bench-build/pot14_final.ptau build-poseidon2/transfer_poseidon2_0000.zkey
+$ snarkjs zkey contribute build-poseidon2/transfer_poseidon2_0000.zkey build-poseidon2/transfer_poseidon2_final.zkey --name="veil-research"
+$ stat -c %s build-poseidon2/transfer_poseidon2_final.zkey build-poseidon2/transfer_poseidon2_vk.json
+5742707
+4024
+```
+
+zkey: 6,001,427 → 5,742,707 bytes (**-4.3%**, a client downloads/caches this per circuit).
+
+**Proving time** (`node scripts/bench/transfer-poseidon2-latency.mjs --runs 15`, same synthetic
+genesis-transfer witness for both, differing only in which Merkle root each circuit's own node
+hash produces for that witness):
+
+```
+=== transfer.circom vs transfer_poseidon2.circom Groth16 proving-time A/B (15 runs each) ===
+node v22.22.2, linux/x64
+--- transfer ---
+  runs: 15   mean: 844.35 ms   stddev: 10.25 ms   min: 828.17 ms   max: 865.42 ms
+--- transfer_poseidon2 ---
+  runs: 15   mean: 794.15 ms   stddev: 11.75 ms   min: 773.34 ms   max: 818.95 ms
+```
+
+**mean proving time: 844.35ms → 794.15ms, -50.2ms, -5.9%.** This is the number the hypothesis named,
+measured end to end (real witness generation + real Groth16 proof, not extrapolated from the
+standalone primitive numbers), and it moves in the same direction and roughly the same magnitude as
+the constraint-count delta (-4.9% total constraints) — the standalone compression-mode result
+(Results, previous section) was not a fluke of a too-small micro-benchmark; it holds at the real
+circuit's ~13k-constraint scale, at the same FFT domain size as the baseline (16,384 both ways, so
+this genuinely isolates the Merkle-hash swap's effect rather than a domain-crossing artifact).
+
+One methodological note for whoever re-runs this: the first attempt at this exact measurement
+stalled for 45+ minutes of 100% CPU with no output on `snarkjs groth16 setup` for the unmodified
+13,611-constraint `transfer.circom` at 2^14 — anomalous compared to the sub-10-second run that
+actually happened once retried. Root cause: two zombie Node processes from an earlier
+`poseidon-arity-latency.mjs` run (a known snarkjs/bn128 issue — see below — where the process
+doesn't exit after finishing) were still consuming 100% CPU each on this session's constrained core,
+starving the setup step. Killing stray `node` processes before a timed run is worth a sentence in
+`scripts/bench/`'s README the next time someone touches it.
 
 ### Negative tests (`circuits/test/transfer_poseidon2.test.mjs`)
 
-<!-- PENDING: full-proof test output once build-poseidon2/ zkey is ready. -->
+`node --experimental-vm-modules test/transfer_poseidon2.test.mjs`, full Groth16 proof mode (real
+`snarkjs.groth16.fullProve` + `verify`, not the JS-side constraint simulation `transfer.test.mjs`
+falls back to when no zkey is present):
 
-## Verdict
+```
+=== Veil Transfer-Poseidon2 Circuit Tests (research variant) ===
+Mode: FULL PROOF (snarkjs Groth16)
+[PASS] P1: Genesis transfer, valid Poseidon2-compression Merkle membership
+[PASS] P2: Non-genesis Merkle position with mixed left/right siblings
+ERROR:  4 Error in template TransferPoseidon2_159 line: 55
+[PASS] N1: Forged Merkle sibling must be rejected
+ERROR:  4 Error in template TransferPoseidon2_159 line: 55
+[PASS] N2: Flipped pathIndices bit must be rejected
+ERROR:  4 Error in template TransferPoseidon2_159 line: 55
+[PASS] N3: Unrelated oldCommitment (not the tree's actual leaf) must be rejected
 
-<!-- PENDING final verdict, written once the full-circuit proving-time number lands. -->
+5 passed, 0 failed
+```
+
+Circuit line 55 is `merkleRoot === membershipProof.root` — every one of the three adversarial
+witnesses (forged sibling, flipped path bit, substituted leaf) was rejected by that exact hard R1CS
+equality, not by some unrelated crash or a JS-side check the prover could route around. This is the
+malicious-witness proof the loop's rules require for a circuit change: a witness that lies about
+Merkle membership cannot produce a verifying proof, full stop.
+
+(`transfer.test.mjs`'s existing C1-C11 suite was not re-run against the Poseidon2 variant since none
+of that logic changed — see Approach. It was re-run against the unmodified `transfer.circom` as part
+of the full suite before opening the PR; see the PR description for that result.)
+
+## Verdict: **KEEP** (research artifacts + a real, positive, reproducible finding — not a production migration)
+
+Every number in Results came from a command actually run this session, including the one the
+hypothesis named (proving time). The Merkle-only Poseidon2-compression swap is real: **-4.9% total
+constraints, -4.3% zkey size, -5.9% proving time**, using an audited third-party implementation's own
+recommended construction, with three passing adversarial soundness tests. That's worth keeping as a
+citable, reproducible result and as working code — `transfer_poseidon2.circom`, its test suite, and
+the four benchmark scripts under `scripts/bench/` are merged with this PR.
+
+**What KEEP does *not* mean here:** this is not a proposal to replace `transfer.circom` in
+production, and this PR does not touch `BASELINE.md`'s protocol-state numbers or `compliance.circom`
+(which has the same Merkle structure and would benefit identically, but doubling the diff doesn't
+change the finding). Three reasons:
+
+1. **The swap is architecturally partial.** Poseidon2 has no official parameter set for the t=5/t=6
+   states the identity-bound commitment hash (`Poseidon(4)`, 6 instances) and the credential-leaf
+   hash (`Poseidon(5)`, 1 instance) need. A real migration can only ever touch the Merkle sites
+   (41 of 51 total Poseidon calls across the protocol) — meaningful, but not "Veil moved to
+   Poseidon2," just "Veil's Merkle tree did."
+2. **Adoption cost is real and this PR doesn't pay it.** Swapping the production circuit means a new
+   verifying key, which means the timelocked on-chain VK-update path (`docs/threat-model.md`'s
+   existing 1-epoch VK timelock machinery, built for exactly this) must actually run, a production
+   (multi-contributor) ceremony must replace the dev-only local one this experiment used, and
+   `frontend/src/hooks/useProofGeneration.ts` plus the relayer's proving path need the new
+   wasm/zkey. That is deployment engineering, not a research-night diff.
+3. **One hypothesis per night.** Applying the same swap to `compliance.circom` (identical Merkle
+   structure, same expected ~5% win) is a five-minute change but a second circuit's worth of
+   re-verification (its own negative tests, its own A/B) — real work, correctly out of scope tonight.
+
+`BASELINE.md` gets a new "Research candidates (not adopted)" line pointing at this report instead of
+a changed protocol-state row — see the diff. `EXPERIMENTS.md` gets a new, concrete item: "Adopt the
+Poseidon2-compression Merkle hash in `compliance.circom` too, then plan the VK-rotation path for
+both," ranked above the still-unmeasured items but below on-chain gas (which several of them still
+depend on).
+
+On-chain gas (queue item #1) stays **BLOCKED**, same as 2026-07-22 — see Approach for tonight's
+narrower diagnosis (network policy, not tool-approval, this time).
+
+## Where this could be used
+
+- **Any Circom/Groth16 protocol with a Poseidon-sponge Merkle accumulator** — the 75-80% non-linear-
+  constraint share measured here is not Veil-specific; any depth-N Merkle-membership circuit built
+  the "obvious" way (circomlib `Poseidon(2)` per level) is paying a sponge's capacity-element tax N
+  times for no benefit, since a Merkle node hash never needs more than one output element. Swapping
+  to a compression-mode 2-to-1 hash (Poseidon2 or otherwise) is close to a free 5-10% win for that
+  entire protocol class — mixers, nullifier-set trees, any UTXO-shielded-pool design.
+- **A thesis chapter on hash-primitive selection for SNARK circuits** — the sponge-vs-compression
+  naive-swap result (Results table: +12% to +41% constraints for the "obviously equivalent" sponge
+  substitution) is a better cautionary example than a clean win would have been: "using the newer
+  primitive" and "using it correctly" are different questions, and benchmarking the wrong
+  construction mode would have produced a confidently wrong REJECT.
+- **Any protocol maintaining parallel Merkle-tree circuits for different note types** (Veil's own
+  `compliance.circom` credential tree is the immediate next candidate) — the win compounds per tree
+  without touching the harder-to-migrate identity/credential hash sites.
+
+## Open questions (next queue)
+
+1. **Adopt in `compliance.circom` + plan the VK-rotation path for both circuits** — the natural
+   completion of this finding; added to `EXPERIMENTS.md`.
+2. **Cross-tree-level domain separation** — neither `merkle_proof.circom` nor
+   `merkle_proof_poseidon2.circom` domain-separates between tree levels (a leaf could in principle be
+   crafted to collide with a shallower internal node's hash). Pre-existing in the original design,
+   not introduced tonight, but now shared by two circuits — worth its own adversarial-analysis night.
+3. **On-chain gas** (queue item #1, carried over again) — narrower next step per Approach: check
+   whether the *account's* network policy (not just this session's) can allow `fullnode.testnet.sui.io`
+   or a `sui` release-artifact host, since the identical wall two nights running suggests policy, not
+   noise.
+4. Does the sponge-vs-compression gap (Results) hold for Poseidon2 at t=4/t=8/t=12/t=16 too, or is
+   t=2/t=3 special-cased in `@taceo/circom-lib`'s implementation? Relevant if a future night wants
+   Poseidon2 for a wider hash (e.g. the credential leaf, if a t=6-equivalent ever gets official
+   parameters via a two-step t=4-then-t=3 chained compression instead of a single t=6 call).
