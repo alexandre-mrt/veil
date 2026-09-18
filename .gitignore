@@ -22,3 +22,6 @@ target/
 
 # Sui
 contracts/Published.toml
+contracts/Pub.local.toml
+contracts/.onchain-gas-pub-*.toml
+scripts/bench/onchain-gas-results.json
