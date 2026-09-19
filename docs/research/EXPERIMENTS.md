@@ -13,13 +13,21 @@ what matters most — say why in the commit, don't just reorder silently.
    permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Poseidon2 at `t=4`/`t=5` (self-derived parameters — commitments, nullifiers, `txAmountHash`).**
+   ~~Poseidon2 vs current Poseidon~~ (this item, at `t=3`) is **settled 2026-09-19 — REJECT for
+   production**: measured −0.3% constraints / −2% to −6% real Groth16 proving time for the depth-20
+   Merkle-hash path (the only width with published, audited BN254 Poseidon2 parameters), real but
+   too small to clear the migration cost (VK timelock, a breaking Merkle-tree hash-family change,
+   added audit surface for a 2023-published primitive). See `LEDGER.md` /
+   `2026-09-19-poseidon2-merkle-swap.md`. Re-opened here, narrower and harder: the *other* three
+   Poseidon call sites per circuit — `Poseidon(3)` (txAmountHash, `t=4` internally) and `Poseidon(4)`
+   (commitments/nullifiers, `t=5` internally) — are where most of each circuit's non-linear
+   constraints actually live, and Poseidon2's `O(t)` vs `O(t²)` full-round advantage should matter
+   more as `t` grows. Closing this needs running the Poseidon2 paper's own constant-generation
+   script for untested widths and independently validating the result (no existing KAT to check
+   against, unlike the `t=3` case) — meaningfully higher-risk than transcribing published constants.
+   Worth exactly one focused night: generate + validate the parameters first, stop there and PARK if
+   validation is shaky, only build circuits if it holds up.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -30,7 +38,9 @@ what matters most — say why in the commit, don't just reorder silently.
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+   is the main lever available without redesigning the deposit flow). Note: if this or item 2 above
+   ships, `templates/merkle_proof_poseidon2.circom` (this session) is the hash gadget to reuse for
+   any new Merkle-tree circuit variant, rather than re-deriving one.
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -58,6 +68,9 @@ what matters most — say why in the commit, don't just reorder silently.
    `docs/threat-model.md` RR2 (dev-only single-contributor ceremony). Large lift — a full circuit
    port, not a parameter change — so this should wait until items 1–2 give a clearer picture of
    what's actually worth optimizing before committing a multi-night effort to a proof-system swap.
+   If this ever happens, revisit the Poseidon2 REJECT above — a proof-system migration already pays
+   the "new verifying key" cost that sank Poseidon2's cost/benefit tonight, so bundling both changes
+   could flip the verdict.
 
 10. **Post-quantum exposure.** BN254 discrete log breaks under a sufficiently large quantum
     computer; Groth16 on BN254 has no PQ story. Likely a design-only, UNMEASURED-labelled
@@ -73,3 +86,9 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+    2026-09-19 hit the identical symptom in `scripts/bench/prove-latency.mjs` and in
+    `scripts/src/test-compliance-utils.ts` — same root cause, wider blast radius than previously
+    scoped (not just `circuits`' `npm test`). Worth fixing the underlying `snarkjs`/`ffjavascript`
+    lingering-handle issue once, rather than re-discovering the workaround (never pipe a real-proof
+    run through `tail`/`head` in a backgrounded shell — redirect straight to a file instead) every
+    session.

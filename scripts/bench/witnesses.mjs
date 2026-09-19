@@ -93,10 +93,81 @@ export function buildComplianceWitness(poseidon) {
   };
 }
 
+// ── Poseidon2 Merkle-hash-swap variants ──────────────────────────────────────
+// Same witnesses as above, except the Merkle-path / recipientHash hash uses
+// Poseidon2(t=3, BN254) (scripts/bench/poseidon2.mjs) instead of circomlib
+// Poseidon(2) — matching transfer_poseidon2.circom, compliance_poseidon2.circom
+// and withdraw_poseidon2.circom. See
+// docs/research/2026-09-19-poseidon2-merkle-swap.md.
+import { poseidon2Hash2to1 } from "./poseidon2.mjs";
+
+function merkleRootFromPathPoseidon2(leaf, pathElements, pathIndices) {
+  let node = leaf;
+  for (let i = 0; i < pathElements.length; i++) {
+    const sibling = pathElements[i];
+    const [left, right] = pathIndices[i] === 0n ? [node, sibling] : [sibling, node];
+    node = poseidon2Hash2to1(left, right);
+  }
+  return node;
+}
+
+export function buildTransferPoseidon2Witness(poseidon) {
+  const cumulativeOld = 0n, txAmount = 100n, randomnessOld = 0n, randomnessNew = 12345n;
+  const userSecret = 987654321n, epochId = 1n, threshold = 1_000_000_000n, salt = 99n;
+  const cumulativeNew = cumulativeOld + txAmount;
+  const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
+  const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
+  const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
+  const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
+  const pathElements = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const pathIndices = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const merkleRoot = merkleRootFromPathPoseidon2(oldCommitment, pathElements, pathIndices);
+  return {
+    oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash, merkleRoot,
+    cumulativeOld, cumulativeNew, txAmount, randomnessOld, randomnessNew, userSecret, salt,
+    pathElements, pathIndices,
+  };
+}
+
+export function buildWithdrawPoseidon2Witness(poseidon) {
+  const cumulativeOld = 500n, randomnessOld = 12345n, userSecret = 987654321n;
+  const withdrawAmount = 100n, recipient = 0xABCDEF123456n, randomnessNew = 77777n;
+  const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
+  const remainingBalance = cumulativeOld - withdrawAmount;
+  const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
+  const nullifier = toBI(poseidon([DOMAIN_WITHDRAW_NULLIFIER, userSecret, randomnessOld, cumulativeOld]));
+  const recipientHash = poseidon2Hash2to1(DOMAIN_RECIPIENT_HASH, recipient);
+  return {
+    commitment, withdrawAmount, nullifier, recipientHash, newCommitment,
+    cumulativeOld, randomnessOld, userSecret, recipient, randomnessNew,
+  };
+}
+
+export function buildCompliancePoseidon2Witness(poseidon) {
+  const userSecret = 987654321n, kycLevel = 2n, expiryEpoch = 1000n, issuerId = 42n;
+  const currentEpoch = 500n, requiredKycLevel = 1n, transferNullifier = 111222333n;
+  const credentialLeaf = toBI(poseidon([DOMAIN_CREDENTIAL_LEAF, userSecret, kycLevel, expiryEpoch, issuerId]));
+  const pathElements = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const pathIndices = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const merkleRoot = merkleRootFromPathPoseidon2(credentialLeaf, pathElements, pathIndices);
+  const contextId = toBI(poseidon([DOMAIN_CONTEXT_BINDING, transferNullifier, userSecret]));
+  const nullifier = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, userSecret, contextId]));
+  const expiryValid = expiryEpoch >= currentEpoch ? 1n : 0n;
+  const kycValid = kycLevel >= requiredKycLevel ? 1n : 0n;
+  const validCredential = expiryValid * kycValid;
+  return {
+    merkleRoot, currentEpoch, contextId, requiredKycLevel, nullifier, validCredential,
+    userSecret, kycLevel, expiryEpoch, issuerId, pathElements, pathIndices, transferNullifier,
+  };
+}
+
 export const WITNESS_BUILDERS = {
   transfer: buildTransferWitness,
   withdraw: buildWithdrawWitness,
   compliance: buildComplianceWitness,
+  transfer_poseidon2: buildTransferPoseidon2Witness,
+  withdraw_poseidon2: buildWithdrawPoseidon2Witness,
+  compliance_poseidon2: buildCompliancePoseidon2Witness,
 };
 
 export function stringifyInputs(inputs) {

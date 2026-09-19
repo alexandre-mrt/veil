@@ -36,6 +36,11 @@ const CIRCUITS = [
   { name: "transfer", dir: "build" },
   { name: "withdraw", dir: "build-withdraw" },
   { name: "compliance", dir: "build-compliance" },
+  // Poseidon2 Merkle-hash-swap research variants (docs/research/2026-09-19-poseidon2-merkle-swap.md).
+  // Built alongside the production circuits in build/ — see circuits/scripts/compile-poseidon2.sh.
+  { name: "transfer_poseidon2", dir: "build" },
+  { name: "withdraw_poseidon2", dir: "build" },
+  { name: "compliance_poseidon2", dir: "build" },
 ];
 
 function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
