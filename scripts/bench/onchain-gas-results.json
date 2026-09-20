@@ -1,0 +1,252 @@
+{
+  "package": "0xedcfef79168fb84c8fb8b96181b62d07648f5107a9eb5e429f7691f82001bfb6",
+  "results": [
+    {
+      "label": "publish package",
+      "module": "-",
+      "fn": "publish",
+      "gasUsed": {
+        "computationCost": "1370000",
+        "storageCost": "156415600",
+        "storageRebate": "0",
+        "nonRefundableStorageFee": "0"
+      },
+      "netMist": 157785600,
+      "digest": "4ZBSQS8qE79WXQq5ZiZdtdsptASjXFa6isZKC5bvrWPM"
+    },
+    {
+      "label": "create_pool (pool A, for shielded_transfer)",
+      "module": "pool",
+      "fn": "create_pool",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "8496800",
+        "storageRebate": "0",
+        "nonRefundableStorageFee": "0"
+      },
+      "netMist": 9496800,
+      "digest": "DyW1PY1YHJqmCtyRsLxyNzrXpgu4hELaxccyx7jbtLe6"
+    },
+    {
+      "label": "token_faucet::faucet (fund pool A depositor)",
+      "module": "token_faucet",
+      "fn": "faucet",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "4043200",
+        "storageRebate": "1700424",
+        "nonRefundableStorageFee": "17176"
+      },
+      "netMist": 3342776,
+      "digest": "DJdYuXW9xUeoB6R1tpgn7gftf6STDV3EQ3tsQXuykCGL"
+    },
+    {
+      "label": "deposit_and_register (pool A)",
+      "module": "pool",
+      "fn": "deposit_and_register",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "9021200",
+        "storageRebate": "7245612",
+        "nonRefundableStorageFee": "73188"
+      },
+      "netMist": 2775588,
+      "digest": "9Fo4EQZK1nALkTGdo7H6TZ3GefScWEF6fwk6Je3K9Agp"
+    },
+    {
+      "label": "update_commitment_root (pool A, admin op)",
+      "module": "pool",
+      "fn": "update_commitment_root",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "8740000",
+        "storageRebate": "7433712",
+        "nonRefundableStorageFee": "75088"
+      },
+      "netMist": 2306288,
+      "digest": "53X5ruFJi2S3FQdpVhSyNux8WBSJXr5vyR4drh8yF88Y"
+    },
+    {
+      "label": "create_pool (pool B, for compliant_transfer)",
+      "module": "pool",
+      "fn": "create_pool",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "8496800",
+        "storageRebate": "0",
+        "nonRefundableStorageFee": "0"
+      },
+      "netMist": 9496800,
+      "digest": "5zboYWv4vFHoa2WerHyLm5aiwvyd5pExWvgEv2TUZpp8"
+    },
+    {
+      "label": "token_faucet::faucet (fund pool B depositor)",
+      "module": "token_faucet",
+      "fn": "faucet",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "4043200",
+        "storageRebate": "1700424",
+        "nonRefundableStorageFee": "17176"
+      },
+      "netMist": 3342776,
+      "digest": "9yM4bYgXCFEJLmxY2bmbosX1AsJdz8WRE6TGiMJqVY5h"
+    },
+    {
+      "label": "deposit_and_register (pool B)",
+      "module": "pool",
+      "fn": "deposit_and_register",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "9021200",
+        "storageRebate": "7245612",
+        "nonRefundableStorageFee": "73188"
+      },
+      "netMist": 2775588,
+      "digest": "ByXywFoNxHBCs39RBYFqUFfmRR5qDX5sRUDjbYMEokjj"
+    },
+    {
+      "label": "update_commitment_root (pool B, admin op)",
+      "module": "pool",
+      "fn": "update_commitment_root",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "8740000",
+        "storageRebate": "7433712",
+        "nonRefundableStorageFee": "75088"
+      },
+      "netMist": 2306288,
+      "digest": "FLLYoBgP1kunS8Pjfd69tnjFJ1QsfC36aTRjd7Fym7Z3"
+    },
+    {
+      "label": "create_compliance_config (pool B, admin op)",
+      "module": "compliance",
+      "fn": "create_compliance_config",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "14941600",
+        "storageRebate": "7674480",
+        "nonRefundableStorageFee": "77520"
+      },
+      "netMist": 8267120,
+      "digest": "AetjHDGdBm4adqq1zWMDkqqaZPYjGzHZy7ZtXQ1W8d4j"
+    },
+    {
+      "label": "create_pool (pool C, for zk_withdraw)",
+      "module": "pool",
+      "fn": "create_pool",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "8496800",
+        "storageRebate": "0",
+        "nonRefundableStorageFee": "0"
+      },
+      "netMist": 9496800,
+      "digest": "FJ2zH9iK2ryj8evX37UVYPqRZJ7Bd1ucrbXhgEDQnbKR"
+    },
+    {
+      "label": "token_faucet::faucet (fund pool C depositor)",
+      "module": "token_faucet",
+      "fn": "faucet",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "4043200",
+        "storageRebate": "1700424",
+        "nonRefundableStorageFee": "17176"
+      },
+      "netMist": 3342776,
+      "digest": "UUCi3nG13DKPBRhxdLJoFkKRLnSnmcGyPLQN8a4axpw"
+    },
+    {
+      "label": "deposit_and_register (pool C)",
+      "module": "pool",
+      "fn": "deposit_and_register",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "9021200",
+        "storageRebate": "7245612",
+        "nonRefundableStorageFee": "73188"
+      },
+      "netMist": 2775588,
+      "digest": "DNYS9TTe8zbnufte6NiDAQdHKntq5aGoF7Lktpcp8VCo"
+    },
+    {
+      "label": "propose_withdraw_vk (pool C, admin op)",
+      "module": "pool",
+      "fn": "propose_withdraw_vk",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11726800",
+        "storageRebate": "7433712",
+        "nonRefundableStorageFee": "75088"
+      },
+      "netMist": 5293088,
+      "digest": "12B8hH9HpXTjxKiV7V44A3hR1dCraZaxZBoMoRW5p9Ta"
+    },
+    {
+      "label": "shielded_transfer (pool A, real transfer proof)",
+      "module": "pool",
+      "fn": "shielded_transfer",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11012400",
+        "storageRebate": "8193636",
+        "nonRefundableStorageFee": "82764"
+      },
+      "netMist": 3818764,
+      "digest": "GWS9MZDheRBjr7ujZiprB883V7fuwaGCZWMCCHSP4GEH"
+    },
+    {
+      "label": "compliant_transfer (pool B, dual proof: transfer + compliance)",
+      "module": "compliance",
+      "fn": "compliant_transfer",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "19326800",
+        "storageRebate": "14333220",
+        "nonRefundableStorageFee": "144780"
+      },
+      "netMist": 5993580,
+      "digest": "9RhSeDM83MGRdLsnVi5Gi3fwgDn3LaUFTnNMY4TTajab"
+    },
+    {
+      "label": "zk_withdraw (pool C, real withdraw proof)",
+      "module": "pool",
+      "fn": "zk_withdraw",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "15580000",
+        "storageRebate": "11150568",
+        "nonRefundableStorageFee": "112632"
+      },
+      "netMist": 5429432,
+      "digest": "J3t6MbZuV2rEprjy9PLiR8CpfTkg6P3Vsn5HdWEiZWMH"
+    },
+    {
+      "label": "freeze_pool (pool A, admin op)",
+      "module": "pool",
+      "fn": "freeze_pool",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "8496800",
+        "storageRebate": "7433712",
+        "nonRefundableStorageFee": "75088"
+      },
+      "netMist": 2063088,
+      "digest": "769kPygo2sDPb3juVjC9TqfMupbACKe3VsyCqQYLpcAs"
+    },
+    {
+      "label": "unfreeze_pool (pool A, admin op)",
+      "module": "pool",
+      "fn": "unfreeze_pool",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "8496800",
+        "storageRebate": "7433712",
+        "nonRefundableStorageFee": "75088"
+      },
+      "netMist": 2063088,
+      "digest": "EdLDNmCdUBsUZqsGce37WsfyYQArKxEN1dKLeCWvEXta"
+    }
+  ]
+}
