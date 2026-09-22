@@ -36,6 +36,30 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Constraint attribution (Poseidon vs. everything else)
+
+Measured 2026-09-22 — see
+[`2026-09-22-poseidon-constraint-attribution.md`](2026-09-22-poseidon-constraint-attribution.md).
+Every non-linear constraint in all three circuits is attributed to a specific gadget by compiling
+that gadget in isolation (`circuits/bench-primitives/`) and summing back to the whole-circuit
+totals above; the reconciliation is exact (0 residual on non-linear constraints, all three
+circuits).
+
+| Circuit | Total non-linear | Poseidon-attributable | Share |
+|---|---|---|---|
+| `transfer.circom` | 6,470 | 6,024 | 93.1% |
+| `compliance.circom` | 6,057 | 5,712 | 94.3% |
+| `withdraw.circom` | 1,465 | 1,143 | 78.0% |
+
+This is the addressable ceiling for any future hash-primitive swap (e.g. Poseidon2): the rest of
+each circuit's non-linear constraints are range checks, comparators, and Merkle-path muxing, which
+a hash-function change cannot touch. Merkle-path cost is confirmed exactly linear in depth — 520
+constraints/level (246 non-linear, 274 linear), independently verified by compiling `MerkleProof(1)`
+and `MerkleProof(20)` and finding an exact 20x multiple.
+
+Reproduce: `bash circuits/scripts/bench-primitives.sh` then
+`node scripts/bench/poseidon-attribution.mjs`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
