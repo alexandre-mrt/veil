@@ -20,7 +20,15 @@ what matters most — say why in the commit, don't just reorder silently.
    needed for gas measurement, since real gas costs are deterministic from bytecode/computation,
    not from the specific testnet deployment. `fullnode.testnet.sui.io` JSON-RPC reads remain
    genuinely policy-blocked (`403`, logged as `connect_rejected` by the sandbox's egress proxy) —
-   don't retry that path; a local network sidesteps it entirely.
+   don't retry that path; a local network sidesteps it entirely. **Also worth trying next**:
+   this PR's own CI run (`.github/workflows/ci.yml`'s `move-tests` job) installs a prebuilt `sui`
+   CLI via a plain `curl` to a GitHub release tarball and runs `sui move test` successfully in
+   under a minute — GitHub Actions runners aren't behind this sandbox's egress proxy, so that
+   path is open even on a night where the sandbox build stalls. A future run could add a
+   short-lived `workflow_dispatch` CI job (or extend `move-tests`) that spins up `sui start`,
+   deploys the package locally, runs the real entry points, and uploads a gas-cost artifact — a
+   measurement path that doesn't depend on this sandbox's network policy or build-time budget at
+   all.
 
 2. **A vetted Poseidon2 circom implementation.** 2026-09-22 established the ceiling this swap is
    chasing: Poseidon-attributable non-linear constraints are 93.1% (`transfer.circom`), 94.3%
