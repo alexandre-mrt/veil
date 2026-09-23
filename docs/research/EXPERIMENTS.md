@@ -10,27 +10,43 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). Blocked three times now (see LEDGER 2026-07-22, 2026-09-23) — the 2026-09-23 attempt
+   got a firmer signal than before: `fullnode.testnet.sui.io` returns an explicit egress-proxy `403`
+   (organization policy, not a one-off tool denial). Unblocking this needs either `api.github.com`/
+   release-download access for the `sui` CLI, or an explicit allowance for that one RPC host — both
+   are outside what this loop can grant itself. Keep re-checking, but stop re-attempting the exact
+   same two paths each night; note explicitly if the access picture hasn't changed rather than
+   re-deriving the same conclusion at length.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Port Poseidon2 and measure the real constraint/proving-time delta.** 2026-09-23 quantified the
+   ceiling with an exact, verified measurement: Poseidon (including the depth-20 Merkle check, which
+   is pure Poseidon(2)) is 94.0% of `transfer.circom`'s, 95.3% of `compliance.circom`'s, and 78.0% of
+   `withdraw.circom`'s non-linear constraints (`scripts/bench/poseidon-cost/`, predicted-vs-actual
+   matched exactly). That's the real leverage number the original item 2 was estimating — now this
+   is squarely a "go implement it" item, not a "figure out if it's worth it" item. The hard
+   requirement, unchanged from 2026-09-23's finding: do **not** hand-derive or blindly pull an
+   unverified circom Poseidon2 implementation from a guessed GitHub URL — that's a supply-chain risk
+   for a protocol's hash function. Either get `api.github.com` code-search access to find a citable,
+   reviewable implementation, get explicit permission to trust a specific named repo, or hand-derive
+   round constants from the published paper and cross-check the output against at least one
+   independent reference (`poseidon2`, `@zkpassport/poseidon2`, or `@taceo/poseidon2` on npm — all
+   reachable) on known test vectors before it goes near a circuit. This is a circuit change, so it
+   needs the full soundness-argument + leakage-analysis + negative-test treatment when it lands.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
    Depends on item 1 existing first (need a real per-verify gas number to know how much this would
    actually save).
 
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+4. **Merkle accumulator at scale (10^5–10^7 commitments).** 2026-09-23 answered one slice of this for
+   free while measuring Poseidon's share: non-linear constraint cost scales exactly linearly with
+   Merkle depth, 246.0 constraints/level, confirmed at two depth deltas (`scripts/bench/poseidon-cost/`).
+   Still open: whether that translates linearly into *proving time* (constraint count and proving
+   time were shown not to scale identically in the 2026-07-22 baseline — needs the ptau file, which
+   is currently `403`-blocked the same as item 1's RPC fallback), batch insertion cost, and indexer
+   throughput for reconstructing the tree client-side. Directly relevant to `docs/threat-model.md`
+   RR5 (deposit-commitment linkability — a bigger anonymity set is the main lever available without
+   redesigning the deposit flow).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -73,3 +89,10 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **`scripts/src/test-compliance-utils.ts` takes ~5 minutes to run 67 tests.** Noticed 2026-09-23
+    — every other JS/TS test suite in the repo finishes in seconds; this one visibly pegs one CPU
+    core the whole time (consistent with repeatedly building depth-20 Merkle trees rather than
+    reusing one across cases). Passes (67/67), just slow. Low priority tooling papercut, same bucket
+    as item 12; fold into whichever future night touches `scripts/src/compliance-utils.ts` or its
+    tests.
