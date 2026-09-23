@@ -36,11 +36,31 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Non-linear constraint breakdown by gadget (2026-09-23)
+
+Non-linear constraints are what Groth16 proving time actually scales with. Isolating every gadget
+(each Poseidon arity, each range check, each comparator, the depth-20 Merkle membership check) and
+compiling it standalone with the same compiler/flags shows non-linear constraint count is **exactly
+additive** across gadget instantiations under circom's default `--O1` (predicted sum matched the real
+circuit's measured total exactly, 0 delta, for all three circuits):
+
+| Circuit | Non-linear constraints | Poseidon's share (incl. the Merkle check) |
+|---|---|---|
+| `transfer.circom` | 6,470 | 6,084 (**94.0%**) |
+| `compliance.circom` | 6,057 | 5,772 (**95.3%**) |
+| `withdraw.circom` | 1,465 | 1,143 (**78.0%**) |
+
+Merkle-depth cost is exactly linear: 246.0 non-linear constraints per additional depth level
+(confirmed at depth 10→20 and 20→30). Reproduce:
+`node scripts/bench/poseidon-cost/constraint-breakdown.mjs` (requires `circom` on `PATH`; see that
+script's header for how to build it if needed). Full methodology and raw output:
+[`2026-09-23-poseidon-constraint-cost.md`](2026-09-23-poseidon-constraint-cost.md).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session. Re-checked 2026-09-23: the JSON-RPC fallback against `fullnode.testnet.sui.io` now returns an explicit egress-proxy `403` (organization policy, not retried) — a firmer signal than the 2026-07-22 attempt. Needs either CLI-download access or an explicit allowance for that one RPC host; top of the queue. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
