@@ -95,7 +95,7 @@ Data flows: User generates Groth16 proofs in-browser, submits proof bytes + publ
 | E4 | Withdraw more than deposited via ZK proof manipulation | Withdraw circuit enforces `withdrawAmount <= cumulativeOld` (constraint C5) with 64-bit range proofs on both values. On-chain checks pool balance sufficiency. | Mitigated |
 | E5 | Bypass compliance requirement via direct `shielded_transfer` | When `compliance_required == true`, `shielded_transfer` aborts with `E_COMPLIANCE_REQUIRED`. Compliance toggle applied lazily before the check. | Mitigated |
 | E6 | Sybil attack: create multiple userSecrets to bypass spending threshold | Known limitation. Each userSecret gets its own cumulative spending counter. Mitigation requires identity-binding at deposit time (future work). | Accepted risk |
-| E7 | Front-run ZK withdrawal to steal funds | Withdrawal circuit binds to recipient via `recipientHash = Poseidon(8, recipient)`. Changing recipient invalidates the Groth16 proof. | Mitigated |
+| E7 | Front-run/replay ZK withdrawal to steal funds | Withdrawal circuit commits to `recipientHash = Poseidon(8, recipient)` as a *public* input, but a public input only binds what the on-chain verifier checks it against. Until 2026-09-24, `pool::zk_withdraw` never checked it — recipient was a free argument, so anyone who observed a pending withdrawal's `(proof_bytes, public_inputs_bytes)` could resubmit with their own address and steal the funds (nullifier still consumed, blocking the real owner). Fixed by recomputing `recipientHash` on-chain via `sui::poseidon::poseidon_bn254` and asserting it matches (`verifier::expected_recipient_hash`, `pool.move` zk_withdraw). | Mitigated |
 
 ## Attack Scenarios (tested in Move tests)
 
@@ -168,7 +168,7 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | Commitment uniqueness | `pool.move:244-249` | Preventive | `E_COMMITMENT_EXISTS` prevents duplicate commitments |
 | Upper bytes zero check | `verifier.move:67-73` | Preventive | Prevents u64 overflow via non-zero upper 24 bytes |
 | Epoch grace period | `pool.move:206-208` | Preventive | Accepts current or previous epoch to handle boundary races |
-| Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive | `recipientHash = Poseidon(8, recipient)` prevents front-running |
+| Recipient binding (withdrawal) | `withdraw.circom:112-117`, `verifier.move` (`expected_recipient_hash`), `pool.move` (`zk_withdraw`) | Preventive | Circuit commits `recipientHash = Poseidon(8, recipient)` as a public input; `pool::zk_withdraw` recomputes it on-chain via `sui::poseidon::poseidon_bn254` and asserts it matches before moving funds — added 2026-09-24, previously the on-chain half was missing (see E7) |
 | Context-bound credential nullifiers | `compliance.circom:79-87` | Preventive | `contextId = Poseidon(6, transferNullifier, userSecret)` unique per transfer |
 | Domain-separated Poseidon hashes | `transfer.circom`, `compliance.circom`, `withdraw.circom` | Preventive | Tags 1-8 prevent cross-domain hash collisions |
 | Merkle accumulator | `pool.move:77-80`, `transfer.circom:52-61` | Privacy | Anonymity set = all commitments, root verified in circuit |

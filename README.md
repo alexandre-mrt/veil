@@ -79,7 +79,7 @@ Every number below is the output of the command next to it, run on this commit. 
 
 | Suite | Result | Command |
 |---|---|---|
-| Move contract | **124 pass** | `cd contracts && sui move test` |
+| Move contract | **127 pass** | `cd contracts && sui move test` |
 | `transfer.circom` (real Groth16 prove + verify) | **43 pass** | `cd circuits && node test/transfer.test.mjs` |
 | `compliance.circom` (real Groth16) | **30 pass** | `cd circuits && node test/compliance.test.mjs` |
 | `withdraw.circom` (real Groth16) | **35 pass** | `cd circuits && node test/withdraw.test.mjs` |
@@ -117,7 +117,7 @@ Known blockers, all still open:
 git clone https://github.com/alexandre-mrt/veil && cd veil
 bash scripts/init.sh                                  # deps + contract build
 
-cd contracts && sui move test                         # 124 pass
+cd contracts && sui move test                         # 127 pass
 cd ../circuits && bash scripts/compile.sh             # compile + dev trusted setup (~85 MB ptau)
 npm test                                              # 108 pass (43 + 30 + 35), real Groth16
 cd ../scripts && bun run src/test-converter.ts        # 109 pass

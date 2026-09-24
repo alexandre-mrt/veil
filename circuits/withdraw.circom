@@ -50,7 +50,13 @@ template Withdraw() {
     signal input cumulativeOld;   // Current cumulative value in commitment
     signal input randomnessOld;   // Blinding factor for commitment
     signal input userSecret;      // User's master secret (proves ownership)
-    signal input recipient;       // Sui address as field element
+    // Sui address reduced to a BN254 field element: interpret the 32 raw address bytes as a
+    // big-endian integer (matches `sui::address::to_u256`), then reduce mod the BN254 scalar
+    // field (addresses are 256-bit; the field is ~254-bit, so an unreduced address is not
+    // always canonical). `pool::zk_withdraw` recomputes this exact value from the `recipient`
+    // argument on-chain — see `verifier::recipient_to_field` for the soundness argument on why
+    // the reduction doesn't weaken the binding.
+    signal input recipient;
     signal input randomnessNew;   // Blinding factor for change commitment
 
     // --- C1: Commitment is well-formed ---
