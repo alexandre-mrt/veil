@@ -5,71 +5,83 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+**Re-ranked 2026-09-24** after auditing the open-PR backlog and fixing the recipient-binding
+vulnerability (RR10 / E7) that a prior unmerged run (`#71`) had found but never landed. See
+`docs/research/2026-09-24-recipient-binding-fix.md` for the full audit.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+1. **Triage the open-PR backlog. This is not a research experiment — it's what's actually
+   blocking every one below it.** 10 open PRs (`#64`-`#73`, opened nightly since 2026-07-28) sit
+   unmerged, mostly independently re-deriving the same two experiments (≥5 Poseidon2 variants,
+   ≥3 on-chain gas variants) because two CI infra bugs (`oven-sh/setup-bun`'s SHA pin no longer
+   resolving; `storage.googleapis.com`'s ptau host 403ing GitHub-hosted runners) kept the suite
+   red for ~2 months and got independently rediscovered/fixed 5+ times without ever merging.
+   `#68` has a real localnet gas measurement with green CI (`mergeable_state: clean`) and is the
+   best candidate to merge first; then the ~9 PRs it and earlier audits supersede should close. A
+   scheduled research run shouldn't merge to `main` or bulk-close PRs unilaterally — this needs a
+   human pass. Until it happens, every night risks re-deriving results that already exist on some
+   unmerged branch.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+2. **On-chain gas per entry point.** `BASELINE.md`'s one still-missing axis on `main` (the fix
+   was measured multiple times on unmerged branches — `#66`, `#68` — but none of that landed).
+   Once the backlog above is triaged, re-verify and merge the best existing measurement rather
+   than re-running from scratch; the toolchain unblock itself is no longer the hard part — a
+   `sui` release binary matching `Move.toml`'s pinned framework rev downloads directly from
+   `github.com/MystenLabs/sui/releases/download/...` (confirmed working 2026-09-24, see this
+   session's report) even when `storage.googleapis.com` and `api.github.com` are both blocked.
 
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+3. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Extensively explored across
+   at least 5 unmerged nights (`#64`, `#65`, `#67`, `#72`, `#73`) with consistent findings: no
+   real gas benefit, a small (~3-6%) proving-time win at best, no standard parameterization for
+   the t=5/t=6 arities Veil's identity/credential hashes need, and no vetted reference
+   implementation to build a real production swap on safely. Treat as **settled REJECT** by
+   volume of evidence even though none of those PRs are merged — do not re-run again without a
+   specific new angle (e.g., a newly-published, audited Poseidon2 BN254 reference implementation
+   appearing).
 
-5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
-   wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
-   across the three circuits' eight domain tags, proof malleability. Adversarial, not a redesign —
-   the existing test suites are thorough but self-referential; worth a pass that tries to break the
-   circuits rather than confirm they work as documented.
+4. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Depends on item 2
+   (a real per-verify gas number) to size the actual savings.
 
-6. **Threshold auditing (t-of-n) vs the single auditor key.** `docs/threat-model.md` asset #6 and
-   the ECDH auditor-key design (`docs/auditor-guide.md`) currently assume one auditor keypair.
-   A t-of-n threshold scheme (or even measuring the cost of a naive N-of-N re-encryption) changes
-   the trust model for compliance data meaningfully and is a natural fit for the "confidential
-   payroll with a t-of-n auditor board" use case named in the 2026-07-22 report.
+5. **Merkle accumulator at scale (10^5-10^7 commitments).** Batch insertion cost, depth-20 vs a
+   deeper tree (anonymity-set size vs proving-time trade-off), indexer throughput. Relevant to
+   `docs/threat-model.md` RR5.
 
-7. **Revocation-friendly accumulators vs the depth-20 credential Merkle tree.** Today, revoking a
-   KYC credential means rebuilding the credential root (`compliance.move`, 1-epoch timelock). An
-   RSA or Merkle-based revocation accumulator could make single-credential revocation cheaper
-   without a full root rebuild — worth a real cost comparison, not just a design note.
+6. **Independent circuit soundness audit.** Under-constrained signals, alias checks, nullifier
+   collision analysis, proof malleability — adversarial, not a redesign. Note: this session found
+   the highest-value soundness bug in the loop's history not by auditing the circuits, but by
+   auditing the *Move-side consumption* of a circuit's public inputs (E7/RR10) — worth treating
+   "does the contract actually check every public input it extracts" as its own checklist item
+   here, not just circuit-internal soundness.
 
-8. **Mobile WASM proving latency.** Cheap extension of the 2026-07-22 browser-proving harness
-   (`scripts/bench/browser-latency.mjs`) — same script, add a mobile Chromium device-emulation
-   profile (`page.emulate(...)`) and compare against the desktop-headless numbers already in
-   `BASELINE.md`. Good "spend an hour, get a real number" candidate for a lighter night.
+7. **Threshold auditing (t-of-n) vs the single auditor key.**
 
-9. **Trusted-setup elimination (PLONK / Halo2 / Nova-folding).** Directly addresses
-   `docs/threat-model.md` RR2 (dev-only single-contributor ceremony). Large lift — a full circuit
-   port, not a parameter change — so this should wait until items 1–2 give a clearer picture of
-   what's actually worth optimizing before committing a multi-night effort to a proof-system swap.
+8. **Revocation-friendly accumulators vs the depth-20 credential Merkle tree.**
 
-10. **Post-quantum exposure.** BN254 discrete log breaks under a sufficiently large quantum
-    computer; Groth16 on BN254 has no PQ story. Likely a design-only, UNMEASURED-labelled
-    experiment (no PQ-SNARK toolchain is likely to install cleanly here either) assessing what a
-    migration path would cost, not a benchmark.
+9. **Mobile WASM proving latency.** Cheap extension of `scripts/bench/browser-latency.mjs`.
 
-11. **Relayer throughput and leakage under load.** `scripts/src/relayer.ts` — real load-testing
-    (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
-    sender-relayer pairs under concurrent load) is unmeasured.
+10. **Trusted-setup elimination (PLONK / Halo2 / Nova-folding).** Large lift; wait until items
+    2-3 are actually merged and settled before committing a multi-night proof-system swap.
 
-12. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
-    papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
-    calls leave the Node process alive after the test file finishes printing results, which stalls
-    the `&&`-chained `npm test` script after the first file. Each file passes fine run
-    individually. Low priority; fold into whichever future night touches `circuits/test/`.
+11. **Post-quantum exposure.** Likely design-only/UNMEASURED.
+
+12. **Relayer throughput and leakage under load.**
+
+13. **`docs/zk-vulnerability-research.md` doesn't name "unchecked public input" as its own bug
+    class.** New, cheap: E7/RR10 (2026-09-24) was exactly this — a circuit-level binding that was
+    real, but never checked by the contract consuming it. Worth a line in that doc so future
+    circuit reviews check both halves (circuit constraint *and* on-chain consumption), not just
+    the circuit.
+
+14. **`compliance-utils` test suite is slow enough to matter.** `test-compliance-utils.ts`'s
+    `buildMerkleTree` at depth 20 is O(2^depth) and now measurably slows down the full-suite run
+    (still running after 4+ minutes during this session's pre-PR check, vs. seconds for every
+    other suite). Previously noted as unmeasured/low-priority in unmerged branches; worth an
+    actual before/after number next time someone touches `compliance-utils.ts`.
+
+15. **`frontend`'s `useWithdraw` hook calls `pool::emergency_withdraw` (admin-only), not
+    `pool::zk_withdraw`.** The real user-facing ZK withdrawal path this session's fix protects
+    has no wired frontend caller yet. Before shipping a real withdraw button, confirm the
+    proving code uses the recipient field-element convention this fix depends on (BE address mod
+    BN254 field, documented in `withdraw.circom` and `verifier::recipient_to_field`).
+
+16. **Fix `circuits`' chained `npm test` hang.** Still present, still low priority (each test
+    file passes fine run individually; only the `&&`-chained script hangs after the first file).

@@ -592,11 +592,19 @@ public fun zk_withdraw(
     let withdraw_amount = verifier::le_bytes_to_u64(&public_inputs_bytes, 32);
     verifier::assert_upper_bytes_zero(&public_inputs_bytes, 40, 64, E_INVALID_INPUTS_LENGTH);
     let nullifier = verifier::extract_bytes(&public_inputs_bytes, 64, 96);
-    // The circuit proves recipientHash = Poseidon(8, recipient), binding the withdrawal
-    // to a specific address. We enforce this by sending tokens ONLY to the `recipient`
-    // parameter — the caller must provide the address that matches their proof.
-    // Front-running is prevented: changing recipient invalidates the Groth16 proof.
-    // bytes 96-128 (recipientHash) are verified by the proof itself.
+    // The circuit proves recipientHash = Poseidon(8, recipient) as a PUBLIC INPUT (bytes
+    // 96-128), but a public input is only ever checked against the value the Groth16 proof
+    // was constructed for — nothing stops a caller from submitting someone else's
+    // (proof_bytes, public_inputs_bytes) unchanged, with `recipient` set to their own address.
+    // The proof still verifies (recipientHash didn't change), the nullifier still gets
+    // consumed, and the funds go to the caller. Binding only exists if this contract
+    // recomputes recipientHash from the `recipient` argument and checks it against bytes
+    // 96-128 itself, which is what the next line does.
+    let recipient_hash_claimed = verifier::bytes_to_field(&public_inputs_bytes, 96, 128);
+    assert!(
+        verifier::expected_recipient_hash(recipient) == recipient_hash_claimed,
+        E_INVALID_RECIPIENT,
+    );
 
     // Extract change commitment (bytes 128-160)
     let new_commitment = verifier::extract_bytes(&public_inputs_bytes, 128, 160);

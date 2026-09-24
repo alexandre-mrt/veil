@@ -1,6 +1,17 @@
 module veil::verifier;
 
+use sui::address;
+use sui::bcs;
 use sui::groth16;
+use sui::poseidon;
+
+/// BN254 scalar field size (Fr). Matches `R` in `scripts/src/proof-converter.ts` and the
+/// modulus circom/snarkjs reduce every signal into.
+const BN254_SCALAR_FIELD: u256 =
+    21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
+/// Domain tag for `withdraw.circom`'s recipient binding (`recipientHash = Poseidon(8, recipient)`).
+const RECIPIENT_DOMAIN_TAG: u256 = 8;
 
 // OPTIMIZATION NOTE: For production, store PreparedVerifyingKey in Pool/ComplianceConfig
 // at creation time instead of raw VK bytes. Saves ~82K gas per verification.
@@ -70,4 +81,31 @@ public(package) fun assert_upper_bytes_zero(data: &vector<u8>, start: u64, end: 
         assert!(data[i] == 0, error_code);
         i = i + 1;
     };
+}
+
+/// Reads a 32-byte little-endian public-input chunk as a BN254 field element. Public inputs
+/// are serialized little-endian by `publicInputsToSuiBytes` (`scripts/src/proof-converter.ts`).
+public(package) fun bytes_to_field(data: &vector<u8>, start: u64, end: u64): u256 {
+    bcs::new(extract_bytes(data, start, end)).peel_u256()
+}
+
+/// Reduces a Sui address into the BN254 scalar field exactly as the withdraw witness generator
+/// must: `address::to_u256` treats the 32 raw address bytes as a big-endian integer, and the
+/// circuit's `recipient` signal is that integer reduced mod the field size (addresses are
+/// 256-bit; the field is ~254-bit, so an unreduced address is not always a canonical field
+/// element). This mapping is 4-to-1 (not 1-to-1), but every one of the ~3 other addresses that
+/// reduce to the same field element is a uniformly random 256-bit value nobody can select a
+/// keypair for — see the recipient-binding soundness argument in
+/// `docs/research/2026-09-24-recipient-binding-fix.md`.
+public(package) fun recipient_to_field(recipient: address): u256 {
+    address::to_u256(recipient) % BN254_SCALAR_FIELD
+}
+
+/// Recomputes `recipientHash = Poseidon(8, recipient)` exactly as `withdraw.circom`'s C9
+/// constraint does, using Sui's native BN254 Poseidon precompile. `poseidon_compat_tests.move`
+/// pins this against independently-computed circomlibjs reference vectors so a future Sui
+/// framework upgrade that silently changed the permutation would fail loudly here instead of
+/// quietly breaking the on-chain binding check in `pool::zk_withdraw`.
+public(package) fun expected_recipient_hash(recipient: address): u256 {
+    poseidon::poseidon_bn254(&vector[RECIPIENT_DOMAIN_TAG, recipient_to_field(recipient)])
 }
