@@ -10,16 +10,32 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   permitted). Blocked three times running now for the same structural reason — see LEDGER
+   2026-07-22 and 2026-09-25: this session's egress policy denies `github.com`,
+   `static.crates.io`, and every public Sui RPC/explorer host tried (`fullnode.testnet.sui.io`,
+   `api.testnet.sui.io`, `rpc.ankr.com`, `sui-testnet.blockvision.org`,
+   `sui-testnet-rpc.publicnode.com`, `sui-testnet.nodeinfra.com`, `suiscan.xyz`, `suivision.xyz`),
+   confirmed via the proxy status endpoint as an organization-policy `403`, not a transient or
+   retryable failure. **This one is not unblockable from inside the loop** — it needs either a
+   broader host allowlist from whoever administers the sandbox, or gas artifacts made reachable
+   through an already-allowed channel (npm, or vendored into the repo). Keep at the top as a
+   standing reminder to check whether the policy has changed, but stop re-attempting the same set
+   of hosts each night without new information.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Poseidon2 for the Merkle-path hasher specifically.** Re-ranked and narrowed by the
+   2026-09-25 run: isolating each Poseidon instance showed the single depth-20 `MerkleProof`
+   component (20× `Poseidon(2)`) is **76-81%** of `transfer.circom`'s and `compliance.circom`'s
+   non-linear constraints on its own (4,920 of 6,470 / 6,057) — far more than the three-or-fewer
+   top-level identity/nullifier `Poseidon(3..5)` calls a swap targeting "Poseidon" broadly would
+   naturally focus on. A Poseidon2 migration scoped to just `templates/merkle_proof.circom`'s
+   internal hasher would likely capture most of the available win at a fraction of the audit
+   surface of a protocol-wide swap. Blocked on the same root cause as item 1's toolchain gap, one
+   layer down: no Poseidon2 circom implementation is reachable through this session's allowlist
+   (checked `poseidon2-circom`, `circom-poseidon2`, `@zk-kit/circuits`, and `circomlib`'s latest npm
+   release — none ship one), and hand-deriving Poseidon2's round constants without a reachable
+   reference to check them against was explicitly rejected as unverifiable. Needs either network
+   access to a canonical reference (paper + test vectors) or a way to install one through an
+   already-allowed registry. See `2026-09-25-poseidon-merkle-constraint-isolation.md`.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
@@ -30,7 +46,11 @@ what matters most — say why in the commit, don't just reorder silently.
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+   is the main lever available without redesigning the deposit flow). The 2026-09-25 run derived
+   the per-level constraint cost (246 non-linear constraints/level, measured via
+   `scripts/bench/poseidon-isolation.mjs`) — e.g. depth 20 → 24 (1.05M → 16.7M-leaf anonymity set)
+   costs +984 non-linear constraints (~15% growth on `transfer.circom`'s Merkle-proof cost alone);
+   proving-time impact of that delta is still unmeasured and would be this item's first result.
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis

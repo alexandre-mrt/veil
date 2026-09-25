@@ -36,14 +36,39 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Constraint breakdown: Poseidon vs everything else (2026-09-25)
+
+Isolating each circuit's Poseidon instances (see
+[`2026-09-25-poseidon-merkle-constraint-isolation.md`](2026-09-25-poseidon-merkle-constraint-isolation.md))
+shows Poseidon — specifically the depth-20 `MerkleProof` component — dominates non-linear
+constraint count:
+
+| Circuit | Poseidon share of non-linear constraints | Of which `MerkleProof(20)` alone |
+|---|---|---|
+| `transfer.circom` | 94.0% | 76.0% (4,920 / 6,470) |
+| `withdraw.circom` | 78.0% | n/a (no Merkle proof — commitment is revealed on-chain by design) |
+| `compliance.circom` | 95.3% | 81.2% (4,920 / 6,057) |
+
+Per-Merkle-level cost: **246 non-linear constraints/level** (243 from `Poseidon(2)`, 3 from the
+`MultiMux1(2)` path selector). Reproduce: `cd scripts/bench && npm install && node
+poseidon-isolation.mjs`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary reachable, and every public Sui RPC/explorer host tried is denied by this sandbox's egress policy (organization-policy `403`, confirmed non-retryable — see 2026-09-25 report). Not unblockable from inside the loop; needs a policy or artifact-delivery change. |
+| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed since 2026-07-22; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| Real-Groth16 circuit test suite (108 tests, `transfer`/`withdraw`/`compliance`) | **HASH-ONLY** as of 2026-09-25 | Needs a compiled zkey from a Groth16 trusted setup, which needs the Hermez Powers-of-Tau file at `storage.googleapis.com` — also now blocked by the same egress policy (worked on 2026-07-22, does not tonight). A from-scratch local `snarkjs powersoftau` ceremony (no network needed) is untried and queued. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
+
+**Toolchain note (2026-09-25):** the native `circom` build (via `cargo install`/`cargo build` from
+`iden3/circom`) that produced the constraint counts above is no longer reproducible in this
+sandbox — `github.com` and `static.crates.io` are now blocked. **`circom2`** (npm, circom 2.2.3
+compiled to WASM) is a verified drop-in replacement: recompiling `transfer.circom` with it
+reproduces this file's constraint counts exactly. Prefer it for any future night that needs to
+compile circuits here.
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
 place, not be appended as a separate table.
