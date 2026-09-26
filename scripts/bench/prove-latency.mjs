@@ -17,15 +17,18 @@
  *   # then snarkjs groth16 setup + zkey contribute + export verificationkey per circuit
  *   # (see circuits/scripts/compile*.sh for the exact sequence)
  */
+import { createRequire } from "module";
 import { buildPoseidon } from "circomlibjs";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import * as snarkjs from "snarkjs";
-import { WITNESS_BUILDERS, setPoseidonField, stringifyInputs } from "./witnesses.mjs";
+import { WITNESS_BUILDERS, buildTransferPoseidon2Witness, setPoseidonField, stringifyInputs } from "./witnesses.mjs";
 
+const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CIRCUITS_DIR = join(__dirname, "..", "..", "circuits");
+const P = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 
 const RUNS = (() => {
   const idx = process.argv.indexOf("--runs");
@@ -36,6 +39,10 @@ const CIRCUITS = [
   { name: "transfer", dir: "build" },
   { name: "withdraw", dir: "build-withdraw" },
   { name: "compliance", dir: "build-compliance" },
+  // Research variant — docs/research/2026-09-26-poseidon2-merkle-path.md. Only benchmarked
+  // when circuits/build-poseidon2/ has been compiled (bash scripts/compile-poseidon2.sh);
+  // skipped like any other circuit whose artifacts aren't present.
+  { name: "transfer_poseidon2", dir: "build-poseidon2" },
 ];
 
 function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
@@ -46,6 +53,12 @@ function stddev(arr, m) {
 async function main() {
   const poseidon = await buildPoseidon();
   setPoseidonField(poseidon.F);
+
+  // Poseidon2 compression, matching templates/merkle_proof_poseidon2.circom exactly
+  // (out = permutation([left,right])[0] + left). Only needed if the poseidon2 variant's
+  // build artifacts are present.
+  const { bn254 } = require("@taceo/poseidon2");
+  const poseidon2Compress = (left, right) => (bn254.t2.permutation([left, right])[0] + left) % P;
 
   console.log(`=== Veil Groth16 proving-time benchmark (${RUNS} runs per circuit) ===`);
   console.log(`node ${process.version}, ${process.platform}/${process.arch}\n`);
@@ -60,7 +73,10 @@ async function main() {
       continue;
     }
 
-    const inputs = stringifyInputs(WITNESS_BUILDERS[circuit.name](poseidon));
+    const witness = circuit.name === "transfer_poseidon2"
+      ? buildTransferPoseidon2Witness(poseidon, poseidon2Compress)
+      : WITNESS_BUILDERS[circuit.name](poseidon);
+    const inputs = stringifyInputs(witness);
     const times = [];
 
     // Warm-up run (not counted — first call pays WASM instantiation cost)
@@ -92,6 +108,10 @@ async function main() {
 
   console.log("=== Summary (JSON) ===");
   console.log(JSON.stringify(results, null, 2));
+  // snarkjs' bn128 curve keeps worker handles open after the last proof, which otherwise
+  // leaves this process hanging indefinitely even though the benchmark finished successfully
+  // (same symptom documented in circuits/test/*.test.mjs — see docs/research/BASELINE.md).
+  process.exit(0);
 }
 
 main().catch((err) => {

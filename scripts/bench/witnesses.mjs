@@ -93,6 +93,39 @@ export function buildComplianceWitness(poseidon) {
   };
 }
 
+// ── Poseidon2 Merkle-path research variant (transfer_poseidon2.circom) ────────
+// Same commitment/nullifier/txAmountHash values as buildTransferWitness (those hashes are
+// untouched by the swap) but the Merkle root uses the Poseidon2 compression hash
+// (out = perm([left,right])[0] + left) matching templates/merkle_proof_poseidon2.circom.
+// See docs/research/2026-09-26-poseidon2-merkle-path.md.
+function merkleRootFromPathPoseidon2(poseidon2Compress, leaf, pathElements, pathIndices) {
+  let node = leaf;
+  for (let i = 0; i < pathElements.length; i++) {
+    const sibling = pathElements[i];
+    const [left, right] = pathIndices[i] === 0n ? [node, sibling] : [sibling, node];
+    node = poseidon2Compress(left, right);
+  }
+  return node;
+}
+
+export function buildTransferPoseidon2Witness(poseidon, poseidon2Compress) {
+  const cumulativeOld = 0n, txAmount = 100n, randomnessOld = 0n, randomnessNew = 12345n;
+  const userSecret = 987654321n, epochId = 1n, threshold = 1_000_000_000n, salt = 99n;
+  const cumulativeNew = cumulativeOld + txAmount;
+  const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
+  const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
+  const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
+  const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
+  const pathElements = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const pathIndices = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const merkleRoot = merkleRootFromPathPoseidon2(poseidon2Compress, oldCommitment, pathElements, pathIndices);
+  return {
+    oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash, merkleRoot,
+    cumulativeOld, cumulativeNew, txAmount, randomnessOld, randomnessNew, userSecret, salt,
+    pathElements, pathIndices,
+  };
+}
+
 export const WITNESS_BUILDERS = {
   transfer: buildTransferWitness,
   withdraw: buildWithdrawWitness,
