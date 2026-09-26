@@ -36,6 +36,26 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Poseidon2 Merkle-path variant (research, not production)
+
+Measured 2026-09-26 — see
+[`2026-09-26-poseidon2-merkle-path.md`](2026-09-26-poseidon2-merkle-path.md) for the full
+methodology, soundness argument, and correctness tests. `transfer_poseidon2.circom` is a
+research-only variant of `transfer.circom` (C0's Merkle hash swapped from circomlib `Poseidon(2)`
+sponge to Poseidon2 compression, t=2; C1–C11 unchanged) — **not** wired into `pool.move`, the
+frontend, or any production path. Included here because it's a real, measured alternative to the
+`transfer.circom` row above, not a hypothetical.
+
+| Circuit | R1CS constraints | Non-linear | Linear | Node proving time (mean of 10) |
+|---|---|---|---|---|
+| `transfer.circom` (production) | 13,611 | 6,470 | 7,141 | 751.9 ms (2026-07-22) / 740.1 ms (2026-09-26 re-measurement) |
+| `transfer_poseidon2.circom` (research) | 12,951 | 5,930 | 7,021 | 670.9 ms |
+| **Δ** | **-660 (-4.85%)** | **-540 (-8.34%)** | **-120 (-1.68%)** | **-69.2 ms (-9.35%, vs. tonight's own `transfer.circom` re-measurement)** |
+
+Reproduce: `bash circuits/scripts/compile-poseidon2.sh`, then
+`node scripts/bench/prove-latency.mjs --runs 10` (benchmarks all four circuits whose build
+artifacts exist) and `node scripts/bench/constraint-report.mjs "transfer":circuits/build/transfer.r1cs "transfer_poseidon2":circuits/build-poseidon2/transfer_poseidon2.r1cs`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
