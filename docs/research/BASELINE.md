@@ -25,6 +25,35 @@ Groth16 proofs are three fixed-size group elements (2×G1 + 1×G2) regardless of
 constant across all three circuits. snarkjs's own JSON proof encoding (decimal-string field
 elements) runs ~721–726 bytes for the same data.
 
+## Where the non-linear constraints actually come from
+
+Measured 2026-09-27 (see
+[`2026-09-27-poseidon-constraint-attribution.md`](2026-09-27-poseidon-constraint-attribution.md)).
+Each row's cost was isolated in its own single-gadget probe circuit
+(`scripts/bench/circuit-probes/*.circom`), then multiplied by how many times the real circuit
+instantiates it; the sum reconciles to the real compiled total exactly for `transfer`/`withdraw` and
+to within 3 constraints (fully explained — two defense-in-depth boolean checks plus one AND gate,
+not present in the isolated comparator probes) for `compliance`.
+
+| Circuit | Merkle path (20×`Poseidon(2)`) | Named domain-tagged Poseidon calls | Range checks + comparators (+ glue) | Total non-linear |
+|---|---|---|---|---|
+| `transfer.circom` | 4,920 (**76.0%**) | 1,164 (18.0%) | 386 (6.0%) | 6,470 |
+| `compliance.circom` | 4,920 (**81.2%**) | 852 (14.1%) | 282 + 3 glue (4.7%) | 6,057 |
+| `withdraw.circom` (no Merkle path) | — | 1,143 (**78.0%**) | 322 (22.0%) | 1,465 |
+
+**Correction to the README's "four Poseidon instances... dominate the real cost" claim:** true for
+`withdraw.circom` (no Merkle path — the named Poseidon calls really are the dominant cost there),
+but materially understates the real driver for `transfer.circom` and `compliance.circom`, where the
+depth-20 Merkle membership proof — not the four/five named domain-tagged hashes — is responsible for
+76–81% of non-linear constraints. Per-Merkle-level cost is exactly 246 non-linear constraints (243
+for `Poseidon(2)` + 2 for `MultiMux1(2)`'s selection + 1 for the boolean path-index check),
+architecture-fixed regardless of depth. This re-targets `EXPERIMENTS.md` items #2 (Poseidon2 should
+aim at the arity-2 Merkle hash first, not the named calls) and #4 (Merkle-depth-vs-anonymity-set
+trade-off now has a real per-level cost to compute against, e.g. depth 20→32 costs +2,952 non-linear
+constraints to `transfer.circom` alone).
+
+Reproduce: `cd scripts/bench && npm install && node constraint-attribution.mjs`.
+
 ## Proving time (mean of 10 runs, includes witness generation)
 
 | Circuit | Node.js (this machine) | Chromium (headless, this machine) | Browser / Node ratio |
@@ -40,8 +69,9 @@ Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** (confirmed a 3rd time, 2026-09-27) | Both fallback paths retested tonight and both return a 403 from the sandbox's egress proxy — an organization-level allowlist denial, not a per-tool approval prompt: `github.com` (needed for a `sui` CLI release) and `fullnode.testnet.sui.io` (direct JSON-RPC read) are both unreachable hosts. Per the sandbox's own proxy documentation, a 403 is not retried or routed around. Unblocking this needs either host added to the sandbox's egress allowlist. Still top of the queue. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| Circuit tests in real-proof mode (108 tests) | **NOT RUN 2026-09-27** (new blocker) | `storage.googleapis.com` (where `compile*.sh` downloads the pot15 Powers of Tau file) also returns a 403 from the sandbox's egress proxy — confirmed with a HEAD request tonight. Tests ran in fallback/simulated mode instead (108/108 pass — see 2026-09-27 report), which the README itself calls "a linting aid, not evidence." No production circuit changed tonight, so risk is low, but this is a second host (beyond `github.com` and the Sui RPC host) that would need allowlisting to restore real-proof-mode testing in this sandbox. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 

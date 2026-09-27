@@ -13,24 +13,36 @@ what matters most — say why in the commit, don't just reorder silently.
    permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Merkle-depth-vs-anonymity-set trade-off (was item 4 — promoted 2026-09-27).** The 2026-09-27
+   constraint-attribution experiment (`docs/research/2026-09-27-poseidon-constraint-attribution.md`)
+   measured that the depth-20 Merkle membership proof, not the named domain-tagged Poseidon calls,
+   is responsible for 76.0% of `transfer.circom`'s and 81.2% of `compliance.circom`'s non-linear
+   constraints — an exact, reconciled per-level cost of 246 non-linear constraints per tree level,
+   architecture-fixed regardless of depth. That makes Merkle depth the highest-leverage lever on
+   prover time for those two circuits, ahead of a Poseidon2 swap of the named hashes (item 3 below).
+   Extends into the full item 4 scope from before (batch insertion cost at 10^5–10^7 commitments,
+   indexer throughput) but now has a real per-level number to compute against instead of a guess —
+   e.g. depth 20→32 costs a computed +2,952 non-linear constraints to `transfer.circom` alone.
+   Directly relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger
+   anonymity set is the main lever available without redesigning the deposit flow).
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
+3. **Poseidon2 vs current Poseidon — re-targeted 2026-09-27.** The 2026-09-27 attribution
+   experiment found the "four Poseidon instances dominate" framing this item used to rank on was
+   incomplete: for `transfer.circom`/`compliance.circom` the named domain-tagged calls are only
+   18.0%/14.1% of non-linear constraints, while the Merkle path's 20x `Poseidon(2)` calls (not
+   counted among the "four") are 76.0%/81.2%. A Poseidon2 experiment should target the arity-2
+   permutation first — that's where the constraint-count leverage actually is — not the named
+   commitment/nullifier/amount hashes. (`withdraw.circom` has no Merkle path, so there the named
+   calls genuinely are the dominant cost at 78.0% — Poseidon2 still matters for that circuit
+   specifically.) No Poseidon2 circuit was built or measured tonight; this is still a real circuit
+   change requiring correct round constants/matrices (no independently-fetchable reference test
+   vectors given this sandbox's GitHub block) plus the soundness argument, leakage analysis, and
+   negative test any circuit change needs.
+
+4. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
    Depends on item 1 existing first (need a real per-verify gas number to know how much this would
    actually save).
-
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis

@@ -30,7 +30,15 @@ The construction is a **composition of standard circomlib gadgets** — Poseidon
 
 ### Real constraint counts
 
-The "11 constraints" figure that used to be in this README was wrong: 11 is the number of *assertions written in the circuit*, not the R1CS constraint count. Four Poseidon instances and four `Num2Bits(64)` range checks dominate the real cost. Numbers below are `snarkjs r1cs info` output on the compiled circuits.
+The "11 constraints" figure that used to be in this README was wrong: 11 is the number of *assertions written in the circuit*, not the R1CS constraint count. Numbers below are `snarkjs r1cs info` output on the compiled circuits.
+
+The real dominant cost isn't the named Poseidon calls below — for `transfer.circom` and
+`compliance.circom` it's the depth-20 Merkle membership proof (C0 / C2), which calls `Poseidon(2)`
+once per tree level: 76.0% and 81.2% of non-linear constraints respectively, measured and
+attributed gadget-by-gadget in
+[`docs/research/BASELINE.md`](docs/research/BASELINE.md#where-the-non-linear-constraints-actually-come-from).
+`withdraw.circom` has no Merkle path, so there the named `Poseidon(4)`/`Poseidon(2)` calls really are
+the dominant cost (78.0%).
 
 | Circuit | Assertions written | R1CS constraints | Non-linear | Public / private inputs |
 |---|---|---|---|---|
