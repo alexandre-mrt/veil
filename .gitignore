@@ -22,3 +22,6 @@ target/
 
 # Sui
 contracts/Published.toml
+
+# Generated at bench-script runtime from the real source template — never hand-edit or commit
+scripts/bench/circuit-probes/*.generated.circom
