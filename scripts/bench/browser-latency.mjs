@@ -11,6 +11,16 @@
  *
  * Usage:
  *   node scripts/bench/browser-latency.mjs [--runs N]
+ *   node scripts/bench/browser-latency.mjs [--runs N] --device "Pixel 7" --cpu-throttle 4
+ *
+ * With --device, the page is created with that Playwright device descriptor's viewport, user
+ * agent, device-scale-factor and touch/mobile flags. With --cpu-throttle, a CDP session applies
+ * Emulation.setCPUThrottlingRate(rate) before benchmarking. IMPORTANT: this still runs on the
+ * host machine's desktop x86_64 CPU under headless Chromium — it is a CPU-throttled emulation of
+ * a mobile device's viewport/UA/CPU budget, not a measurement on real mobile hardware (real ARM
+ * silicon, thermal throttling, and a real mobile browser's WASM JIT would all differ). Report
+ * results as "CPU-throttled desktop Chromium approximating <device>", never as "measured on
+ * <device>".
  *
  * Requires: `playwright` package (see scripts/bench/package.json) with a Chromium build
  * available. Set PLAYWRIGHT_CHROMIUM_PATH to override the default executable path.
@@ -23,7 +33,7 @@ import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import { join, dirname, extname } from "path";
 import { fileURLToPath } from "url";
-import { chromium } from "playwright";
+import { chromium, devices } from "playwright";
 import { buildPoseidon } from "circomlibjs";
 import { WITNESS_BUILDERS, setPoseidonField, stringifyInputs } from "./witnesses.mjs";
 
@@ -31,9 +41,25 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const CIRCUITS_DIR = join(__dirname, "..", "..", "circuits");
 const PORT = 8934;
 
+function argVal(flag) {
+  const idx = process.argv.indexOf(flag);
+  return idx !== -1 ? process.argv[idx + 1] : undefined;
+}
+
 const RUNS = (() => {
-  const idx = process.argv.indexOf("--runs");
-  return idx !== -1 ? parseInt(process.argv[idx + 1], 10) : 10;
+  const v = argVal("--runs");
+  return v !== undefined ? parseInt(v, 10) : 10;
+})();
+
+const DEVICE_NAME = argVal("--device");
+const DEVICE = DEVICE_NAME ? devices[DEVICE_NAME] : undefined;
+if (DEVICE_NAME && !DEVICE) {
+  console.error(`Unknown Playwright device: "${DEVICE_NAME}". See playwright's devices.json for valid names.`);
+  process.exit(1);
+}
+const CPU_THROTTLE = (() => {
+  const v = argVal("--cpu-throttle");
+  return v !== undefined ? parseFloat(v) : 1;
 })();
 
 const CIRCUIT_DIRS = { transfer: "build", withdraw: "build-withdraw", compliance: "build-compliance" };
@@ -102,10 +128,28 @@ async function main() {
   const server = await startServer(poseidon);
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
   const browser = await chromium.launch({ executablePath, args: ["--no-sandbox"] });
-  const page = await browser.newPage();
+  const context = await browser.newContext(DEVICE ?? {});
+  const page = await context.newPage();
+
+  if (CPU_THROTTLE !== 1) {
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: CPU_THROTTLE });
+  }
+
   await page.goto(`http://localhost:${PORT}/index.html`);
 
-  console.log(`=== Veil browser (Chromium) proving-time benchmark (${RUNS} runs per circuit) ===`);
+  const label = DEVICE_NAME
+    ? `=== Veil browser (Chromium, CPU-throttled ${CPU_THROTTLE}x, emulating "${DEVICE_NAME}") proving-time benchmark (${RUNS} runs per circuit) ===`
+    : `=== Veil browser (Chromium) proving-time benchmark (${RUNS} runs per circuit) ===`;
+  console.log(label);
+  if (DEVICE_NAME) {
+    console.log(
+      `NOTE: runs on this machine's desktop x86_64 CPU under headless Chromium with CPU throttling ` +
+      `(Emulation.setCPUThrottlingRate rate=${CPU_THROTTLE}) and "${DEVICE_NAME}"'s viewport/UA/DPR ` +
+      `emulated. This approximates a mobile device's CPU budget; it is not a measurement on real ` +
+      `mobile hardware.`
+    );
+  }
   const ua = await page.evaluate(() => navigator.userAgent);
   console.log(ua, "\n");
 
@@ -115,6 +159,8 @@ async function main() {
       ([c, r]) => window.runBenchmark(c, r),
       [circuit, RUNS],
     );
+    result.device = DEVICE_NAME ?? null;
+    result.cpuThrottleRate = CPU_THROTTLE;
     results.push(result);
     console.log(`--- ${circuit} ---`);
     console.log(`  runs: ${result.runs}`);
@@ -125,6 +171,7 @@ async function main() {
   console.log("=== Summary (JSON) ===");
   console.log(JSON.stringify(results, null, 2));
 
+  await context.close();
   await browser.close();
   server.close();
 }
