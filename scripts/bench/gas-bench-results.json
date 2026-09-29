@@ -1,0 +1,177 @@
+{
+  "rpc": "http://127.0.0.1:9000",
+  "referenceGasPrice": "1000",
+  "epochMs": 60000,
+  "results": [
+    {
+      "label": "publish (whole package)",
+      "status": "success",
+      "computationCost": "1370000",
+      "computationUnits": "1370",
+      "storageCost": "156415600",
+      "storageRebate": "978120",
+      "netMist": "156807480",
+      "digest": "FFiT6m1472ZE7RqNqU1Wp1JPLyaa1iqcgDTRhrHB1jGi"
+    },
+    {
+      "label": "create_pool",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "8496800",
+      "storageRebate": "978120",
+      "netMist": "8518680",
+      "digest": "EKtLBZ7qHCTZ9sxygmkQGKxvmUCitRsneCqQbqm5vwQG"
+    },
+    {
+      "label": "token_faucet::faucet (mint 1000 VEIL)",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "4043200",
+      "storageRebate": "2678544",
+      "netMist": "2364656",
+      "digest": "FWb6vM9pAMmrBtSGt5FdXRuCarqhMXXwMaWK3oFLVcUy"
+    },
+    {
+      "label": "deposit_and_register (1st commitment)",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "10358800",
+      "storageRebate": "8223732",
+      "netMist": "3135068",
+      "digest": "Arb8D1xJUAcX6hNZ89Rw793DUQXj9Gx59irPMPQQfJzh"
+    },
+    {
+      "label": "deposit_and_register (2nd commitment)",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "10358800",
+      "storageRebate": "8223732",
+      "netMist": "3135068",
+      "digest": "2384SnueM4n7Rtd3Lwvp7qfLALZusxtjpPTwG4cmFGJq"
+    },
+    {
+      "label": "deposit_and_register (3rd commitment)",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "10358800",
+      "storageRebate": "8223732",
+      "netMist": "3135068",
+      "digest": "47UBVGTCpPt4FSfXBwCqpA6QfFGekqKecsx16PozJUNm"
+    },
+    {
+      "label": "update_commitment_root (propose)",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "8740000",
+      "storageRebate": "8411832",
+      "netMist": "1328168",
+      "digest": "D71PKtNq6yPgyHUPMvm1CkfFeGA1Jo8h81dgzYMGe41k"
+    },
+    {
+      "label": "propose_withdraw_vk",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "11970000",
+      "storageRebate": "8652600",
+      "netMist": "4317400",
+      "digest": "FL1dT9fMVdUj5uLWXZ7QYaiDWM36LQTFAEQW5aHyJ6p9"
+    },
+    {
+      "label": "create_compliance_config",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "18171600",
+      "storageRebate": "11850300",
+      "netMist": "7321300",
+      "digest": "4rBscKztKJWnZjnDo447YP5dZdt8Z8kECbySjUx2Qf6r"
+    },
+    {
+      "label": "propose_withdrawal",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "12517200",
+      "storageRebate": "12091068",
+      "netMist": "1426132",
+      "digest": "42QStkKA6SbKR6td3SRNNGuSaF5qwYphESKs4aFb5qeV"
+    },
+    {
+      "label": "cancel_withdrawal",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "12213200",
+      "storageRebate": "12392028",
+      "netMist": "821172",
+      "digest": "4CMkJZUYKJVYypHy3E9G1ciVoJXV6t8TvgM1znQMPCNB"
+    },
+    {
+      "label": "freeze_pool",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "12213200",
+      "storageRebate": "12091068",
+      "netMist": "1122132",
+      "digest": "8Nqp9xWFMuFgPpuU6BXRFnqVWzRSA5rubviepdKwFQW8"
+    },
+    {
+      "label": "unfreeze_pool",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "12213200",
+      "storageRebate": "12091068",
+      "netMist": "1122132",
+      "digest": "4RSsQt1ZHWPMxeLNbLFB6cYDWuhFPXSQpeuuEicqEnoc"
+    },
+    {
+      "label": "shielded_transfer (real Groth16 proof)",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "14485600",
+      "storageRebate": "12610224",
+      "netMist": "2875376",
+      "digest": "A2erj7xZBYKi32yzfFttUiE6FDUfp5qSBCVSkLJSyRCW"
+    },
+    {
+      "label": "shielded_transfer replay (expect abort)",
+      "status": "abort: MoveAbort(MoveLocation { module: ModuleId { address: 02f840f419e38b01ac99d494813d319a80976b59d65413f955f5829fadd3a02e, name: Identifier(\"pool\") }, function: 4, instruction: 134, function_name: Some(\"execute_transfer\") }, 9) in command 0",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "10442400",
+      "storageRebate": "10337976",
+      "netMist": "1104424",
+      "digest": "5n2UaWzcoFQY3Dfm35YUawwzLc699FX6rwR6KgRBBTC2"
+    },
+    {
+      "label": "compliant_transfer (transfer + compliance proofs)",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "22556800",
+      "storageRebate": "18268272",
+      "netMist": "5288528",
+      "digest": "7u798J2mz1YEGy1SqSNXP4sUf2KBchyvsfC5XZFoUhNM"
+    },
+    {
+      "label": "zk_withdraw (real Groth16 proof)",
+      "status": "success",
+      "computationCost": "1000000",
+      "computationUnits": "1000",
+      "storageCost": "15823200",
+      "storageRebate": "12369456",
+      "netMist": "4453744",
+      "digest": "AeNRv1npZYdQuy77XedBEuKJA6pCkbJchUduLYQ3Azqj"
+    }
+  ]
+}
