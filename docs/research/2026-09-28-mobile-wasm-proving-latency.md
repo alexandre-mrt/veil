@@ -107,6 +107,12 @@ recommended on unblocking item #1. Findings, more precise than the previous two 
   an unrelated public GitHub repo over HTTPS *does* work — I used it to fetch `iden3/circom` source,
   see below — so the release/API paths are blocked by a narrower rule than raw git-over-HTTPS.)
 - `cargo search sui` / crates.io has no published `sui` CLI crate (confirmed again).
+- **Confirmed the blocker is this session's environment, not a fundamental unavailability**: this
+  PR's own CI (`Move contracts (sui move test)` job, unrestricted GitHub Actions network) installs a
+  real `sui` testnet binary straight from `api.github.com/repos/MystenLabs/sui/releases` in under 30
+  seconds and runs all 124 Move tests successfully (see Test suite below). The exact same request
+  this session's egress proxy blocks with `403`/`connect_rejected` works fine from a runner without
+  that proxy in front of it.
 
 This is now a clearly diagnosed infrastructure blocker, not an ambiguous one: on-chain gas
 measurement needs either `fullnode.testnet.sui.io` (or an equivalent Sui JSON-RPC host) added to this
@@ -250,7 +256,7 @@ before trusting the new mobile numbers built on top of it.)
 | Compliance utils | **pass** (see below) | `cd scripts && bun run src/test-compliance-utils.ts` |
 | Frontend (vitest) | **pass** (see below) | `cd frontend && bunx vitest run` |
 | Property-based fuzz | **pass** (see below) | `cd scripts && bun run src/fuzz-tests.ts` |
-| Move contracts | **NOT RUN** (blocked, same as 2026-07-22) | `sui move test` — no `sui` CLI reachable, see above |
+| Move contracts | **NOT RUN inside this research session** (no `sui` CLI reachable under this environment's egress policy) — **124/124 pass in the repo's own CI** on this PR's head commit, confirmed after the fact (`Move contracts (sui move test)` job, `alexandre-mrt/veil#79`, `c1771a95e4bf224b5c15eee175ec997565030fdc`) — CI's runner has unrestricted network and installs `sui` straight from GitHub releases, which this session's proxy blocks | `sui move test` |
 
 No test was loosened, skipped, or given new tolerance. No circuit, Move, or frontend proving code
 changed — the only production-path file touched is the bench script itself.
