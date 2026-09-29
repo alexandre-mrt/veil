@@ -14,8 +14,11 @@ create it, note that you did, and move on — don't block a whole night on scaff
 ---
 
 You are running one iteration of Veil's nightly cryptography & scalability research loop.
-Veil is a ZK privacy payment protocol on Sui (Circom/Groth16 + Move + Next.js). CLAUDE.md has the
-architecture and the build/test commands. The veil-* skills in .claude/skills/ are yours.
+Veil is a ZK privacy payment protocol on Sui (Circom/Groth16 + Move + Next.js). There is no
+CLAUDE.md in this repo (checked 2026-09-28) — README.md has the architecture, circuit/test
+counts, and the build/test commands instead. The .claude/skills/ directory does not exist either;
+there are no veil-* skills to load. Neither is worth recreating from scratch on a research night —
+noting it here and moving on, per this file's own instruction below.
 
 Tonight's job is ONE experiment, measured, merged as a PR, and permanently documented. Not a
 refactor, not a sweep of small fixes. One hypothesis, tested, with real numbers.
@@ -23,14 +26,15 @@ refactor, not a sweep of small fixes. One hypothesis, tested, with real numbers.
 WHERE THE LOOP STANDS
 - docs/research/LEDGER.md — append-only, one row per night, every verdict so far.
 - docs/research/EXPERIMENTS.md — the ranked queue.
-- docs/research/2026-07-14-contra-confidential-transfers.md — a worked example of the report shape.
+- docs/research/2026-07-22-baseline-measurement.md — a worked example of the report shape (this
+  file used to point at a 2026-07-14 file that was never created — corrected 2026-09-28).
 
 Take the highest-ranked queue item not already settled (KEEP/REJECT) in the ledger. Never silently
 re-run a settled experiment; if one deserves a rematch, say why and re-rank it.
 
-BASELINE.md does not exist yet and is queue item #1. Veil's own numbers — per-circuit constraints,
-proving time, proof and VK size, on-chain gas per entry point, browser proving latency — have never
-been measured in one run on one machine. Until they exist every comparison is half-blind.
+`BASELINE.md` was created 2026-07-22 (queue item #1 that night) and is now the living baseline —
+see `docs/research/BASELINE.md` and `EXPERIMENTS.md` for what's still unmeasured in it (on-chain
+gas remains the biggest gap, blocked three nights running on this environment's egress policy).
 
 THE ONE RULE THAT MATTERS
 Every number you report comes from a command you actually ran, with the raw output pasted.

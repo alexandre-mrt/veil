@@ -1,6 +1,6 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Measured 2026-07-22, on one machine, in one run (mobile-approximated row added 2026-09-28). See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
@@ -36,13 +36,32 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## Mobile WASM proving latency (approximated, 2026-09-28)
+
+**UNMEASURED on real hardware — see caveat.** `scripts/bench/browser-latency.mjs --device "Pixel 7"
+--cpu-throttle 4` runs the same headless-Chromium harness as the desktop numbers above, but with a
+Playwright device descriptor (viewport/UA/DPR) and a 4x CDP CPU throttle (Lighthouse's standard
+"mid-tier mobile" multiplier) applied. This still runs on the host machine's desktop x86_64 CPU — it
+approximates a mid/high-tier Android phone's CPU budget, it is **not** a measurement on real mobile
+hardware (no real ARM silicon, mobile WASM JIT, or thermal throttling). Full methodology and caveats:
+[`2026-09-28-mobile-wasm-proving-latency.md`](2026-09-28-mobile-wasm-proving-latency.md).
+
+| Circuit | Desktop headless (ms) | Mobile-approximated, 4x throttle (ms) | Ratio |
+|---|---|---|---|
+| `transfer.circom` | 1228.03 | 2335.45 | 1.90x |
+| `compliance.circom` | 1193.95 | 2327.08 | 1.95x |
+| `withdraw.circom` | 385.96 | 897.97 | 2.33x |
+
+Reproduce: `node scripts/bench/browser-latency.mjs --runs 8 --device "Pixel 7" --cpu-throttle 4`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** (3rd attempt, 2026-09-28) | No `sui` CLI reachable (not on crates.io, and `github.com/MystenLabs/sui/releases` + Sui/Aptos RPC/CDN hosts all denied — confirmed as explicit egress-policy denials via the agent proxy's own status endpoint, not a transient fault). This is now an infrastructure allowlist/vendoring problem, not something an in-session retry can fix. Top of the queue for the next run, pending an environment change. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
-| Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
+| Poseidon2 vs current Poseidon | **NOT MEASURED** | No circom-level Poseidon2 template exists on npm (only JS/TS hashers), and no reference implementation or test vectors were reachable to verify a from-scratch round-constant derivation against (same network restrictions as above). PARKed — see queue. |
+| Real mobile hardware proving latency | **NOT MEASURED** | The row above is a CPU-throttled desktop approximation, not a real device. A real-device provider was not attempted this session (assumed blocked by the same egress policy; not yet confirmed). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
