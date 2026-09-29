@@ -5,15 +5,19 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **PTB batching of transfers (gas floor amortisation).** Follow-up to the 2026-09-29 gas baseline: every
+   entry point is billed the 1,000-unit computation minimum, and one Groth16 verify is only ~250–270
+   units, so ~3 proofs should fit in one PTB for one floor. Extend `scripts/bench/gas-bench.ts` to submit
+   N = 1…10 `shielded_transfer` calls in one PTB and measure net cost/transfer and where the bucket
+   steps. Cheap, and moves a number users actually pay.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
+2. **Storage per transfer + Merkle accumulator at scale (merged with the old accumulator item).** The
+   2026-09-29 baseline shows ~2.9–3.1M MIST net per new dynamic field (nullifiers never deleted) — the
+   dominant permanent cost. Measure the split (field object vs `Pool` object growth), then test a
+   compact nullifier/commitment accumulator at 10^5–10^7 commitments (depth vs anonymity set, indexer
+   throughput). Relevant to `docs/threat-model.md` RR5.
+
+3. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
    baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
    Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
@@ -21,16 +25,11 @@ what matters most — say why in the commit, don't just reorder silently.
    instance from the current baseline) is the highest-leverage next number — it moves prover time
    directly, for every circuit, on every transfer.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
-
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+4. **Batched/aggregated proof verification (N transfers → 1 verify) — DOWNGRADED.** The gas baseline
+   shows verification is ~250–270 gas units, inside the 1,000-unit billing floor; aggregation saves
+   0 billed gas until many proofs share a tx, and PTB batching (item 1) captures that already. Revisit
+   only if item 1 shows the bucket steps up sharply. Also drop the stored-`PreparedVerifyingKey`
+   idea for the same reason (saves ~84 units, billed 0).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
