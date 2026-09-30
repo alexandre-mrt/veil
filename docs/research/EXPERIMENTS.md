@@ -5,7 +5,7 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
+1. **On-chain gas per entry point.** *(Blocked again 2026-09-30: needs `fullnode.testnet.sui.io` and/or a Sui release host on the network allowlist — do not spend a night on tooling until that changes.)* `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
@@ -13,24 +13,18 @@ what matters most — say why in the commit, don't just reorder silently.
    permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **(Promoted 2026-09-30: Merkle path is 76% of transfer's constraints, 520/level.) Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
+   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
+   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
+   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
+   is the main lever available without redesigning the deposit flow).
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
    Depends on item 1 existing first (need a real per-verify gas number to know how much this would
    actually save).
 
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+*Settled:* ~~Poseidon2 vs Poseidon~~ **REJECTED 2026-09-30** (−3% transfer / +3% compliance; see LEDGER). Rematch only under a Plonkish backend (item 9).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
