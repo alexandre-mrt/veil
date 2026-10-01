@@ -1,6 +1,6 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Measured 2026-07-22 (circuits, proving) and 2026-10-01 (on-chain gas), each on one machine in one run. See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
@@ -36,14 +36,40 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point (local Sui network, real proofs)
+
+Measured 2026-10-01 by `scripts/bench/gas-localnet.ts` on a `sui 1.81.0` localnet (protocol 138,
+reference gas price 1000 MIST/unit). Net = computation + storage − rebate. Full table, batching
+curve, raw output and caveats (**local network figures, not mainnet fees**) in
+[`2026-10-01-onchain-gas-baseline.md`](2026-10-01-onchain-gas-baseline.md).
+
+| Entry point | Computation (units) | Net (MIST) | Net (SUI) |
+|---|---|---|---|
+| `deposit_and_register` | 1,000 | 1,799,900 | 0.0018 |
+| `shielded_transfer` (steady state) | 1,000 | 3,116,144 | 0.0031 |
+| `compliant_transfer` | 1,000 | 5,288,528 | 0.0053 |
+| `zk_withdraw` | 1,000 | 4,453,744 | 0.0045 |
+| `create_pool` | 1,000 | 8,518,680 | 0.0085 |
+| `create_compliance_config` | 1,000 | 7,286,568 | 0.0073 |
+| `publish` (6 modules) | 1,390 | 148,024,400 | 0.148 |
+| admin timelock proposals / freeze (range) | 1,000 | 0.8M – 4.3M | 0.0008 – 0.0043 |
+
+Computation is at the 1,000-unit protocol floor for every entry point (marginal real work ≈ 342
+units per `shielded_transfer`, ≈ 270 per `zk_withdraw`, visible only when batching ≥ 4 in one PTB);
+cost is storage-dominated. Move test suite: 124/124 pass (`sui move test --build-env testnet`,
+CLI 1.64.0 and 1.81.0). Contracts need a network on Sui ≥ 1.81 (see the report's findings).
+
+Reproduce: see the report's "Reproduce" block (`node --experimental-strip-types bench/gas-localnet.ts`).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| Real-network (testnet/mainnet) gas and fee levels | **NOT MEASURED** | Sandbox egress denies the Sui fullnodes; the localnet ratios above should be cross-checked on a real network. |
+| Groth16 verification share of the 342 computation units | **NOT MEASURED** | Verifier functions are `public(package)`; needs a test-only wrapper module. |
+| Shared-`Pool` contention under concurrent transfers | **NOT MEASURED** | Needs a multi-sender load generator. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
-| Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
+| Relayer throughput / leakage under load | **NOT MEASURED** | Queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Whatever comes out of a future run should replace the corresponding row above in place, not be
+appended as a separate table.

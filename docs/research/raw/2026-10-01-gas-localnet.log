@@ -1,0 +1,101 @@
+RGP=1000 protocolVersion=138
+publish                            comp=1390000 (1390 units) storage=156415600 rebate=9781200 net=148024400
+create_pool                        comp=1000000 (1000 units) storage=8496800 rebate=978120 net=8518680
+create_compliance_config           comp=1000000 (1000 units) storage=14698400 rebate=8411832 net=7286568
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+deposit_and_register #1 (first)    comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+deposit_and_register #2            comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+deposit_and_register #3            comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+deposit_and_register #4            comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+deposit_and_register #5            comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+faucet (testnet-only)              comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+faucet+deposit (bulk, not reported) comp=1000000 (1000 units) storage=9264400 rebate=8464500 net=1799900
+update_commitment_root (propose)   comp=1000000 (1000 units) storage=8983200 rebate=8652600 net=1330600
+propose_withdraw_vk                comp=1000000 (1000 units) storage=12213200 rebate=8893368 net=4319832
+sleeping 28808 ms past the epoch boundary...
+shielded_transfer #1               comp=1000000 (1000 units) storage=14485600 rebate=12610224 net=2875376
+shielded_transfer #2 (steady state) comp=1000000 (1000 units) storage=14485600 rebate=12369456 net=3116144
+compliant_transfer                 comp=1000000 (1000 units) storage=22556800 rebate=18268272 net=5288528
+zk_withdraw #1                     comp=1000000 (1000 units) storage=15823200 rebate=12369456 net=4453744
+zk_withdraw #2 (steady state)      comp=1000000 (1000 units) storage=15823200 rebate=12369456 net=4453744
+dry-run 1x shielded_transfer in one PTB comp=1000000 (1000 units) storage=14485600 rebate=12369456 net=3116144
+dry-run 2x shielded_transfer in one PTB comp=1000000 (1000 units) storage=18528800 rebate=14400936 net=5127864
+dry-run 4x shielded_transfer in one PTB comp=1510000 (1510 units) storage=26615200 rebate=18463896 net=9661304
+dry-run 8x shielded_transfer in one PTB comp=2760000 (2760 units) storage=42788000 rebate=26589816 net=18958184
+dry-run 16x shielded_transfer in one PTB comp=5430000 (5430 units) storage=75133600 rebate=42841656 net=37721944
+dry-run 24x shielded_transfer in one PTB comp=8240000 (8240 units) storage=107479200 rebate=59093496 net=56625704
+dry-run 1x zk_withdraw in one PTB  comp=1000000 (1000 units) storage=15823200 rebate=12369456 net=4453744
+dry-run 2x zk_withdraw in one PTB  comp=1020000 (1020 units) storage=21204000 rebate=14400936 net=7823064
+dry-run 4x zk_withdraw in one PTB  comp=1560000 (1560 units) storage=31965600 rebate=18463896 net=15061704
+dry-run 8x zk_withdraw in one PTB  comp=2640000 (2640 units) storage=53488800 rebate=26589816 net=29538984
+freeze_pool                        comp=1000000 (1000 units) storage=11970000 rebate=11850300 net=1119700
+unfreeze_pool                      comp=1000000 (1000 units) storage=11970000 rebate=11850300 net=1119700
+propose_withdrawal                 comp=1000000 (1000 units) storage=12274000 rebate=11850300 net=1423700
+cancel_withdrawal                  comp=1000000 (1000 units) storage=11970000 rebate=12151260 net=818740
+update_credential_root (propose)   comp=1000000 (1000 units) storage=8717200 rebate=8389260 net=1327940
