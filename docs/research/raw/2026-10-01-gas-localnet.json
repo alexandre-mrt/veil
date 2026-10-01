@@ -1,0 +1,987 @@
+{
+  "rgp": "1000",
+  "protocolVersion": "138",
+  "epochMs": 60000,
+  "rows": [
+    {
+      "label": "publish",
+      "note": "17046 bytecode bytes",
+      "digest": "Gtgwj8xrA4d7AuZVmrnHffux9WNVZNfb2nJW7x1EJSVh",
+      "computationCostMist": "1390000",
+      "computationUnits": "1390",
+      "storageCostMist": "156415600",
+      "storageRebateMist": "9781200",
+      "netMist": "148024400"
+    },
+    {
+      "label": "create_pool",
+      "note": "",
+      "digest": "BogA1XWHKbkSyEUnxRBmdeKWAZHbiKdnYYVxLyajzSKd",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "8496800",
+      "storageRebateMist": "978120",
+      "netMist": "8518680"
+    },
+    {
+      "label": "create_compliance_config",
+      "note": "",
+      "digest": "51pAkbmUTEbcWuJVrbw9oikG1HCwhU5TCCn9j1gRwgi9",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "14698400",
+      "storageRebateMist": "8411832",
+      "netMist": "7286568"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "3NuXCWR7G1ixnqqMbdFjsVCtM4og6zzf11bsZicfSUFF",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "deposit_and_register #1 (first)",
+      "note": "leaf 0",
+      "digest": "7FM8PpVfFBWNWjNvYULCd5ijLYiB8w5rkcAiqHitZjy3",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "4hmnPw1XcbZcq2VtehVPUSFPs6iHkQ7mPDko1kQAMGx5",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "deposit_and_register #2",
+      "note": "leaf 1",
+      "digest": "Ab7UQeex4TXRmmhsMEKrTvEoiXDhq6CkWpJCK81dS9X6",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "8wXm8cGmteUsXNTRnD1Th8NmpLbZCracCGiZeTj6JLqH",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "deposit_and_register #3",
+      "note": "leaf 2",
+      "digest": "6cwWAUBWWncE8pGGvkhHWDwnHNTuCYqebt5qCMoRqyhG",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "3Fbdsv1p1MxQwVFX3HdcvS7CgJ1Bdo29LUuXwuz6cgtw",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "deposit_and_register #4",
+      "note": "leaf 3",
+      "digest": "3f6hzceBiD2sBErUDZdHuFVjYHkomz2efzm9eZKz6QDZ",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "J3rqyjt6VvJyZwU7dcLxovgFFJ4Q2pxVRqujJnCdKUx6",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "deposit_and_register #5",
+      "note": "leaf 4",
+      "digest": "9DrnkDQ8HgNSjtWpcGC3yASnyC3FJNQ6qiBWgLaSDcdn",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "gjruB9exKXB1wSEu2QEPjDxuKbbDbnUM7QxYrJ35zzx",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "7SKMC8k9LGoy59fDRvDkXEHJWFVYzygxZcJXHyerGkCQ",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "FLvxXCwUX8oKxQPcWbuXb1KFBCBpyWjXtThfawVF3yWf",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "BUZGmqeqpbkKcGNxwtcSFBiFeSFnM9dJ6mRQLC1xLeCE",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "2reWFYuW5smovXQDPchYgDSpijtABEyja3voEj3JyAPb",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "4jJt7SLG6jsrXCtNb4SciY5LKA4iw3CPLsjYd88Cm1BP",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "A2mvuGwEwVZ81eP4Z9uqvAxF7GmseRxqpX9Q95er3jnf",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "wH2SDwun3VsBPn8fmhaMLPj6Y6jRspQJoWnknnR5nZo",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "74fWJpaDnPhN3EdcdRpcv8uk4FyQfykMoUcVfJNFQ28G",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "2xRJA7pKSCnAnmypchNDuCSMnaGydSHPsXkeUQkazmUU",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "5UDQh6Uiz4gcZQRHCBAoRVefJJ7B3fWzDioD4SyoMBnR",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "DqmkHx8sQ3E8CgSiin3C9BKdsQEsQorvwa1Vohvc1uS",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "CdFbQ9YuLFSGmBeYP4WyfeA12pdqprw7vY2hYH3UgXvC",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "45hsjGmbytZ5guKe8ZtzPnJcAgaqeoga8iPEPTFau3yC",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "J7mchSDv3Y4Wh9FmiamHwV18F3ywr3gSSkYWwXVv4YvY",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "7KPZ1temR8Ze8kVttvbgYurGqXydXR8bGyGajUd5qTf6",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "9QoYN9TKTFBfR5g8fi2AMop86d1XhJNAczzHPSMe84KM",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "7HPM3DQLQtyV8SM6SmKMTP9tibUr9BgVfPh9RzkFibks",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "7qpeejFUmET1fpoWWqV7GFtk3KpvWjbVsxzzGSfkTqNG",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "Bkvi2UuLxzWSEyE7PHs1jBLmD4bjQnpPVcbW6W3eYgBB",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "BMNA9sck4CXLRsCLGPZapWXBaFrqYtZC1TsuR7b8Jojk",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "7fYqEHi5Uuijec49sssxxogGExV4623SxMFneet9sEqu",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "HZ2f31S37Z8fJhFggVr3xikFMzhkPGsL8pYnW5GkhuNz",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "8vF1PS2VLV5F14NWkSxPCZ3NDMLZHZXWWEyRtUetDZ2T",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "GB9DiDJpNdadSmrwmKBP7DoiJm4sGdwoukMLpN1He2Eo",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "6EQcgfAhyWK62uFiSJwr48DKUpBUNepBJ99a4ZDWfSPb",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "6dbuETkkXrfyFQUjSEpw1ueUxEpx86QJ6nd8D7ZpHz9b",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "GFxkFYJuj5VN2NAvac9BAAyLmY9YZUSDmAXAQtxx6e3U",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "B1yJzp15UtdFR952MgjU6Wb88NmGHuwD7xVg1g46jSiP",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "9ZqmZ8fZpyTmEyezGRTU1F4nndE29DAAx6BG5bYERPFK",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "3cwRdkGvVFcArC7VTpWHKeZAjhHHoPJpfRw6r1MAi68x",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "2oTRxwfBzXnQx6WttZswuADFDvYiL37TiZcxRqxsDNDC",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "CJmKquu89YRdPhuB3TwvtuyieCMRdXZzwniZz2wjwhqk",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "GqCziwFF8qRN1GfXYfetUf8PFFJ3F1WYh2HsCupwsVPQ",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "FHq68B2VKWBk3ipiAqeTJKBZWwNVKKNzDTPkGpodCbRd",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "3ZpeLKtJgg74FZXX3g4vLXzoc845PY3NDVMrvr7MYHCW",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "6toY8yHeBVtmpQx1F26XbCX31cuLLq3b5H2yjSbpMaap",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "4rdb6GX134wfbgZ4Zno11j4XUpi1jPgvxQ9LVFWxgexG",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "DPd5PvyCmGUC9gaNM24TmEWMVEkg8RHu6w8c9tXUS8eB",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "ARV8LKMzkYVXHc2Vhzva8XvVkKiVMiZvXTUrAJ4LKooJ",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "97wNCHPgyRShQpQTkavxuSxezNgJ3W7Xf7G1fZa9UJQv",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "7bGuRUtGnrpro4uoRHo6fBc4Y3JBeaxVJf5xiWrLNvrb",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "ACT68KuCkD2uExu5KWsMi3bTBNSFXJurog52MCQYJcH6",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "BwtoPZujzdgaiizyoTZvesUS1B6bKPveNmof5GcxXfPm",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "5v8wFuNFRyHiByC5kTKexJeVhM3zYRJc6sN9HSzp9Ujf",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "L92NfAJWTUt7KdUgFLbYTVvMcKCnMHmoWEZpMg9mVUo",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "ApZjbvSgeXkZr4DtHgJzRXGQcT6LgcMDK5wFdkzfXwRK",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "6sKD7DMHg3dMWsroFx3rVGioJuHT3WunM3RJmCdGQA1N",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "HRQGtQqkaYZ1R6wZYd89Ed5JhF6hp4349eiz4Va2KKhm",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "J2dGCKJGWvhFPnUwYQQWVA9WQzMZNHhQeg5gUVSSWm49",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "A3g4Tdwfq4hjqr5j1cUvBzdWoHxwEG4in2LxivbLid4J",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "E3So1T9VVuh1syRak2mDEVYj9ZSY2KE9daxFhVf6z75",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "DzKrpAfhVtaR4DiD9qBJWHrowTfUcYna6tyY4jdRCFGj",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "8sbXUrJWD1k96oEB7Si7HNCvLXrRrMHMsSKcTuWRLiwu",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "AY15vreHK4MpYn1wPcznzB7tGjuzpZpKpNcCn3paXd7F",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "HhqznHZJzG1WVjj97chfd73F5D8CFbgBBQZZNxaiVZZA",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "Bbab3CuJXYTnJpF9Jb7Rfsg4qYn3J8bU5C2YkWz4XQKf",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "tKysJZpQfeNCoMUgQGazDr17Wv8myZ8fqpd9vPwuURz",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "GoRgMtQmBDgHoDsBASsVGECLN544atVzLkGPPC8vLgQR",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "4zYmDCiQH7V8jWk6AJQXfqaGB2oDAaSUB2taXMKYLUVH",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "8GZYTfuA9g7bkowgAhte1ET3dsoBcYvSnSNWr5i9h9DJ",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "8HxAwKj7si6Z4rbfy1UXRXKqjSzCQNMRv7eqysZ5v2xi",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "faucet (testnet-only)",
+      "note": "",
+      "digest": "49WNzfFbqEGnwpbxxVqwGz2x7XLkzUx7bXdRhjp2gKXp",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "4043200",
+      "storageRebateMist": "2678544",
+      "netMist": "2364656"
+    },
+    {
+      "label": "faucet+deposit (bulk, not reported)",
+      "note": "",
+      "digest": "5vp9cuLyoYuAXLzQvhDe4y5MHhBuYoXxJhnqzPG2J7pZ",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "9264400",
+      "storageRebateMist": "8464500",
+      "netMist": "1799900"
+    },
+    {
+      "label": "update_commitment_root (propose)",
+      "note": "",
+      "digest": "BhDoYEjHdfEvT35qvFbEn2iJJJxuX1BzbyctRspujx9o",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "8983200",
+      "storageRebateMist": "8652600",
+      "netMist": "1330600"
+    },
+    {
+      "label": "propose_withdraw_vk",
+      "note": "",
+      "digest": "VgZbQUNbdyruLgQsQbaxRGMLwWV6sSiUYZJgP4nShYJ",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "12213200",
+      "storageRebateMist": "8893368",
+      "netMist": "4319832"
+    },
+    {
+      "label": "shielded_transfer #1",
+      "note": "also applies the pending commitment root (lazy apply)",
+      "digest": "46uP1wwizp5UaaLTta6HJj12ZnEikwUijoDhGB5scB8G",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "14485600",
+      "storageRebateMist": "12610224",
+      "netMist": "2875376"
+    },
+    {
+      "label": "shielded_transfer #2 (steady state)",
+      "note": "",
+      "digest": "GjtCFLN5W4fsM5wuorZtnddEKFe7sL8qyswi3y4eiyzc",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "14485600",
+      "storageRebateMist": "12369456",
+      "netMist": "3116144"
+    },
+    {
+      "label": "compliant_transfer",
+      "note": "transfer proof + compliance proof, 93-byte encrypted_amount",
+      "digest": "AxPjUbrhzVWshQdcsAcZxxYrNQxBQLdD7cZUB692f3Hs",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "22556800",
+      "storageRebateMist": "18268272",
+      "netMist": "5288528"
+    },
+    {
+      "label": "zk_withdraw #1",
+      "note": "also applies the pending withdraw VK",
+      "digest": "CF6PfXfM4CRaRcNXXqTjrzvKgrQAGdV8jY3HB1dq7Fmw",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "15823200",
+      "storageRebateMist": "12369456",
+      "netMist": "4453744"
+    },
+    {
+      "label": "zk_withdraw #2 (steady state)",
+      "note": "",
+      "digest": "4tw9f84KY87kj226DJkakxGpMcCXbqiq7wDoUA2m5mrJ",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "15823200",
+      "storageRebateMist": "12369456",
+      "netMist": "4453744"
+    },
+    {
+      "label": "dry-run 1x shielded_transfer in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "14485600",
+      "storageRebateMist": "12369456",
+      "netMist": "3116144"
+    },
+    {
+      "label": "dry-run 2x shielded_transfer in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "18528800",
+      "storageRebateMist": "14400936",
+      "netMist": "5127864"
+    },
+    {
+      "label": "dry-run 4x shielded_transfer in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "1510000",
+      "computationUnits": "1510",
+      "storageCostMist": "26615200",
+      "storageRebateMist": "18463896",
+      "netMist": "9661304"
+    },
+    {
+      "label": "dry-run 8x shielded_transfer in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "2760000",
+      "computationUnits": "2760",
+      "storageCostMist": "42788000",
+      "storageRebateMist": "26589816",
+      "netMist": "18958184"
+    },
+    {
+      "label": "dry-run 16x shielded_transfer in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "5430000",
+      "computationUnits": "5430",
+      "storageCostMist": "75133600",
+      "storageRebateMist": "42841656",
+      "netMist": "37721944"
+    },
+    {
+      "label": "dry-run 24x shielded_transfer in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "8240000",
+      "computationUnits": "8240",
+      "storageCostMist": "107479200",
+      "storageRebateMist": "59093496",
+      "netMist": "56625704"
+    },
+    {
+      "label": "dry-run 1x zk_withdraw in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "15823200",
+      "storageRebateMist": "12369456",
+      "netMist": "4453744"
+    },
+    {
+      "label": "dry-run 2x zk_withdraw in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "1020000",
+      "computationUnits": "1020",
+      "storageCostMist": "21204000",
+      "storageRebateMist": "14400936",
+      "netMist": "7823064"
+    },
+    {
+      "label": "dry-run 4x zk_withdraw in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "1560000",
+      "computationUnits": "1560",
+      "storageCostMist": "31965600",
+      "storageRebateMist": "18463896",
+      "netMist": "15061704"
+    },
+    {
+      "label": "dry-run 8x zk_withdraw in one PTB",
+      "note": "dry-run (not executed)",
+      "computationCostMist": "2640000",
+      "computationUnits": "2640",
+      "storageCostMist": "53488800",
+      "storageRebateMist": "26589816",
+      "netMist": "29538984"
+    },
+    {
+      "label": "freeze_pool",
+      "note": "",
+      "digest": "CqKWUZqeP2ingnWdcQqaLTAoZdSQYtK2Xc4mZggSvo9f",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "11970000",
+      "storageRebateMist": "11850300",
+      "netMist": "1119700"
+    },
+    {
+      "label": "unfreeze_pool",
+      "note": "",
+      "digest": "Ake8p1LwRVVZnvJZBSWdLXHg3z6VyCypQjqZvbfo35pq",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "11970000",
+      "storageRebateMist": "11850300",
+      "netMist": "1119700"
+    },
+    {
+      "label": "propose_withdrawal",
+      "note": "",
+      "digest": "4dsg6Uw96yTHo7R31nF5dKJoSj3cQsoDfjdD87v8nKbA",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "12274000",
+      "storageRebateMist": "11850300",
+      "netMist": "1423700"
+    },
+    {
+      "label": "cancel_withdrawal",
+      "note": "",
+      "digest": "4juwV2FzhQz1nUjiCN5MVsUXV7sxY1FNvNQUp5WxF1o6",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "11970000",
+      "storageRebateMist": "12151260",
+      "netMist": "818740"
+    },
+    {
+      "label": "update_credential_root (propose)",
+      "note": "",
+      "digest": "F1dVKmJRuxGdfrbR6EcWdTEtrkZAP7g75okFgG5yR7eh",
+      "computationCostMist": "1000000",
+      "computationUnits": "1000",
+      "storageCostMist": "8717200",
+      "storageRebateMist": "8389260",
+      "netMist": "1327940"
+    }
+  ]
+}
