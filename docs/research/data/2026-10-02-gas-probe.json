@@ -1,0 +1,143 @@
+{
+  "rgp": "1000",
+  "primitives": {
+    "loop_n (empty iteration)": {
+      "n1": 9400,
+      "n2": 16971,
+      "unitsPerCallCrossing": 0.5283317923656056,
+      "unitsPerCallSlope": 1.0482587944140003
+    },
+    "transfer: prepare_verifying_key x n": {
+      "n1": 12,
+      "n2": 61,
+      "unitsPerCallCrossing": 81.63265306122449,
+      "unitsPerCallSlope": 83.93442622950819
+    },
+    "transfer: verify (VK pre-prepared) x n": {
+      "n1": 5,
+      "n2": 27,
+      "unitsPerCallCrossing": 181.8181818181818,
+      "unitsPerCallSlope": 182.96296296296296
+    },
+    "transfer: prepare+verify x n (today)": {
+      "n1": 4,
+      "n2": 19,
+      "unitsPerCallCrossing": 266.6666666666667,
+      "unitsPerCallSlope": 269.4736842105263
+    },
+    "withdraw: prepare_verifying_key x n": {
+      "n1": 12,
+      "n2": 61,
+      "unitsPerCallCrossing": 81.63265306122449,
+      "unitsPerCallSlope": 84.09836065573771
+    },
+    "withdraw: verify (VK pre-prepared) x n": {
+      "n1": 6,
+      "n2": 30,
+      "unitsPerCallCrossing": 166.66666666666666,
+      "unitsPerCallSlope": 164
+    },
+    "withdraw: prepare+verify x n (today)": {
+      "n1": 4,
+      "n2": 21,
+      "unitsPerCallCrossing": 235.2941176470588,
+      "unitsPerCallSlope": 247.61904761904762
+    },
+    "compliance: prepare_verifying_key x n": {
+      "n1": 12,
+      "n2": 61,
+      "unitsPerCallCrossing": 81.63265306122449,
+      "unitsPerCallSlope": 83.93442622950819
+    },
+    "compliance: verify (VK pre-prepared) x n": {
+      "n1": 6,
+      "n2": 29,
+      "unitsPerCallCrossing": 173.91304347826087,
+      "unitsPerCallSlope": 174.48275862068965
+    },
+    "compliance: prepare+verify x n (today)": {
+      "n1": 4,
+      "n2": 20,
+      "unitsPerCallCrossing": 250,
+      "unitsPerCallSlope": 257.5
+    }
+  },
+  "observedBuckets": [
+    "1000",
+    "4680",
+    "2380",
+    "1240",
+    "1060",
+    "1020",
+    "1010",
+    "21400",
+    "12100",
+    "7370",
+    "5820",
+    "5250",
+    "4960",
+    "5110",
+    "5030",
+    "5000",
+    "5020",
+    "5010",
+    "22800",
+    "1350",
+    "2670",
+    "5330",
+    "4000",
+    "4660",
+    "5160",
+    "5080",
+    "10200",
+    "1570",
+    "1200",
+    "3030",
+    "5960",
+    "4500",
+    "5230",
+    "4870",
+    "5050",
+    "9990",
+    "1090",
+    "2150",
+    "4280",
+    "8530",
+    "6410",
+    "5340",
+    "4810",
+    "5320",
+    "4990",
+    "5070",
+    "1420",
+    "2730",
+    "5350",
+    "4040",
+    "4690",
+    "4860",
+    "9940",
+    "2000",
+    "3970",
+    "7920",
+    "5940",
+    "5450",
+    "5200",
+    "10400",
+    "1490",
+    "1150",
+    "2880",
+    "5660",
+    "4270",
+    "5310",
+    "5140",
+    "1050",
+    "2070",
+    "4120",
+    "8220",
+    "6170",
+    "5150",
+    "4640",
+    "4890",
+    "10300"
+  ]
+}

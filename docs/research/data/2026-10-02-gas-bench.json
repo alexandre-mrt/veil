@@ -1,0 +1,226 @@
+{
+  "rgp": "1000",
+  "rows": [
+    {
+      "label": "publish (all 6 modules)",
+      "ok": true,
+      "computation": "1390000",
+      "storage": "156415600",
+      "rebate": "9781200",
+      "units": "1390",
+      "net": "148024400"
+    },
+    {
+      "label": "create_pool",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "8496800",
+      "rebate": "978120",
+      "units": "1000",
+      "net": "8518680"
+    },
+    {
+      "label": "propose_withdraw_vk (timelocked)",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "11726800",
+      "rebate": "8411832",
+      "units": "1000",
+      "net": "4314968"
+    },
+    {
+      "label": "create_compliance_config",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "17928400",
+      "rebate": "11609532",
+      "units": "1000",
+      "net": "7318868"
+    },
+    {
+      "label": "deposit_and_register #1",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "12494400",
+      "rebate": "11662200",
+      "units": "1000",
+      "net": "1832200"
+    },
+    {
+      "label": "deposit_and_register #2",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "12494400",
+      "rebate": "11662200",
+      "units": "1000",
+      "net": "1832200"
+    },
+    {
+      "label": "deposit_and_register #3",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "12494400",
+      "rebate": "11662200",
+      "units": "1000",
+      "net": "1832200"
+    },
+    {
+      "label": "deposit_and_register #4",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "12494400",
+      "rebate": "11662200",
+      "units": "1000",
+      "net": "1832200"
+    },
+    {
+      "label": "deposit_and_register #5",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "12494400",
+      "rebate": "11662200",
+      "units": "1000",
+      "net": "1832200"
+    },
+    {
+      "label": "deposit_and_register #6",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "12494400",
+      "rebate": "11662200",
+      "units": "1000",
+      "net": "1832200"
+    },
+    {
+      "label": "deposit_and_register #7",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "12494400",
+      "rebate": "11662200",
+      "units": "1000",
+      "net": "1832200"
+    },
+    {
+      "label": "update_commitment_root (timelocked)",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "12213200",
+      "rebate": "11850300",
+      "units": "1000",
+      "net": "1362900"
+    },
+    {
+      "label": "shielded_transfer — INVALID proof (abort)",
+      "ok": false,
+      "computation": "1000000",
+      "storage": "10685600",
+      "rebate": "10578744",
+      "units": "1000",
+      "net": "1106856",
+      "error": "MoveAbort(MoveLocation { module: ModuleId { address: 4173f572bf135139ee679ad1dc7a887396165ca4dd26a4e64f88b36eae1f435e, name: Identifier(\"pool\") }, function: 4, instruction: 100, function_name: Some(\"execute_transfer\") }, 3) in command 0"
+    },
+    {
+      "label": "shielded_transfer #1",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "14485600",
+      "rebate": "12610224",
+      "units": "1000",
+      "net": "2875376"
+    },
+    {
+      "label": "shielded_transfer #2",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "14485600",
+      "rebate": "12369456",
+      "units": "1000",
+      "net": "3116144"
+    },
+    {
+      "label": "shielded_transfer #3",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "14485600",
+      "rebate": "12369456",
+      "units": "1000",
+      "net": "3116144"
+    },
+    {
+      "label": "compliant_transfer #1",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "22556800",
+      "rebate": "18268272",
+      "units": "1000",
+      "net": "5288528"
+    },
+    {
+      "label": "compliant_transfer #2",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "22556800",
+      "rebate": "18268272",
+      "units": "1000",
+      "net": "5288528"
+    },
+    {
+      "label": "zk_withdraw #1 (recipient == proof's recipient)",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "15823200",
+      "rebate": "12369456",
+      "units": "1000",
+      "net": "4453744"
+    },
+    {
+      "label": "zk_withdraw #2 (SUBSTITUTED recipient)",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "15823200",
+      "rebate": "12369456",
+      "units": "1000",
+      "net": "4453744"
+    },
+    {
+      "label": "freeze_pool",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "11970000",
+      "rebate": "11850300",
+      "units": "1000",
+      "net": "1119700"
+    },
+    {
+      "label": "unfreeze_pool",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "11970000",
+      "rebate": "11850300",
+      "units": "1000",
+      "net": "1119700"
+    },
+    {
+      "label": "propose_withdrawal",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "12274000",
+      "rebate": "11850300",
+      "units": "1000",
+      "net": "1423700"
+    },
+    {
+      "label": "cancel_withdrawal",
+      "ok": true,
+      "computation": "1000000",
+      "storage": "11970000",
+      "rebate": "12151260",
+      "units": "1000",
+      "net": "818740"
+    }
+  ],
+  "substitution": {
+    "status": "success",
+    "attackerBalance": "100"
+  }
+}

@@ -1,0 +1,72 @@
+=== Veil on-chain gas benchmark (localnet http://127.0.0.1:9000) ===
+sui sui 1.81.0-bf0c491c17b8  node v22.22.0
+reference gas price: 1000 MIST/unit
+
+-- publish
+  publish (all 6 modules)                      ok   comp=1390000 (1390 units) storage=156415600 rebate=9781200
+
+-- admin / setup
+  create_pool                                  ok   comp=1000000 (1000 units) storage=8496800 rebate=978120
+  propose_withdraw_vk (timelocked)             ok   comp=1000000 (1000 units) storage=11726800 rebate=8411832
+  create_compliance_config                     ok   comp=1000000 (1000 units) storage=17928400 rebate=11609532
+
+-- deposits
+  deposit_and_register #1                      ok   comp=1000000 (1000 units) storage=12494400 rebate=11662200
+  deposit_and_register #2                      ok   comp=1000000 (1000 units) storage=12494400 rebate=11662200
+  deposit_and_register #3                      ok   comp=1000000 (1000 units) storage=12494400 rebate=11662200
+  deposit_and_register #4                      ok   comp=1000000 (1000 units) storage=12494400 rebate=11662200
+  deposit_and_register #5                      ok   comp=1000000 (1000 units) storage=12494400 rebate=11662200
+  deposit_and_register #6                      ok   comp=1000000 (1000 units) storage=12494400 rebate=11662200
+  deposit_and_register #7                      ok   comp=1000000 (1000 units) storage=12494400 rebate=11662200
+  update_commitment_root (timelocked)          ok   comp=1000000 (1000 units) storage=12213200 rebate=11850300
+
+-- waiting for epoch 29848763 (commitments mature + timelocks apply)...
+
+-- shielded_transfer
+  shielded_transfer — INVALID proof (abort)    ABRT comp=1000000 (1000 units) storage=10685600 rebate=10578744
+  shielded_transfer #1                         ok   comp=1000000 (1000 units) storage=14485600 rebate=12610224
+  shielded_transfer #2                         ok   comp=1000000 (1000 units) storage=14485600 rebate=12369456
+  shielded_transfer #3                         ok   comp=1000000 (1000 units) storage=14485600 rebate=12369456
+
+-- compliant_transfer (transfer proof + compliance proof)
+  compliant_transfer #1                        ok   comp=1000000 (1000 units) storage=22556800 rebate=18268272
+  compliant_transfer #2                        ok   comp=1000000 (1000 units) storage=22556800 rebate=18268272
+
+-- zk_withdraw
+  zk_withdraw #1 (recipient == proof's recipient) ok   comp=1000000 (1000 units) storage=15823200 rebate=12369456
+  zk_withdraw #2 (SUBSTITUTED recipient)       ok   comp=1000000 (1000 units) storage=15823200 rebate=12369456
+  >> substituted-recipient withdraw success; attacker balance = 100
+
+-- admin ops
+  freeze_pool                                  ok   comp=1000000 (1000 units) storage=11970000 rebate=11850300
+  unfreeze_pool                                ok   comp=1000000 (1000 units) storage=11970000 rebate=11850300
+  propose_withdrawal                           ok   comp=1000000 (1000 units) storage=12274000 rebate=11850300
+  cancel_withdrawal                            ok   comp=1000000 (1000 units) storage=11970000 rebate=12151260
+
+=== SUMMARY (MIST; units = computation / RGP) ===
+label | ok | computation | units | storage | rebate | net
+publish (all 6 modules) | ok | 1390000 | 1390 | 156415600 | 9781200 | 148024400
+create_pool | ok | 1000000 | 1000 | 8496800 | 978120 | 8518680
+propose_withdraw_vk (timelocked) | ok | 1000000 | 1000 | 11726800 | 8411832 | 4314968
+create_compliance_config | ok | 1000000 | 1000 | 17928400 | 11609532 | 7318868
+deposit_and_register #1 | ok | 1000000 | 1000 | 12494400 | 11662200 | 1832200
+deposit_and_register #2 | ok | 1000000 | 1000 | 12494400 | 11662200 | 1832200
+deposit_and_register #3 | ok | 1000000 | 1000 | 12494400 | 11662200 | 1832200
+deposit_and_register #4 | ok | 1000000 | 1000 | 12494400 | 11662200 | 1832200
+deposit_and_register #5 | ok | 1000000 | 1000 | 12494400 | 11662200 | 1832200
+deposit_and_register #6 | ok | 1000000 | 1000 | 12494400 | 11662200 | 1832200
+deposit_and_register #7 | ok | 1000000 | 1000 | 12494400 | 11662200 | 1832200
+update_commitment_root (timelocked) | ok | 1000000 | 1000 | 12213200 | 11850300 | 1362900
+shielded_transfer — INVALID proof (abort) | abort | 1000000 | 1000 | 10685600 | 10578744 | 1106856
+shielded_transfer #1 | ok | 1000000 | 1000 | 14485600 | 12610224 | 2875376
+shielded_transfer #2 | ok | 1000000 | 1000 | 14485600 | 12369456 | 3116144
+shielded_transfer #3 | ok | 1000000 | 1000 | 14485600 | 12369456 | 3116144
+compliant_transfer #1 | ok | 1000000 | 1000 | 22556800 | 18268272 | 5288528
+compliant_transfer #2 | ok | 1000000 | 1000 | 22556800 | 18268272 | 5288528
+zk_withdraw #1 (recipient == proof's recipient) | ok | 1000000 | 1000 | 15823200 | 12369456 | 4453744
+zk_withdraw #2 (SUBSTITUTED recipient) | ok | 1000000 | 1000 | 15823200 | 12369456 | 4453744
+freeze_pool | ok | 1000000 | 1000 | 11970000 | 11850300 | 1119700
+unfreeze_pool | ok | 1000000 | 1000 | 11970000 | 11850300 | 1119700
+propose_withdrawal | ok | 1000000 | 1000 | 12274000 | 11850300 | 1423700
+cancel_withdrawal | ok | 1000000 | 1000 | 11970000 | 12151260 | 818740
+wrote /tmp/claude-0/out/gas.json

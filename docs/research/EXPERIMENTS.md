@@ -5,71 +5,64 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+Re-ranked 2026-10-02 after the on-chain gas baseline (LEDGER 2026-10-02): the old #1 (gas) is settled
+KEEP; a confirmed security finding (F1) jumps to the top; batched proofs is demoted because verification
+sits entirely under Sui's 1,000-unit computation floor.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+1. **Fix `zk_withdraw` recipient binding (F1) and measure the fix.** `zk_withdraw` ignores the
+   `recipientHash` public input, so a valid proof can be redirected to any address (confirmed on-chain,
+   `2026-10-02-onchain-gas-baseline.md`). Recompute `Poseidon(8, recipient)` on-chain with
+   `sui::poseidon::poseidon_bn254`, or expose `recipient` as a public input; settle the 256-bit
+   address → ~254-bit field mapping; add the missing negative Move test; measure extra gas with
+   `scripts/bench/gas-bench.ts` (still under the floor?). Unmitigated threat → highest value.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+2. **Contract ↔ circuit binding audit.** F1 passed 43+30+35 circuit tests and 124 Move tests. Check every
+   public input of all three circuits is compared on-chain or provably unneeded; in particular whether
+   `compliant_transfer`'s compliance proof is bound to the transfer proof it accompanies (`contextId` is
+   private in the compliance circuit; the contract never relates the two proofs). Fold in the old
+   "independent soundness audit" scope (alias checks beyond T30, nullifier collisions across the eight
+   domain tags, malleability).
 
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
-   deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
-   circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
-   relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
-   is the main lever available without redesigning the deposit flow).
+3. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Unchanged from before: transfer and
+   compliance have 6,470 / 6,057 non-linear constraints driven by four Poseidon instances vs 1,465 for
+   withdraw; a measured constraint/proving-time delta moves prover time on every transfer. (Note: any
+   hash change interacts with F1's on-chain Poseidon, so do #1 first.)
 
-5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
-   wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
-   across the three circuits' eight domain tags, proof malleability. Adversarial, not a redesign —
-   the existing test suites are thorough but self-referential; worth a pass that tries to break the
-   circuits rather than confirm they work as documented.
+4. **Storage footprint per transfer.** New. Gas is storage-dominated: a transfer pays ≈ 14.5 M MIST
+   storage (≈ 3.1 M net) against a 1.0 M computation floor. Break down which objects/dynamic fields cost
+   what, and test whether e.g. nullifier-only sets or Merkle-leaf commitments (instead of one dynamic
+   field per commitment) cut it. Replaces batching as the real gas lever.
 
-6. **Threshold auditing (t-of-n) vs the single auditor key.** `docs/threat-model.md` asset #6 and
-   the ECDH auditor-key design (`docs/auditor-guide.md`) currently assume one auditor keypair.
-   A t-of-n threshold scheme (or even measuring the cost of a naive N-of-N re-encryption) changes
-   the trust model for compliance data meaningfully and is a natural fit for the "confidential
-   payroll with a t-of-n auditor board" use case named in the 2026-07-22 report.
+5. **Merkle accumulator at scale (10^5–10^7 commitments).** Unchanged: batch insertion cost, depth-20 vs
+   deeper (anonymity set vs proving time), indexer throughput; threat-model RR5. Overlaps #4.
 
-7. **Revocation-friendly accumulators vs the depth-20 credential Merkle tree.** Today, revoking a
-   KYC credential means rebuilding the credential root (`compliance.move`, 1-epoch timelock). An
-   RSA or Merkle-based revocation accumulator could make single-credential revocation cheaper
-   without a full root rebuild — worth a real cost comparison, not just a design note.
+6. **Threshold auditing (t-of-n) vs the single auditor key.** Unchanged. New datum: ≈ 3 full
+   Groth16 verifications fit under the computation floor, so a multi-proof auditor design is not
+   compute-limited.
 
-8. **Mobile WASM proving latency.** Cheap extension of the 2026-07-22 browser-proving harness
-   (`scripts/bench/browser-latency.mjs`) — same script, add a mobile Chromium device-emulation
-   profile (`page.emulate(...)`) and compare against the desktop-headless numbers already in
-   `BASELINE.md`. Good "spend an hour, get a real number" candidate for a lighter night.
+7. **Mobile WASM proving latency.** Unchanged; cheap extension of `scripts/bench/browser-latency.mjs`
+   (add a mobile device-emulation profile). Good candidate for a light night. Re-check the ptau caveat.
 
-9. **Trusted-setup elimination (PLONK / Halo2 / Nova-folding).** Directly addresses
-   `docs/threat-model.md` RR2 (dev-only single-contributor ceremony). Large lift — a full circuit
-   port, not a parameter change — so this should wait until items 1–2 give a clearer picture of
-   what's actually worth optimizing before committing a multi-night effort to a proof-system swap.
+8. **Shared-object (`Pool`) contention under concurrent transfers.** New. Everything touches one shared
+   object; measure throughput with concurrent submissions using the gas-bench harness (localnet
+   single-validator limits what it can show — may need multi-validator genesis).
 
-10. **Post-quantum exposure.** BN254 discrete log breaks under a sufficiently large quantum
-    computer; Groth16 on BN254 has no PQ story. Likely a design-only, UNMEASURED-labelled
-    experiment (no PQ-SNARK toolchain is likely to install cleanly here either) assessing what a
-    migration path would cost, not a benchmark.
+9. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** *Demoted.* Measured
+   verification ≈ 235–270 units per proof, entirely absorbed by the 1,000-unit floor, so batching saves
+   0 MIST today. Revisit only if (a) a design pushes total computation over the floor (many proofs per tx,
+   on-chain Poseidon from #1 plus heavier checks) or (b) Sui's pricing changes.
 
-11. **Relayer throughput and leakage under load.** `scripts/src/relayer.ts` — real load-testing
-    (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
-    sender-relayer pairs under concurrent load) is unmeasured.
+10. **Revocation-friendly accumulators vs the depth-20 credential Merkle tree.** Unchanged.
 
-12. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
-    papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
-    calls leave the Node process alive after the test file finishes printing results, which stalls
-    the `&&`-chained `npm test` script after the first file. Each file passes fine run
-    individually. Low priority; fold into whichever future night touches `circuits/test/`.
+11. **Trusted-setup elimination (PLONK / Halo2 / Nova-folding).** Unchanged; large lift. Note the
+    verification budget above: a PLONK-family verifier is likely to cost far more than Groth16's ~180 units
+    and could leave the floor — measure with `gas-probe` before committing.
+
+12. **Post-quantum exposure.** Unchanged; design-only, UNMEASURED label.
+
+13. **Relayer throughput and leakage under load.** Unchanged. F1 makes the relayer's trust position more
+    important (a relayer can currently redirect withdrawals) — do after #1.
+
+14. **Housekeeping.** Confirm a live-network RGP/storage-price check and a Hermez-ptau re-run of the
+    proving-time rows (see report Open questions #5). (The earlier "chained `npm test` hang" item was
+    fixed in `f942fca`; dropped.)
