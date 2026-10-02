@@ -1,0 +1,22 @@
+=== Veil gas probe (localnet http://127.0.0.1:9000); sui sui 1.81.0-bf0c491c17b8; RGP 1000 ===
+
+-- baseline: empty loop
+  loop_n (empty iteration)                 n1=9400 n2=16971  crossing: ~0.528 units/call | two-point slope: ~1.048 units/call
+
+-- transfer
+  transfer: prepare_verifying_key x n      n1=12 n2=61  crossing: ~81.633 units/call | two-point slope: ~83.934 units/call
+  transfer: verify (VK pre-prepared) x n   n1=5 n2=27  crossing: ~181.818 units/call | two-point slope: ~182.963 units/call
+  transfer: prepare+verify x n (today)     n1=4 n2=19  crossing: ~266.667 units/call | two-point slope: ~269.474 units/call
+
+-- withdraw
+  withdraw: prepare_verifying_key x n      n1=12 n2=61  crossing: ~81.633 units/call | two-point slope: ~84.098 units/call
+  withdraw: verify (VK pre-prepared) x n   n1=6 n2=30  crossing: ~166.667 units/call | two-point slope: ~164.000 units/call
+  withdraw: prepare+verify x n (today)     n1=4 n2=21  crossing: ~235.294 units/call | two-point slope: ~247.619 units/call
+
+-- compliance
+  compliance: prepare_verifying_key x n    n1=12 n2=61  crossing: ~81.633 units/call | two-point slope: ~83.934 units/call
+  compliance: verify (VK pre-prepared) x n n1=6 n2=29  crossing: ~173.913 units/call | two-point slope: ~174.483 units/call
+  compliance: prepare+verify x n (today)   n1=4 n2=20  crossing: ~250.000 units/call | two-point slope: ~257.500 units/call
+
+observed distinct computation-unit values (bucket edges): 1000, 1010, 1020, 1050, 1060, 1090, 1150, 1200, 1240, 1350, 1420, 1490, 1570, 2000, 2070, 2150, 2380, 2670, 2730, 2880, 3030, 3970, 4000, 4040, 4120, 4270, 4280, 4500, 4640, 4660, 4680, 4690, 4810, 4860, 4870, 4890, 4960, 4990, 5000, 5010, 5020, 5030, 5050, 5070, 5080, 5110, 5140, 5150, 5160, 5200, 5230, 5250, 5310, 5320, 5330, 5340, 5350, 5450, 5660, 5820, 5940, 5960, 6170, 6410, 7370, 7920, 8220, 8530, 9940, 9990, 10200, 10300, 10400, 12100, 21400, 22800
+wrote /tmp/claude-0/out/probe2.json
