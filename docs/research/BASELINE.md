@@ -1,6 +1,6 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Measured 2026-07-22 (circuits, proving) and 2026-10-03 (on-chain gas, Move tests), on one machine per run. See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
@@ -36,14 +36,33 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point (local network, Sui 1.82, reference gas price 1000 MIST/unit)
+
+Measured 2026-10-03 — [`2026-10-03-onchain-gas-baseline.md`](2026-10-03-onchain-gas-baseline.md).
+Every entry point is charged the **1,000-unit computation floor (1,000,000 MIST)**; "raw" units are
+recovered by dry-run subtraction (±10 units). Reproduce: `node scripts/bench/gas-localnet.mjs` (see
+script header for the local-network prerequisites).
+
+| Entry point | Raw computation units | Net cost (MIST) |
+|---|---|---|
+| `deposit_and_register` | 170 | 3,052,831 |
+| `shielded_transfer` | 340 | 2,749,274 – 2,992,449 |
+| `compliant_transfer` (2 proofs) | 650 | 5,105,845 |
+| `zk_withdraw` | 460 | 4,330,049 |
+| `update_commitment_root` / `propose_withdraw_vk` | 20 / 20 | 1,244,050 / 4,230,874 |
+| `create_pool` / `create_compliance_config` | <10 / 30 | 8,508,899 / 7,202,797 |
+| package publish (contracts + bench module) | n/a | 163,472,099 |
+
+Verifier: `prepare_verifying_key` 85 raw units; verify (VK prepared each call) 270; verify (VK
+prepared once) 185. Up to 2 verifications per PTB (3 with a prepared VK) stay inside the floor.
+Net storage (~1.75M MIST per transfer) outweighs computation (1.0M MIST floor).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Move contract suite: **124/124 pass** (2026-10-03, `sui-move test -e testnet`, Sui 1.82 built from source).
+Gas numbers above are from a local network, not testnet/mainnet protocol parameters.
