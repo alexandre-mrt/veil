@@ -5,26 +5,35 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **Fix recipient binding in `zk_withdraw` (F1, from 2026-10-04).** An unmitigated theft path in
+   `docs/threat-model.md` E7: the contract never checks `recipient` against the proof's
+   `recipientHash`. Candidate fix: make the recipient address (as 2×128-bit limbs) public inputs that
+   the contract rebuilds from the `recipient` bytes — no on-chain hash. Needs a circuit change, so
+   soundness argument + leakage analysis + a negative test (proof for A rejected when sent to B), and
+   a re-measure of `zk_withdraw` gas (more public inputs). Re-ranked to #1 because it is a live
+   security hole, not an optimisation.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
    baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
    Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
    swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+   instance) moves prover time directly. Note the 2026-10-04 gas result: on-chain cost does not
+   depend on constraint count (verify ≈267 units regardless), so this is a prover-latency win only.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+3. **Net storage growth per transfer (≈2.0 M of 3.04 M MIST, 2026-10-04).** The dominant on-chain cost
+   is permanent state: one nullifier dynamic field + one commitment field per transfer. Compare the
+   current per-field layout with batched nullifier accumulators / bitmaps; measure bytes and MIST per
+   N transfers. Replaces the old "aggregation" item as the gas lever.
+
+3b. **Shared-object contention + PTB batching in the relayer.** Measured: 4 transfers in one PTB cost
+   −62% computation / −20% net. Unmeasured: k concurrent PTBs on the single `Pool`, and what
+   batching leaks (sender↔relayer-tx linkage). Fold in relayer item #11.
+
+3c. **Batched/aggregated proof verification (demoted from #3 on 2026-10-04).** The 2026-10-04 baseline
+   put one verify at ≈267 units against a 1,000-unit per-tx floor, so aggregation saves at most
+   ≈267 units per extra proof (≈8% of a 4-transfer PTB's net cost). Only revisit if a recursion
+   scheme is wanted for a *different* reason (proof size, trusted-setup removal).
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a

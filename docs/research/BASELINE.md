@@ -1,6 +1,6 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Circuit/proving numbers measured 2026-07-22; on-chain gas measured 2026-10-04 (see below). One machine per run. See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
@@ -36,14 +36,39 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point (2026-10-04, localnet, `sui 1.72.1`, RGP 1000)
+
+Report: [`2026-10-04-onchain-gas-baseline.md`](2026-10-04-onchain-gas-baseline.md). Reproduce:
+`cd scripts/bench && npm install && sui start --force-regenesis --with-faucet & node --experimental-strip-types --no-warnings gas.ts --samples 3 --epoch-ms 120000`.
+Computation in gas units (1,000 = the per-tx minimum); net = computation + storage − rebate, MIST. Prices
+(RGP, storage price) differ on testnet/mainnet; units and bytes do not.
+
+| Entry point | Computation (units) | Net (MIST) |
+|---|---|---|
+| `deposit_and_register` | 1,000 (floor) | 1,797,468 |
+| `shielded_transfer` | 1,000 (floor) | 3,035,888 |
+| `compliant_transfer` | 1,000 (floor) | 5,288,528 |
+| `zk_withdraw` | 1,000 (floor) | 4,453,744 |
+| 4 × `shielded_transfer` in one PTB | 1,510 | 9,661,304 (2.42 M each) |
+| `create_pool` / `create_compliance_config` | 1,000 | 8,518,680 / 7,321,300 |
+| admin proposals / freeze (`propose_*`, `freeze_pool`, …) | 1,000 | 0.8 – 4.3 M |
+| publish package | 1,390 | 148,024,400 |
+
+Groth16 verify on-chain: ≈267 compute units (≈83 `prepare_verifying_key` + ≈185 verify). Below the
+1,000-unit floor, so aggregation saves nothing until ≥4 proofs share a tx.
+
+## Move contract tests
+
+`sui move test` (CLI 1.72.1): `Test result: OK. Total tests: 124; passed: 124; failed: 0` (2026-10-04).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
-| Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
-| Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
+| Gas in SUI on testnet/mainnet | **NOT MEASURED** | Localnet prices only; testnet fullnode unreachable from the sandbox (egress allowlist). |
+| Shared-object contention (k concurrent PTBs on one Pool) | **NOT MEASURED** | Single-client run. |
+| Mobile WASM proving latency | **NOT MEASURED** | Desktop headless Chromium only; extend `browser-latency.mjs` with `page.emulate`. |
+| Relayer throughput / leakage under load | **NOT MEASURED** | Queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Note: the 2026-10-04 zkeys used a locally generated pot15 (Hermez ptau hosts returned 403), so
+zkey byte sizes there are not comparable with the table above; constraint counts are identical.

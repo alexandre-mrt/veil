@@ -1,0 +1,1352 @@
+[
+  {
+    "op": "publish (package, once)",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1390,
+    "computationMist": 1390000,
+    "storageMist": 156415600,
+    "rebateMist": 9781200,
+    "netMist": 148024400,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "publish (package, once)",
+        "status": "ok",
+        "computation": 1390000,
+        "storage": 156415600,
+        "rebate": 9781200,
+        "nonRefundable": 98800,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "(setup) mint coins",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 21432000,
+    "rebateMist": 2678544,
+    "netMist": 19753456,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "(setup) mint coins",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 21432000,
+        "rebate": 2678544,
+        "nonRefundable": 27056,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "create_pool (transfer VK 4025 B)",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 8496800,
+    "rebateMist": 978120,
+    "netMist": 8518680,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "create_pool (transfer VK 4025 B)",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 8496800,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "deposit_and_register",
+    "n": 13,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 9021200,
+    "rebateMist": 8223732,
+    "netMist": 1797468,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      },
+      {
+        "op": "deposit_and_register",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 9021200,
+        "rebate": 8223732,
+        "nonRefundable": 83068,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "update_commitment_root (propose)",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 8740000,
+    "rebateMist": 8411832,
+    "netMist": 1328168,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "update_commitment_root (propose)",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 8740000,
+        "rebate": 8411832,
+        "nonRefundable": 84968,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "propose_withdraw_vk (withdraw VK 3656 B)",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 11970000,
+    "rebateMist": 8652600,
+    "netMist": 4317400,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "propose_withdraw_vk (withdraw VK 3656 B)",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 11970000,
+        "rebate": 8652600,
+        "nonRefundable": 87400,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "create_compliance_config (compliance VK 3841 B)",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 18171600,
+    "rebateMist": 11850300,
+    "netMist": 7321300,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "create_compliance_config (compliance VK 3841 B)",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 18171600,
+        "rebate": 11850300,
+        "nonRefundable": 119700,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "shielded_transfer, aborted right after verify (floor: 1 transfer verify)",
+    "n": 1,
+    "status": "abort( function_name: Some(\"execute_transfer\") }, 32) in command 0)",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 10685600,
+    "rebateMist": 10578744,
+    "netMist": 1106856,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "shielded_transfer, aborted right after verify (floor: 1 transfer verify)",
+        "status": "abort( function_name: Some(\"execute_transfer\") }, 32) in command 0)",
+        "computation": 1000000,
+        "storage": 10685600,
+        "rebate": 10578744,
+        "nonRefundable": 106856,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "zk_withdraw, aborted right after verify (floor: 1 withdraw verify)",
+    "n": 1,
+    "status": "abort(: 101, function_name: Some(\"zk_withdraw\") }, 9) in command 0)",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 10685600,
+    "rebateMist": 10578744,
+    "netMist": 1106856,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "zk_withdraw, aborted right after verify (floor: 1 withdraw verify)",
+        "status": "abort(: 101, function_name: Some(\"zk_withdraw\") }, 9) in command 0)",
+        "computation": 1000000,
+        "storage": 10685600,
+        "rebate": 10578744,
+        "nonRefundable": 106856,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "shielded_transfer",
+    "n": 3,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 14485600,
+    "rebateMist": 12449712,
+    "netMist": 3035888,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "shielded_transfer",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 14485600,
+        "rebate": 12610224,
+        "nonRefundable": 127376,
+        "rgp": 1000
+      },
+      {
+        "op": "shielded_transfer",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 14485600,
+        "rebate": 12369456,
+        "nonRefundable": 124944,
+        "rgp": 1000
+      },
+      {
+        "op": "shielded_transfer",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 14485600,
+        "rebate": 12369456,
+        "nonRefundable": 124944,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "shielded_transfer x4 in ONE PTB",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1510,
+    "computationMist": 1510000,
+    "storageMist": 26615200,
+    "rebateMist": 18463896,
+    "netMist": 9661304,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "shielded_transfer x4 in ONE PTB",
+        "status": "ok",
+        "computation": 1510000,
+        "storage": 26615200,
+        "rebate": 18463896,
+        "nonRefundable": 186504,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "compliant_transfer (transfer + compliance proof)",
+    "n": 3,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 22556800,
+    "rebateMist": 18268272,
+    "netMist": 5288528,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "compliant_transfer (transfer + compliance proof)",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 22556800,
+        "rebate": 18268272,
+        "nonRefundable": 184528,
+        "rgp": 1000
+      },
+      {
+        "op": "compliant_transfer (transfer + compliance proof)",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 22556800,
+        "rebate": 18268272,
+        "nonRefundable": 184528,
+        "rgp": 1000
+      },
+      {
+        "op": "compliant_transfer (transfer + compliance proof)",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 22556800,
+        "rebate": 18268272,
+        "nonRefundable": 184528,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "zk_withdraw",
+    "n": 3,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 15823200,
+    "rebateMist": 12369456,
+    "netMist": 4453744,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "zk_withdraw",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 15823200,
+        "rebate": 12369456,
+        "nonRefundable": 124944,
+        "rgp": 1000
+      },
+      {
+        "op": "zk_withdraw",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 15823200,
+        "rebate": 12369456,
+        "nonRefundable": 124944,
+        "rgp": 1000
+      },
+      {
+        "op": "zk_withdraw",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 15823200,
+        "rebate": 12369456,
+        "nonRefundable": 124944,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "freeze_pool",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 11970000,
+    "rebateMist": 11850300,
+    "netMist": 1119700,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "freeze_pool",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 11970000,
+        "rebate": 11850300,
+        "nonRefundable": 119700,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "unfreeze_pool",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 11970000,
+    "rebateMist": 11850300,
+    "netMist": 1119700,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "unfreeze_pool",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 11970000,
+        "rebate": 11850300,
+        "nonRefundable": 119700,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "propose_withdrawal",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 12274000,
+    "rebateMist": 11850300,
+    "netMist": 1423700,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "propose_withdrawal",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 12274000,
+        "rebate": 11850300,
+        "nonRefundable": 119700,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "cancel_withdrawal",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 11970000,
+    "rebateMist": 12151260,
+    "netMist": 818740,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "cancel_withdrawal",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 11970000,
+        "rebate": 12151260,
+        "nonRefundable": 122740,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "(harness) publish bench_verify copy",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1430,
+    "computationMist": 1430000,
+    "storageMist": 162130800,
+    "rebateMist": 978120,
+    "netMist": 162582680,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "(harness) publish bench_verify copy",
+        "status": "ok",
+        "computation": 1430000,
+        "storage": 162130800,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n= 1",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n= 1",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n= 2",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n= 2",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n= 3",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1110,
+    "computationMist": 1110000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1119880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n= 3",
+        "status": "ok",
+        "computation": 1110000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n= 4",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1380,
+    "computationMist": 1380000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1389880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n= 4",
+        "status": "ok",
+        "computation": 1380000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n= 6",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1910,
+    "computationMist": 1910000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1919880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n= 6",
+        "status": "ok",
+        "computation": 1910000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n= 8",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 2440,
+    "computationMist": 2440000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 2449880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n= 8",
+        "status": "ok",
+        "computation": 2440000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n=12",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 3510,
+    "computationMist": 3510000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 3519880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n=12",
+        "status": "ok",
+        "computation": 3510000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n=16",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 4570,
+    "computationMist": 4570000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 4579880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n=16",
+        "status": "ok",
+        "computation": 4570000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n=24",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 6700,
+    "computationMist": 6700000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 6709880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n=24",
+        "status": "ok",
+        "computation": 6700000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n=32",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 8830,
+    "computationMist": 8830000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 8839880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n=32",
+        "status": "ok",
+        "computation": 8830000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n=48",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 13100,
+    "computationMist": 13100000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 13109880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n=48",
+        "status": "ok",
+        "computation": 13100000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk+verify (transfer) x n=64",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 17400,
+    "computationMist": 17400000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 17409880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk+verify (transfer) x n=64",
+        "status": "ok",
+        "computation": 17400000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n= 1",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n= 1",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n= 2",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n= 2",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n= 3",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n= 3",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n= 4",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n= 4",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n= 6",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n= 6",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n= 8",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n= 8",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n=12",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1310,
+    "computationMist": 1310000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1319880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n=12",
+        "status": "ok",
+        "computation": 1310000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n=16",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1640,
+    "computationMist": 1640000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1649880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n=16",
+        "status": "ok",
+        "computation": 1640000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n=24",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 2300,
+    "computationMist": 2300000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 2309880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n=24",
+        "status": "ok",
+        "computation": 2300000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n=32",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 2970,
+    "computationMist": 2970000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 2979880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n=32",
+        "status": "ok",
+        "computation": 2970000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n=48",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 4290,
+    "computationMist": 4290000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 4299880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n=48",
+        "status": "ok",
+        "computation": 4290000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk only (transfer VK) x n=64",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 5620,
+    "computationMist": 5620000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 5629880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk only (transfer VK) x n=64",
+        "status": "ok",
+        "computation": 5620000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n= 1",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n= 1",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n= 2",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n= 2",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n= 3",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1000,
+    "computationMist": 1000000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1009880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n= 3",
+        "status": "ok",
+        "computation": 1000000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n= 4",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1130,
+    "computationMist": 1130000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1139880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n= 4",
+        "status": "ok",
+        "computation": 1130000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n= 6",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1500,
+    "computationMist": 1500000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1509880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n= 6",
+        "status": "ok",
+        "computation": 1500000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n= 8",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 1860,
+    "computationMist": 1860000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 1869880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n= 8",
+        "status": "ok",
+        "computation": 1860000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n=12",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 2600,
+    "computationMist": 2600000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 2609880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n=12",
+        "status": "ok",
+        "computation": 2600000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n=16",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 3330,
+    "computationMist": 3330000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 3339880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n=16",
+        "status": "ok",
+        "computation": 3330000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n=24",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 4790,
+    "computationMist": 4790000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 4799880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n=24",
+        "status": "ok",
+        "computation": 4790000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n=32",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 6260,
+    "computationMist": 6260000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 6269880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n=32",
+        "status": "ok",
+        "computation": 6260000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n=48",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 9190,
+    "computationMist": 9190000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 9199880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n=48",
+        "status": "ok",
+        "computation": 9190000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  },
+  {
+    "op": "scale: prepare_vk once + verify x n=64",
+    "n": 1,
+    "status": "ok",
+    "computationUnits": 12200,
+    "computationMist": 12200000,
+    "storageMist": 988000,
+    "rebateMist": 978120,
+    "netMist": 12209880,
+    "rgp": 1000,
+    "raw": [
+      {
+        "op": "scale: prepare_vk once + verify x n=64",
+        "status": "ok",
+        "computation": 12200000,
+        "storage": 988000,
+        "rebate": 978120,
+        "nonRefundable": 9880,
+        "rgp": 1000
+      }
+    ]
+  }
+]

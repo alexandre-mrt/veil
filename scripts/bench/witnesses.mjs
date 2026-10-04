@@ -37,16 +37,18 @@ function merkleRootFromPath(poseidon, leaf, pathElements, pathIndices) {
   return node;
 }
 
-export function buildTransferWitness(poseidon) {
-  const cumulativeOld = 0n, txAmount = 100n, randomnessOld = 0n, randomnessNew = 12345n;
-  const userSecret = 987654321n, epochId = 1n, threshold = 1_000_000_000n, salt = 99n;
+// Optional `o` overrides let a bench pin the epoch, user, or Merkle path without forking the builder.
+export function buildTransferWitness(poseidon, o = {}) {
+  const cumulativeOld = 0n, txAmount = 100n, randomnessOld = o.randomnessOld ?? 0n, randomnessNew = 12345n;
+  const userSecret = o.userSecret ?? 987654321n, epochId = o.epochId ?? 1n;
+  const threshold = o.threshold ?? 1_000_000_000n, salt = 99n;
   const cumulativeNew = cumulativeOld + txAmount;
   const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
   const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
   const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
   const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
-  const pathElements = Array.from({ length: MERKLE_DEPTH }, () => 0n);
-  const pathIndices = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const pathElements = o.pathElements ?? Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const pathIndices = o.pathIndices ?? Array.from({ length: MERKLE_DEPTH }, () => 0n);
   const merkleRoot = merkleRootFromPath(poseidon, oldCommitment, pathElements, pathIndices);
   return {
     oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash, merkleRoot,
@@ -55,9 +57,9 @@ export function buildTransferWitness(poseidon) {
   };
 }
 
-export function buildWithdrawWitness(poseidon) {
-  const cumulativeOld = 500n, randomnessOld = 12345n, userSecret = 987654321n;
-  const withdrawAmount = 100n, recipient = 0xABCDEF123456n, randomnessNew = 77777n;
+export function buildWithdrawWitness(poseidon, o = {}) {
+  const cumulativeOld = 500n, randomnessOld = o.randomnessOld ?? 12345n, userSecret = o.userSecret ?? 987654321n;
+  const withdrawAmount = 100n, recipient = o.recipient ?? 0xABCDEF123456n, randomnessNew = o.randomnessNew ?? 77777n;
   const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
   const remainingBalance = cumulativeOld - withdrawAmount;
   const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
@@ -69,9 +71,10 @@ export function buildWithdrawWitness(poseidon) {
   };
 }
 
-export function buildComplianceWitness(poseidon) {
-  const userSecret = 987654321n, kycLevel = 2n, expiryEpoch = 1000n, issuerId = 42n;
-  const currentEpoch = 500n, requiredKycLevel = 1n, transferNullifier = 111222333n;
+export function buildComplianceWitness(poseidon, o = {}) {
+  const userSecret = 987654321n, kycLevel = 2n, issuerId = 42n;
+  const currentEpoch = o.currentEpoch ?? 500n, expiryEpoch = o.expiryEpoch ?? 1000n;
+  const requiredKycLevel = 1n, transferNullifier = o.transferNullifier ?? 111222333n;
   const credentialLeaf = toBI(poseidon([DOMAIN_CREDENTIAL_LEAF, userSecret, kycLevel, expiryEpoch, issuerId]));
   const pathElements = [];
   const pathIndices = [];
