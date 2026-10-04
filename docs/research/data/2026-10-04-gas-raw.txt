@@ -1,0 +1,60 @@
+rpc=http://127.0.0.1:9000 rgp=1000 epoch_ms=120000 samples=3
+package=0xde872d19589708e113dacea5e473dd3d2a7c9029f236a231ef8dfbc412383951
+PROBE recipient-binding: proofs commit to recipient field 0xABCDEF123456; unrelated address 0x6a443aed1ab0fe7a832097b60664667226ecce2e41e307cb746ce6f54e295f7d received 300 base units from 3 zk_withdraw txs
+proof-carrying txs ran in 26.1s (must stay < 120s)
+
+op | n | status | computation (gas units = cost/RGP) | computation (MIST) | storage cost (MIST) | storage rebate | net (MIST)
+publish (package, once) | 1 | ok | 1390 | 1390000 | 156415600 | 9781200 | 148024400
+(setup) mint coins | 1 | ok | 1000 | 1000000 | 21432000 | 2678544 | 19753456
+create_pool (transfer VK 4025 B) | 1 | ok | 1000 | 1000000 | 8496800 | 978120 | 8518680
+deposit_and_register | 13 | ok | 1000 (MIST range [1000000..1000000]) | 1000000 | 9021200 | 8223732 | 1797468
+update_commitment_root (propose) | 1 | ok | 1000 | 1000000 | 8740000 | 8411832 | 1328168
+propose_withdraw_vk (withdraw VK 3656 B) | 1 | ok | 1000 | 1000000 | 11970000 | 8652600 | 4317400
+create_compliance_config (compliance VK 3841 B) | 1 | ok | 1000 | 1000000 | 18171600 | 11850300 | 7321300
+shielded_transfer, aborted right after verify (floor: 1 transfer verify) | 1 | abort( function_name: Some("execute_transfer") }, 32) in command 0) | 1000 | 1000000 | 10685600 | 10578744 | 1106856
+zk_withdraw, aborted right after verify (floor: 1 withdraw verify) | 1 | abort(: 101, function_name: Some("zk_withdraw") }, 9) in command 0) | 1000 | 1000000 | 10685600 | 10578744 | 1106856
+shielded_transfer | 3 | ok | 1000 (MIST range [1000000..1000000]) | 1000000 | 14485600 | 12449712 | 3035888
+shielded_transfer x4 in ONE PTB | 1 | ok | 1510 | 1510000 | 26615200 | 18463896 | 9661304
+compliant_transfer (transfer + compliance proof) | 3 | ok | 1000 (MIST range [1000000..1000000]) | 1000000 | 22556800 | 18268272 | 5288528
+zk_withdraw | 3 | ok | 1000 (MIST range [1000000..1000000]) | 1000000 | 15823200 | 12369456 | 4453744
+freeze_pool | 1 | ok | 1000 | 1000000 | 11970000 | 11850300 | 1119700
+unfreeze_pool | 1 | ok | 1000 | 1000000 | 11970000 | 11850300 | 1119700
+propose_withdrawal | 1 | ok | 1000 | 1000000 | 12274000 | 11850300 | 1423700
+cancel_withdrawal | 1 | ok | 1000 | 1000000 | 11970000 | 12151260 | 818740
+(harness) publish bench_verify copy | 1 | ok | 1430 | 1430000 | 162130800 | 978120 | 162582680
+scale: prepare_vk+verify (transfer) x n= 1 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk+verify (transfer) x n= 2 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk+verify (transfer) x n= 3 | 1 | ok | 1110 | 1110000 | 988000 | 978120 | 1119880
+scale: prepare_vk+verify (transfer) x n= 4 | 1 | ok | 1380 | 1380000 | 988000 | 978120 | 1389880
+scale: prepare_vk+verify (transfer) x n= 6 | 1 | ok | 1910 | 1910000 | 988000 | 978120 | 1919880
+scale: prepare_vk+verify (transfer) x n= 8 | 1 | ok | 2440 | 2440000 | 988000 | 978120 | 2449880
+scale: prepare_vk+verify (transfer) x n=12 | 1 | ok | 3510 | 3510000 | 988000 | 978120 | 3519880
+scale: prepare_vk+verify (transfer) x n=16 | 1 | ok | 4570 | 4570000 | 988000 | 978120 | 4579880
+scale: prepare_vk+verify (transfer) x n=24 | 1 | ok | 6700 | 6700000 | 988000 | 978120 | 6709880
+scale: prepare_vk+verify (transfer) x n=32 | 1 | ok | 8830 | 8830000 | 988000 | 978120 | 8839880
+scale: prepare_vk+verify (transfer) x n=48 | 1 | ok | 13100 | 13100000 | 988000 | 978120 | 13109880
+scale: prepare_vk+verify (transfer) x n=64 | 1 | ok | 17400 | 17400000 | 988000 | 978120 | 17409880
+scale: prepare_vk only (transfer VK) x n= 1 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk only (transfer VK) x n= 2 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk only (transfer VK) x n= 3 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk only (transfer VK) x n= 4 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk only (transfer VK) x n= 6 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk only (transfer VK) x n= 8 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk only (transfer VK) x n=12 | 1 | ok | 1310 | 1310000 | 988000 | 978120 | 1319880
+scale: prepare_vk only (transfer VK) x n=16 | 1 | ok | 1640 | 1640000 | 988000 | 978120 | 1649880
+scale: prepare_vk only (transfer VK) x n=24 | 1 | ok | 2300 | 2300000 | 988000 | 978120 | 2309880
+scale: prepare_vk only (transfer VK) x n=32 | 1 | ok | 2970 | 2970000 | 988000 | 978120 | 2979880
+scale: prepare_vk only (transfer VK) x n=48 | 1 | ok | 4290 | 4290000 | 988000 | 978120 | 4299880
+scale: prepare_vk only (transfer VK) x n=64 | 1 | ok | 5620 | 5620000 | 988000 | 978120 | 5629880
+scale: prepare_vk once + verify x n= 1 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk once + verify x n= 2 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk once + verify x n= 3 | 1 | ok | 1000 | 1000000 | 988000 | 978120 | 1009880
+scale: prepare_vk once + verify x n= 4 | 1 | ok | 1130 | 1130000 | 988000 | 978120 | 1139880
+scale: prepare_vk once + verify x n= 6 | 1 | ok | 1500 | 1500000 | 988000 | 978120 | 1509880
+scale: prepare_vk once + verify x n= 8 | 1 | ok | 1860 | 1860000 | 988000 | 978120 | 1869880
+scale: prepare_vk once + verify x n=12 | 1 | ok | 2600 | 2600000 | 988000 | 978120 | 2609880
+scale: prepare_vk once + verify x n=16 | 1 | ok | 3330 | 3330000 | 988000 | 978120 | 3339880
+scale: prepare_vk once + verify x n=24 | 1 | ok | 4790 | 4790000 | 988000 | 978120 | 4799880
+scale: prepare_vk once + verify x n=32 | 1 | ok | 6260 | 6260000 | 988000 | 978120 | 6269880
+scale: prepare_vk once + verify x n=48 | 1 | ok | 9190 | 9190000 | 988000 | 978120 | 9199880
+scale: prepare_vk once + verify x n=64 | 1 | ok | 12200 | 12200000 | 988000 | 978120 | 12209880
