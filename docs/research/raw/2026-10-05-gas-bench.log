@@ -1,0 +1,51 @@
+== publish ==
+[gas] publish package                    computation=1370000 storage=156415600 rebate=978120
+package=0xecfac7b56a068796707fea29538559ccf9467feda40a41ba70f47e6d83d7d98f referenceGasPrice=1000 MIST/unit
+== pool ==
+[gas] create_pool                        computation=1000000 storage=8496800 rebate=978120 net=8518680
+== mint ==
+[gas] token::mint x6 (setup, not a Veil path) computation=1000000 storage=10731200 rebate=2678544 net=9052656
+== deposits ==
+[gas] deposit_and_register #1            computation=1000000 storage=9021200 rebate=8223732 net=1797468
+[gas] deposit_and_register #2            computation=1000000 storage=9021200 rebate=8223732 net=1797468
+[gas] deposit_and_register #3            computation=1000000 storage=9021200 rebate=8223732 net=1797468
+[gas] deposit_and_register #4            computation=1000000 storage=9021200 rebate=8223732 net=1797468
+[gas] deposit_and_register #5            computation=1000000 storage=9021200 rebate=8223732 net=1797468
+[gas] deposit_and_register #6            computation=1000000 storage=9021200 rebate=8223732 net=1797468
+== admin ==
+[gas] update_commitment_root (propose)   computation=1000000 storage=8740000 rebate=8411832 net=1328168
+[gas] propose_withdraw_vk                computation=1000000 storage=11970000 rebate=8652600 net=4317400
+[gas] create_compliance_config           computation=1000000 storage=18171600 rebate=11850300 net=7321300
+== waiting 18s for epoch 29853087 ==
+chain epoch now 29853087
+== proving ==
+== entry points ==
+[gas] shielded_transfer #1               computation=1000000 storage=14485600 rebate=12610224 net=2875376
+[gas] shielded_transfer #2               computation=1000000 storage=14485600 rebate=12369456 net=3116144
+[gas] shielded_transfer #3               computation=1000000 storage=14485600 rebate=12369456 net=3116144
+[gas] compliant_transfer (2 Groth16 verifies) computation=1000000 storage=22556800 rebate=18268272 net=5288528
+[gas] zk_withdraw                        computation=1000000 storage=15823200 rebate=12369456 net=4453744
+== PROBE: zk_withdraw with a recipient the proof never mentioned ==
+[gas] zk_withdraw (swapped recipient PROBE) computation=1000000 storage=15823200 rebate=12369456 net=4453744
+[PROBE] swapped-recipient withdrawal ACCEPTED; attacker 0x6b1bb4de1b440a58593d91643bb6fd9f08bb6d41cacd1d61aa59acbb5592acad now holds 100 units of TOKEN
+
+| entry point | computation (MIST) | computation (gas units) | storage cost | storage rebate | net MIST |
+|---|---|---|---|---|---|
+| publish package (6 modules) | 1370000 | 1370 | 156415600 | 978120 | 156807480 |
+| create_pool | 1000000 | 1000 | 8496800 | 978120 | 8518680 |
+| deposit_and_register #1 | 1000000 | 1000 | 9021200 | 8223732 | 1797468 |
+| deposit_and_register #2 | 1000000 | 1000 | 9021200 | 8223732 | 1797468 |
+| deposit_and_register #3 | 1000000 | 1000 | 9021200 | 8223732 | 1797468 |
+| deposit_and_register #4 | 1000000 | 1000 | 9021200 | 8223732 | 1797468 |
+| deposit_and_register #5 | 1000000 | 1000 | 9021200 | 8223732 | 1797468 |
+| deposit_and_register #6 | 1000000 | 1000 | 9021200 | 8223732 | 1797468 |
+| update_commitment_root (propose) | 1000000 | 1000 | 8740000 | 8411832 | 1328168 |
+| propose_withdraw_vk | 1000000 | 1000 | 11970000 | 8652600 | 4317400 |
+| create_compliance_config | 1000000 | 1000 | 18171600 | 11850300 | 7321300 |
+| shielded_transfer #1 | 1000000 | 1000 | 14485600 | 12610224 | 2875376 |
+| shielded_transfer #2 | 1000000 | 1000 | 14485600 | 12369456 | 3116144 |
+| shielded_transfer #3 | 1000000 | 1000 | 14485600 | 12369456 | 3116144 |
+| compliant_transfer (2 Groth16 verifies) | 1000000 | 1000 | 22556800 | 18268272 | 5288528 |
+| zk_withdraw | 1000000 | 1000 | 15823200 | 12369456 | 4453744 |
+
+raw json: /home/user/veil/scripts/bench/gas-bench-result.json
