@@ -1,0 +1,152 @@
+{
+  "rgp": 1000,
+  "packageId": "0xecfac7b56a068796707fea29538559ccf9467feda40a41ba70f47e6d83d7d98f",
+  "epochMs": 60000,
+  "rows": [
+    {
+      "label": "publish package (6 modules)",
+      "computation": 1370000,
+      "storage": 156415600,
+      "rebate": 978120,
+      "nonRefundable": 9880,
+      "net": 156807480,
+      "digest": "62m6YZ9jAtMsDtpCq76vDmUrPLgJrfFtbHxNvht3cfGT"
+    },
+    {
+      "label": "create_pool",
+      "computation": 1000000,
+      "storage": 8496800,
+      "rebate": 978120,
+      "nonRefundable": 9880,
+      "net": 8518680,
+      "digest": "AFFXxiDXwAcuvo8bqsEGCTTWjnUoUrbPuK1R7HqBXxCU"
+    },
+    {
+      "label": "deposit_and_register #1",
+      "computation": 1000000,
+      "storage": 9021200,
+      "rebate": 8223732,
+      "nonRefundable": 83068,
+      "net": 1797468,
+      "digest": "G8xkr8zSMiVFGvs1RXZN6ouxHFYyYq7eiafaKRYSuF7M"
+    },
+    {
+      "label": "deposit_and_register #2",
+      "computation": 1000000,
+      "storage": 9021200,
+      "rebate": 8223732,
+      "nonRefundable": 83068,
+      "net": 1797468,
+      "digest": "45qg9BYHY3xoSHSiXk9dtQx2kjaA8TqaKG4LoX4nv3vm"
+    },
+    {
+      "label": "deposit_and_register #3",
+      "computation": 1000000,
+      "storage": 9021200,
+      "rebate": 8223732,
+      "nonRefundable": 83068,
+      "net": 1797468,
+      "digest": "7buQhMKPN6Egw7pZdeMq2qmRaj2qsM28MWfbNTxTgE82"
+    },
+    {
+      "label": "deposit_and_register #4",
+      "computation": 1000000,
+      "storage": 9021200,
+      "rebate": 8223732,
+      "nonRefundable": 83068,
+      "net": 1797468,
+      "digest": "518dq2DNcE7CHGQ79t4wcNZHYCMdVuXZhUADbRMPXv84"
+    },
+    {
+      "label": "deposit_and_register #5",
+      "computation": 1000000,
+      "storage": 9021200,
+      "rebate": 8223732,
+      "nonRefundable": 83068,
+      "net": 1797468,
+      "digest": "82jKPKVPxSE6QRni4pRW66YAANxLQD9tU75DjcAwc34x"
+    },
+    {
+      "label": "deposit_and_register #6",
+      "computation": 1000000,
+      "storage": 9021200,
+      "rebate": 8223732,
+      "nonRefundable": 83068,
+      "net": 1797468,
+      "digest": "24fx121UPBEXdsVAv6PdRtptjDf7fUJpSRAPrDMZqfLJ"
+    },
+    {
+      "label": "update_commitment_root (propose)",
+      "computation": 1000000,
+      "storage": 8740000,
+      "rebate": 8411832,
+      "nonRefundable": 84968,
+      "net": 1328168,
+      "digest": "6W9PGYDHhHeQ589tHKEHVraK1A6n7HwPwon81cRXivHY"
+    },
+    {
+      "label": "propose_withdraw_vk",
+      "computation": 1000000,
+      "storage": 11970000,
+      "rebate": 8652600,
+      "nonRefundable": 87400,
+      "net": 4317400,
+      "digest": "4tnxjFJAtXmhPP9Y9K8uPGb8EWxa2DLS54NaBJffKA4k"
+    },
+    {
+      "label": "create_compliance_config",
+      "computation": 1000000,
+      "storage": 18171600,
+      "rebate": 11850300,
+      "nonRefundable": 119700,
+      "net": 7321300,
+      "digest": "9TZGuJ7p81g5VHjsTRCu5gyPCxkH7MvfrmbC6iJnBEHw"
+    },
+    {
+      "label": "shielded_transfer #1",
+      "computation": 1000000,
+      "storage": 14485600,
+      "rebate": 12610224,
+      "nonRefundable": 127376,
+      "net": 2875376,
+      "digest": "GFFPzkLmeRchUhWLazkGqDWUXQ1Skg7r5xNehUSmR3pi"
+    },
+    {
+      "label": "shielded_transfer #2",
+      "computation": 1000000,
+      "storage": 14485600,
+      "rebate": 12369456,
+      "nonRefundable": 124944,
+      "net": 3116144,
+      "digest": "AV11PkYHVVapwrFfweSDQ8ZK6me6214mBz8tw3FxYzJa"
+    },
+    {
+      "label": "shielded_transfer #3",
+      "computation": 1000000,
+      "storage": 14485600,
+      "rebate": 12369456,
+      "nonRefundable": 124944,
+      "net": 3116144,
+      "digest": "Gjo6H2aH7KLsVQuaw3MAbzQcRbPZmEEix5aJ1cf1ced6"
+    },
+    {
+      "label": "compliant_transfer (2 Groth16 verifies)",
+      "computation": 1000000,
+      "storage": 22556800,
+      "rebate": 18268272,
+      "nonRefundable": 184528,
+      "net": 5288528,
+      "digest": "CaaMAGV2ZH9Gpp1HV6iHTzcfU6Yu1pvSk32AXVuKMCW7"
+    },
+    {
+      "label": "zk_withdraw",
+      "computation": 1000000,
+      "storage": 15823200,
+      "rebate": 12369456,
+      "nonRefundable": 124944,
+      "net": 4453744,
+      "digest": "D8joPtdFPhKcGdXr7wZxjm7CR5rJE7knSeuczEMrxPUd"
+    }
+  ],
+  "probe": "swapped-recipient withdrawal ACCEPTED; attacker 0x6b1bb4de1b440a58593d91643bb6fd9f08bb6d41cacd1d61aa59acbb5592acad now holds 100 units of TOKEN"
+}
