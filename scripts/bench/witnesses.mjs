@@ -37,9 +37,9 @@ function merkleRootFromPath(poseidon, leaf, pathElements, pathIndices) {
   return node;
 }
 
-export function buildTransferWitness(poseidon) {
+export function buildTransferWitness(poseidon, { epochId = 1n } = {}) {
   const cumulativeOld = 0n, txAmount = 100n, randomnessOld = 0n, randomnessNew = 12345n;
-  const userSecret = 987654321n, epochId = 1n, threshold = 1_000_000_000n, salt = 99n;
+  const userSecret = 987654321n, threshold = 1_000_000_000n, salt = 99n;
   const cumulativeNew = cumulativeOld + txAmount;
   const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
   const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));

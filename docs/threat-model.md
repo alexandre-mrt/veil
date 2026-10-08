@@ -137,6 +137,7 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | RR7 | Relayer centralization | Low | Single relayer can censor. | Multiple independent relayers + direct submission fallback. |
 | RR8 | PBKDF2 fallback key derivation | Low | In incognito mode, encryption key derived from wallet address (public). Weaker than IndexedDB non-extractable keys. | Acceptable for incognito sessions. Primary path uses non-extractable keys. |
 | RR9 | Token faucet in production bytecode | Low | `token_faucet.move` allows free minting (gated by TreasuryCap). | Remove from sources before mainnet deployment. Separate module file for easy exclusion. |
+| RR10 | `zk_withdraw` recipient not bound to proof | High | `pool::zk_withdraw` accepts `recipient` as a free argument; the proof's `recipientHash` public input is never checked against it, so anyone who sees a withdrawal (mempool/relayer) can redirect the funds. Reproduced on localnet 2026-10-08 (`docs/research/2026-10-08-onchain-gas.md`). | Open. Bind on-chain (`sui::poseidon` `Poseidon(8, recipient)` == bytes 96–128) — top of `docs/research/EXPERIMENTS.md`. |
 
 ## Security Controls Summary Table
 
