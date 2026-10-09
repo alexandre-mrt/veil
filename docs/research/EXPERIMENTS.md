@@ -12,6 +12,10 @@ what matters most — say why in the commit, don't just reorder silently.
    fullnode could recover real historical gas without the CLI at all, if that network call is
    permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   **Blocked a third time (2026-10-09):** a `sui` binary is obtainable from Docker Hub image layers
+   but running it needs owner approval — see `2026-10-09-onchain-gas-unblock.md` for the three
+   options. Do not re-attempt until the owner picks one; take item 8 or 2 meanwhile (both also need
+   `circom` installed).
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
