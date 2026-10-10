@@ -1,8 +1,9 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
-[`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
-methodology, raw command output, and what's still missing. Superseded rows should be replaced in
+Measured 2026-07-22 (circuits, proving) and 2026-10-10 (on-chain gas), on one machine, one run each. See
+[`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) and
+[`2026-10-10-onchain-gas-baseline.md`](2026-10-10-onchain-gas-baseline.md) for the full
+methodology, raw command output, and caveats. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
 reflects the current state of the protocol, not history.
 
@@ -36,14 +37,44 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas (local Sui network, real proofs)
+
+Measured 2026-10-10 with `node scripts/bench/gas-localnet.mjs` on `sui 1.81.1-e04cf9aa915c`,
+reference gas price **1,000 MIST/unit**, local genesis (**not testnet** — caveats in the report).
+Net MIST = computation + storage − storage rebate. Two independent runs: 66/66 transactions
+identical. 124/124 Move tests pass.
+
+| Entry point | Computation units | Net MIST | ≈ SUI |
+|---|---:|---:|---:|
+| `pool::deposit_and_register` | 1,000 | 1,832,200 | 0.0018 |
+| `pool::shielded_transfer` (1 proof) | 1,000 | 2,875,376 | 0.0029 |
+| `pool::zk_withdraw` (1 proof) | 1,000 | 4,453,744 | 0.0045 |
+| `compliance::compliant_transfer` (2 proofs) | 1,000 | 5,290,960 | 0.0053 |
+| `pool::create_pool` | 1,000 | 8,518,680 | 0.0085 |
+| `compliance::create_compliance_config` | 1,000 | 7,562,068 | 0.0076 |
+| `pool::propose_withdraw_vk` / `propose_vk_update` | 1,000 | 4,314,968 / 4,836,100 | 0.0043 / 0.0048 |
+| `pool::update_commitment_root` | 1,000 | 1,362,900 | 0.0014 |
+| `pool::freeze_pool` / `unfreeze_pool` | 1,000 | 1,119,700 | 0.0011 |
+| rejected `shielded_transfer` (bad proof or pre-pairing abort) | 1,000 | 1,106,856 | 0.0011 |
+| package publish | 1,370 | 156,807,480 | 0.1568 |
+
+Every single-call entry point, including the 2-proof `compliant_transfer`, is at Sui's 1,000-unit
+minimum computation charge: on-chain Groth16 verification is **not** the cost driver; storage is.
+Above the floor (PTB with k transfers in one tx: 4 → 1,510, 6 → 2,120, 8 → 2,760 units) each extra
+verified transfer adds ≈ 305–320 computation units. Rejected-proof spam costs the attacker the
+same ≈ 0.0011 SUI whether it aborts before or after the pairing.
+
+Reproduce: see `scripts/bench/README.md` (start a local network, then
+`node scripts/bench/gas-localnet.mjs --out gas.json`; ~5 min, mostly one real 60 s epoch wait).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Gas on **live testnet/mainnet** (as opposed to the local-network numbers above) and shared-object
+contention under concurrent senders are not measured; both are in `EXPERIMENTS.md`. Whatever a
+future run measures should replace the corresponding row above in place, not be appended as a
+separate table.

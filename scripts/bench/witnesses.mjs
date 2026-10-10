@@ -27,7 +27,7 @@ function toBI(val) {
   return BigInt(val);
 }
 
-function merkleRootFromPath(poseidon, leaf, pathElements, pathIndices) {
+export function merkleRootFromPath(poseidon, leaf, pathElements, pathIndices) {
   let node = leaf;
   for (let i = 0; i < pathElements.length; i++) {
     const sibling = pathElements[i];
@@ -37,16 +37,21 @@ function merkleRootFromPath(poseidon, leaf, pathElements, pathIndices) {
   return node;
 }
 
-export function buildTransferWitness(poseidon) {
-  const cumulativeOld = 0n, txAmount = 100n, randomnessOld = 0n, randomnessNew = 12345n;
-  const userSecret = 987654321n, epochId = 1n, threshold = 1_000_000_000n, salt = 99n;
+// Every builder takes an optional `o` of overrides for its scalar inputs (defaults are the
+// original fixed values, so prove-latency.mjs output is unchanged). gas-localnet.mjs uses them
+// to bind a proof to a live on-chain epoch / Merkle tree.
+export function buildTransferWitness(poseidon, o = {}) {
+  const {
+    cumulativeOld = 0n, txAmount = 100n, randomnessOld = 0n, randomnessNew = 12345n,
+    userSecret = 987654321n, epochId = 1n, threshold = 1_000_000_000n, salt = 99n,
+  } = o;
   const cumulativeNew = cumulativeOld + txAmount;
   const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
   const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
   const nullifier = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, epochId, randomnessOld]));
   const txAmountHash = toBI(poseidon([DOMAIN_TX_AMOUNT, txAmount, salt]));
-  const pathElements = Array.from({ length: MERKLE_DEPTH }, () => 0n);
-  const pathIndices = Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const pathElements = o.pathElements ?? Array.from({ length: MERKLE_DEPTH }, () => 0n);
+  const pathIndices = o.pathIndices ?? Array.from({ length: MERKLE_DEPTH }, () => 0n);
   const merkleRoot = merkleRootFromPath(poseidon, oldCommitment, pathElements, pathIndices);
   return {
     oldCommitment, newCommitment, threshold, epochId, nullifier, txAmountHash, merkleRoot,
@@ -55,9 +60,11 @@ export function buildTransferWitness(poseidon) {
   };
 }
 
-export function buildWithdrawWitness(poseidon) {
-  const cumulativeOld = 500n, randomnessOld = 12345n, userSecret = 987654321n;
-  const withdrawAmount = 100n, recipient = 0xABCDEF123456n, randomnessNew = 77777n;
+export function buildWithdrawWitness(poseidon, o = {}) {
+  const {
+    cumulativeOld = 500n, randomnessOld = 12345n, userSecret = 987654321n,
+    withdrawAmount = 100n, recipient = 0xABCDEF123456n, randomnessNew = 77777n,
+  } = o;
   const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
   const remainingBalance = cumulativeOld - withdrawAmount;
   const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
@@ -69,9 +76,11 @@ export function buildWithdrawWitness(poseidon) {
   };
 }
 
-export function buildComplianceWitness(poseidon) {
-  const userSecret = 987654321n, kycLevel = 2n, expiryEpoch = 1000n, issuerId = 42n;
-  const currentEpoch = 500n, requiredKycLevel = 1n, transferNullifier = 111222333n;
+export function buildComplianceWitness(poseidon, o = {}) {
+  const {
+    userSecret = 987654321n, kycLevel = 2n, expiryEpoch = 1000n, issuerId = 42n,
+    currentEpoch = 500n, requiredKycLevel = 1n, transferNullifier = 111222333n,
+  } = o;
   const credentialLeaf = toBI(poseidon([DOMAIN_CREDENTIAL_LEAF, userSecret, kycLevel, expiryEpoch, issuerId]));
   const pathElements = [];
   const pathIndices = [];
