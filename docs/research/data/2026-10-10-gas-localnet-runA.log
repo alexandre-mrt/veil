@@ -1,0 +1,148 @@
+rpc api 1.81.1, reference gas price 1000 MIST/unit, signer 0x6b78a8e805c540957c22ceeaae4c088e17a4eb7b74adf239ff678d734c9b8642
+sui binary: sui 1.81.1-e04cf9aa915c
+
+sui transfer (floor, 1 coin split+send)        ok    comp=  1000000 stor=  1976000 rebate=  9781200 net= -6805200
+publish (all 6 modules)                        ok    comp=  1370000 stor=156415600 rebate=   978120 net=156807480
+pool::create_pool                              ok    comp=  1000000 stor=  8496800 rebate=   978120 net=  8518680
+pool::propose_withdraw_vk                      ok    comp=  1000000 stor= 11726800 rebate=  8411832 net=  4314968
+compliance::create_compliance_config           ok    comp=  1000000 stor= 18171600 rebate= 11609532 net=  7562068
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (leaf 0)            ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (leaf 1)            ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (withdraw leaf)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 0)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 1)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 2)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 3)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 4)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 5)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 6)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 7)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 8)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 9)      ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 10)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 11)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 12)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 13)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 14)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 15)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 16)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 17)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 18)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+token_faucet::faucet (setup, not a Veil entry) ok    comp=  1000000 stor=  4043200 rebate=  2678544 net=  2364656
+pool::deposit_and_register (probe leaf 19)     ok    comp=  1000000 stor= 12494400 rebate= 11662200 net=  1832200
+pool::update_commitment_root (propose)         ok    comp=  1000000 stor= 12213200 rebate= 11850300 net=  1362900
+
+-- waiting 32s for the next pool epoch boundary --
+
+proof bytes 128, transfer inputs 224B, compliance inputs 192B, withdraw inputs 160B
+
+shielded_transfer REJECTED early (threshold, pre-pairing) ABORT comp=  1000000 stor= 10685600 rebate= 10578744 net=  1106856
+shielded_transfer REJECTED late (bad proof, post-pairing) ABORT comp=  1000000 stor= 10685600 rebate= 10578744 net=  1106856
+pool::shielded_transfer                        ok    comp=  1000000 stor= 14485600 rebate= 12610224 net=  2875376
+pool::shielded_transfer REPLAY (nullifier/commitment spent) ABORT comp=  1000000 stor= 10442400 rebate= 10337976 net=  1104424
+compliance::compliant_transfer (2 proofs)      ok    comp=  1000000 stor= 22800000 rebate= 18509040 net=  5290960
+pool::zk_withdraw                              ok    comp=  1000000 stor= 15823200 rebate= 12369456 net=  4453744
+PTB: 2 x shielded_transfer in one tx           ok    comp=  1000000 stor= 18528800 rebate= 14400936 net=  5127864
+PTB: 4 x shielded_transfer in one tx           ok    comp=  1510000 stor= 26615200 rebate= 18463896 net=  9661304
+PTB: 6 x shielded_transfer in one tx           ok    comp=  2120000 stor= 34701600 rebate= 22526856 net= 14294744
+PTB: 8 x shielded_transfer in one tx           ok    comp=  2760000 stor= 42788000 rebate= 26589816 net= 18958184
+pool::propose_vk_update                        ok    comp=  1000000 stor= 15686400 rebate= 11850300 net=  4836100
+pool::cancel_vk_update                         ok    comp=  1000000 stor= 11970000 rebate= 15529536 net= -2559536
+pool::freeze_pool                              ok    comp=  1000000 stor= 11970000 rebate= 11850300 net=  1119700
+pool::unfreeze_pool                            ok    comp=  1000000 stor= 11970000 rebate= 11850300 net=  1119700
+
+=== summary (MIST; computation units = computationCost / referenceGasPrice) ===
+wrote /tmp/claude-0/gas-finalA.json
+┌─────────┬───────────────────────────────────────────────────────────────┬───────┬─────────┬───────────┬──────────┬───────────┬───────────┐
+│ (index) │ label                                                         │ units │ comp    │ storage   │ rebate   │ net       │ status    │
+├─────────┼───────────────────────────────────────────────────────────────┼───────┼─────────┼───────────┼──────────┼───────────┼───────────┤
+│ 0       │ 'sui transfer (floor, 1 coin split+send)'                     │ 1000  │ 1000000 │ 1976000   │ 9781200  │ -6805200  │ 'success' │
+│ 1       │ 'publish (all 6 modules)'                                     │ 1370  │ 1370000 │ 156415600 │ 978120   │ 156807480 │ 'success' │
+│ 2       │ 'pool::create_pool'                                           │ 1000  │ 1000000 │ 8496800   │ 978120   │ 8518680   │ 'success' │
+│ 3       │ 'pool::propose_withdraw_vk'                                   │ 1000  │ 1000000 │ 11726800  │ 8411832  │ 4314968   │ 'success' │
+│ 4       │ 'compliance::create_compliance_config'                        │ 1000  │ 1000000 │ 18171600  │ 11609532 │ 7562068   │ 'success' │
+│ 5       │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 6       │ 'pool::deposit_and_register (leaf 0)'                         │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 7       │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 8       │ 'pool::deposit_and_register (leaf 1)'                         │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 9       │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 10      │ 'pool::deposit_and_register (withdraw leaf)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 11      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 12      │ 'pool::deposit_and_register (probe leaf 0)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 13      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 14      │ 'pool::deposit_and_register (probe leaf 1)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 15      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 16      │ 'pool::deposit_and_register (probe leaf 2)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 17      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 18      │ 'pool::deposit_and_register (probe leaf 3)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 19      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 20      │ 'pool::deposit_and_register (probe leaf 4)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 21      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 22      │ 'pool::deposit_and_register (probe leaf 5)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 23      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 24      │ 'pool::deposit_and_register (probe leaf 6)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 25      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 26      │ 'pool::deposit_and_register (probe leaf 7)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 27      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 28      │ 'pool::deposit_and_register (probe leaf 8)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 29      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 30      │ 'pool::deposit_and_register (probe leaf 9)'                   │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 31      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 32      │ 'pool::deposit_and_register (probe leaf 10)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 33      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 34      │ 'pool::deposit_and_register (probe leaf 11)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 35      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 36      │ 'pool::deposit_and_register (probe leaf 12)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 37      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 38      │ 'pool::deposit_and_register (probe leaf 13)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 39      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 40      │ 'pool::deposit_and_register (probe leaf 14)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 41      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 42      │ 'pool::deposit_and_register (probe leaf 15)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 43      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 44      │ 'pool::deposit_and_register (probe leaf 16)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 45      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 46      │ 'pool::deposit_and_register (probe leaf 17)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 47      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 48      │ 'pool::deposit_and_register (probe leaf 18)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 49      │ 'token_faucet::faucet (setup, not a Veil entry)'              │ 1000  │ 1000000 │ 4043200   │ 2678544  │ 2364656   │ 'success' │
+│ 50      │ 'pool::deposit_and_register (probe leaf 19)'                  │ 1000  │ 1000000 │ 12494400  │ 11662200 │ 1832200   │ 'success' │
+│ 51      │ 'pool::update_commitment_root (propose)'                      │ 1000  │ 1000000 │ 12213200  │ 11850300 │ 1362900   │ 'success' │
+│ 52      │ 'shielded_transfer REJECTED early (threshold, pre-pairing)'   │ 1000  │ 1000000 │ 10685600  │ 10578744 │ 1106856   │ 'abort 5' │
+│ 53      │ 'shielded_transfer REJECTED late (bad proof, post-pairing)'   │ 1000  │ 1000000 │ 10685600  │ 10578744 │ 1106856   │ 'abort 3' │
+│ 54      │ 'pool::shielded_transfer'                                     │ 1000  │ 1000000 │ 14485600  │ 12610224 │ 2875376   │ 'success' │
+│ 55      │ 'pool::shielded_transfer REPLAY (nullifier/commitment spent)' │ 1000  │ 1000000 │ 10442400  │ 10337976 │ 1104424   │ 'abort 9' │
+│ 56      │ 'compliance::compliant_transfer (2 proofs)'                   │ 1000  │ 1000000 │ 22800000  │ 18509040 │ 5290960   │ 'success' │
+│ 57      │ 'pool::zk_withdraw'                                           │ 1000  │ 1000000 │ 15823200  │ 12369456 │ 4453744   │ 'success' │
+│ 58      │ 'PTB: 2 x shielded_transfer in one tx'                        │ 1000  │ 1000000 │ 18528800  │ 14400936 │ 5127864   │ 'success' │
+│ 59      │ 'PTB: 4 x shielded_transfer in one tx'                        │ 1510  │ 1510000 │ 26615200  │ 18463896 │ 9661304   │ 'success' │
+│ 60      │ 'PTB: 6 x shielded_transfer in one tx'                        │ 2120  │ 2120000 │ 34701600  │ 22526856 │ 14294744  │ 'success' │
+│ 61      │ 'PTB: 8 x shielded_transfer in one tx'                        │ 2760  │ 2760000 │ 42788000  │ 26589816 │ 18958184  │ 'success' │
+│ 62      │ 'pool::propose_vk_update'                                     │ 1000  │ 1000000 │ 15686400  │ 11850300 │ 4836100   │ 'success' │
+│ 63      │ 'pool::cancel_vk_update'                                      │ 1000  │ 1000000 │ 11970000  │ 15529536 │ -2559536  │ 'success' │
+│ 64      │ 'pool::freeze_pool'                                           │ 1000  │ 1000000 │ 11970000  │ 11850300 │ 1119700   │ 'success' │
+│ 65      │ 'pool::unfreeze_pool'                                         │ 1000  │ 1000000 │ 11970000  │ 11850300 │ 1119700   │ 'success' │
+└─────────┴───────────────────────────────────────────────────────────────┴───────┴─────────┴───────────┴──────────┴───────────┴───────────┘
+exit 0
