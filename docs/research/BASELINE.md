@@ -36,14 +36,45 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point
+
+Measured 2026-10-11 on a local Sui network (`sui 1.72.1-94ad8ccd0ed6`, built from the revision
+`contracts/Move.toml` pins), reference gas price 1000 MIST, real Groth16 proofs. MIST; 1 SUI = 10⁹.
+`net = computation + storage − rebate`. Full method and raw output:
+[`2026-10-11-onchain-gas-baseline.md`](2026-10-11-onchain-gas-baseline.md). **Localnet, not
+mainnet** — the shape (what dominates) is the result; absolutes move with the epoch's gas price.
+
+| Entry point | Computation | Storage | Rebate | Net |
+|---|---:|---:|---:|---:|
+| `publish` | 1,380,000 | 156,415,600 | 4,890,600 | 152,905,000 |
+| `create_pool` | 1,000,000 | 8,496,800 | 978,120 | 8,518,680 |
+| `deposit_and_register` | 1,000,000 | 10,358,800 | 8,223,732 | 3,135,068 |
+| `update_commitment_root` (propose) | 1,000,000 | 8,740,000 | 8,411,832 | 1,328,168 |
+| `propose_withdraw_vk` | 1,000,000 | 11,970,000 | 8,652,600 | 4,317,400 |
+| `shielded_transfer` | 1,000,000 | 14,242,400 | 12,369,456 | 2,872,944 |
+| `zk_withdraw` | 1,000,000 | 15,580,000 | 12,128,688 | 4,451,312 |
+
+Verifier marginal computation (N calls per PTB, slope): `prepare_verifying_key` ≈ 84,600 MIST,
+`verify_full` transfer (7 inputs) ≈ 270,000, withdraw (5 inputs) ≈ 248,000. Computation is billed
+in buckets with a 1,000,000 MIST floor, so every single-call entry point pays exactly the floor.
+Verification is 9.4 % of a `shielded_transfer`; storage is 65 %.
+
+Reproduce: `sui start --force-regenesis --with-faucet`, then `cd scripts && bun run bench/gas-local.ts`.
+
+## Test suites (2026-10-11)
+
+Move 124/124 (`cd contracts && sui move test`); circuits 43 + 30 + 35; converter, compliance utils,
+fuzz (6 properties), frontend vitest 19 — all green on this commit.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
-| Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
-| Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
+| Gas: `compliant_transfer`, `create_compliance_config`, other admin/timelock ops, `emergency_withdraw` | **NOT MEASURED** | Not driven in the 2026-10-11 run (compliance wiring left to a follow-up). `compliant_transfer` verifies two proofs and is the one entry point that could exceed the computation floor. |
+| Gas at mainnet gas price | **NOT MEASURED** | Testnet fullnode is policy-denied from the research sandbox; localnet RGP is 1000. |
+| Proving time re-run | **NOT RE-RUN 2026-10-11** | pot15 was regenerated locally (Hermez ptau is no longer downloadable), so the proving-time table above is from 2026-07-22 and was not re-measured. Constraint counts re-confirmed (transfer 6,470 + 7,141). |
+| Mobile WASM proving latency | **NOT MEASURED** | Extend `scripts/bench/browser-latency.mjs` with a mobile device-emulation profile. |
+| Relayer throughput / leakage under load | **NOT MEASURED** | Queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Whatever a future run produces should replace the corresponding row above in place, not be appended
+as a separate table.
