@@ -10,7 +10,7 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
+   permitted). Blocked three times now for different reasons (see LEDGER 2026-07-22 and 2026-10-12; the latter lists the exact unblock: permission to execute a `sui` binary, e.g. the Docker Hub `mysten/sui-tools` one which the sandbox can fetch, or an allow-listed fullnode). If still blocked next run, take item 2 instead of retrying — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
