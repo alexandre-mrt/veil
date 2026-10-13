@@ -5,13 +5,14 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **Fix E7: bind `zk_withdraw`'s `recipient` to the proof.** Found 2026-10-13 (see
+   `2026-10-13-onchain-gas-baseline.md`): the contract never compares `recipient` with the circuit's
+   `recipientHash`, so anyone who sees a withdrawal proof can redirect the funds; demonstrated on a
+   local network. A live, unmitigated theft path (colluding relayer) beats every optimisation below.
+   Needs a design choice (on-chain `sui::poseidon` + address→field reduction vs recipient limbs as
+   public inputs), then the full circuit-change package: soundness argument, leakage analysis,
+   negative test, and a localnet assertion that a redirected withdrawal is rejected
+   (`scripts/bench/gas-localnet.ts` already has the harness).
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
@@ -21,10 +22,12 @@ what matters most — say why in the commit, don't just reorder silently.
    instance from the current baseline) is the highest-leverage next number — it moves prover time
    directly, for every circuit, on every transfer.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Re-ranked down on
+   2026-10-13: measured verify cost is 268 compute units, and every entry point is billed at the
+   1,000-unit floor, so aggregation saves 0 MIST below ≈ 4 proofs per tx and at most ≈ 268 units
+   per extra proof above it (≈ 0.0003 SUI). Only worth it as a prover/throughput play (one proof
+   for N transfers shrinks tx size and per-tx overhead), not a gas play. Replaces the old gas
+   motivation with a throughput one; consider after item 4's storage work.
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
@@ -68,7 +71,12 @@ what matters most — say why in the commit, don't just reorder silently.
     (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
     sender-relayer pairs under concurrent load) is unmeasured.
 
-12. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
+12. **Cut transfer storage cost (new, 2026-10-13).** Net storage is 65–81% of every transfer's gas
+    (`shielded_transfer` net 2,875,376 MIST, of which 1,875,376 storage). Candidate: shrink what is
+    rewritten per tx — the `Pool` object carries both VKs inline and is mutated on every call — and
+    merge commitment+nullifier into fewer dynamic fields. Measure with `gas-localnet.ts`.
+
+13. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
     papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
