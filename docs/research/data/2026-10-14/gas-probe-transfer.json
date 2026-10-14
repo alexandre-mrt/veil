@@ -1,0 +1,291 @@
+{
+  "circuit": "transfer",
+  "sui": "sui 1.72.1-94ad8ccd0ed6",
+  "rgp": 1000,
+  "results": {
+    "loop_noop": {
+      "scan": [
+        [
+          1,
+          1000
+        ],
+        [
+          2,
+          1000
+        ],
+        [
+          4,
+          1000
+        ],
+        [
+          8,
+          1000
+        ],
+        [
+          16,
+          1000
+        ],
+        [
+          32,
+          1000
+        ],
+        [
+          64,
+          1000
+        ],
+        [
+          128,
+          1000
+        ],
+        [
+          256,
+          1000
+        ],
+        [
+          512,
+          1000
+        ],
+        [
+          1024,
+          1000
+        ],
+        [
+          2048,
+          1000
+        ],
+        [
+          4096,
+          1000
+        ]
+      ],
+      "transitions": [],
+      "fit": null
+    },
+    "loop_prepare": {
+      "scan": [
+        [
+          1,
+          1000
+        ],
+        [
+          2,
+          1000
+        ],
+        [
+          4,
+          1000
+        ],
+        [
+          8,
+          1000
+        ],
+        [
+          16,
+          1350
+        ],
+        [
+          32,
+          2680
+        ],
+        [
+          64,
+          5330
+        ],
+        [
+          128,
+          10700
+        ],
+        [
+          256,
+          21400
+        ],
+        [
+          512,
+          42800
+        ]
+      ],
+      "transitions": [
+        {
+          "n": 12,
+          "prevBucketUnits": 1000
+        },
+        {
+          "n": 17,
+          "prevBucketUnits": 1350
+        },
+        {
+          "n": 33,
+          "prevBucketUnits": 2680
+        },
+        {
+          "n": 65,
+          "prevBucketUnits": 5330
+        },
+        {
+          "n": 129,
+          "prevBucketUnits": 10700
+        },
+        {
+          "n": 257,
+          "prevBucketUnits": 21400
+        }
+      ],
+      "fit": {
+        "slopeUnitsPerIter": 83.44516606656123,
+        "interceptUnits": -57.89503202431782
+      }
+    },
+    "loop_verify_prepared": {
+      "scan": [
+        [
+          1,
+          1000
+        ],
+        [
+          2,
+          1000
+        ],
+        [
+          4,
+          1000
+        ],
+        [
+          8,
+          1570
+        ],
+        [
+          16,
+          3040
+        ],
+        [
+          32,
+          5960
+        ],
+        [
+          64,
+          11900
+        ],
+        [
+          128,
+          23600
+        ],
+        [
+          256,
+          47100
+        ],
+        [
+          512,
+          94100
+        ]
+      ],
+      "transitions": [
+        {
+          "n": 5,
+          "prevBucketUnits": 1000
+        },
+        {
+          "n": 9,
+          "prevBucketUnits": 1570
+        },
+        {
+          "n": 17,
+          "prevBucketUnits": 3040
+        },
+        {
+          "n": 33,
+          "prevBucketUnits": 5960
+        },
+        {
+          "n": 65,
+          "prevBucketUnits": 11900
+        },
+        {
+          "n": 129,
+          "prevBucketUnits": 23600
+        },
+        {
+          "n": 257,
+          "prevBucketUnits": 47100
+        }
+      ],
+      "fit": {
+        "slopeUnitsPerIter": 183.3680649832564,
+        "interceptUnits": -37.793352339578895
+      }
+    },
+    "loop_verify_full": {
+      "scan": [
+        [
+          1,
+          1000
+        ],
+        [
+          2,
+          1000
+        ],
+        [
+          4,
+          1090
+        ],
+        [
+          8,
+          2150
+        ],
+        [
+          16,
+          4280
+        ],
+        [
+          32,
+          8530
+        ],
+        [
+          64,
+          17100
+        ],
+        [
+          128,
+          34200
+        ],
+        [
+          256,
+          68400
+        ]
+      ],
+      "transitions": [
+        {
+          "n": 4,
+          "prevBucketUnits": 1000
+        },
+        {
+          "n": 5,
+          "prevBucketUnits": 1090
+        },
+        {
+          "n": 9,
+          "prevBucketUnits": 2150
+        },
+        {
+          "n": 17,
+          "prevBucketUnits": 4280
+        },
+        {
+          "n": 33,
+          "prevBucketUnits": 8530
+        },
+        {
+          "n": 65,
+          "prevBucketUnits": 17100
+        },
+        {
+          "n": 129,
+          "prevBucketUnits": 34200
+        }
+      ],
+      "fit": {
+        "slopeUnitsPerIter": 266.575104074251,
+        "interceptUnits": -213.23960963625203
+      }
+    }
+  }
+}
