@@ -1,0 +1,43 @@
+sui CLI: sui 1.72.1-94ad8ccd0ed6
+reference gas price: 1000 MIST/unit  (computation units = computationCost / 1000)
+[gas] publish (6 modules)                                  comp=1380000 stor=156415600 rebate=4890600 net=152905000  success
+transfer VK: 488 B, withdraw VK: 424 B
+[gas] create_pool (transfer VK 488 B)                      comp=1000000 stor=8496800 rebate=978120 net=8518680  success
+[gas] token_faucet::faucet (mint 1000 VEIL)                comp=1000000 stor=4043200 rebate=2678544 net=2364656  success
+[gas] deposit_and_register #1 (pool has 0 commitments)     comp=1000000 stor=9021200 rebate=8223732 net=1797468  success
+[gas] token_faucet::faucet #2                              comp=1000000 stor=4043200 rebate=2678544 net=2364656  success
+[gas] deposit_and_register #2 (pool has 1 commitments)     comp=1000000 stor=9021200 rebate=8223732 net=1797468  success
+[gas] update_commitment_root (propose, 32 B)               comp=1000000 stor=8740000 rebate=8411832 net=1328168  success
+[gas] propose_withdraw_vk (424 B)                          comp=1000000 stor=11970000 rebate=8652600 net=4317400  success
+waiting for epoch > 29866054 (epoch = 60s) so the timelocks and commitment maturity elapse...
+[gas] shielded_transfer abort: threshold mismatch (pre-verify) comp=1000000 stor=10442400 rebate=10337976 net=1104424  failure (MoveAbort(MoveLocation { module: ModuleId { address: b37c985)
+[gas] shielded_transfer abort: bad proof (post-verify)     comp=1000000 stor=10442400 rebate=10337976 net=1104424  failure (MoveAbort(MoveLocation { module: ModuleId { address: b37c985)
+[gas] shielded_transfer SUCCESS (dry-run)                  comp=1000000 stor=14242400 rebate=12369456 net=2872944  success
+[gas] shielded_transfer SUCCESS                            comp=1000000 stor=14242400 rebate=12369456 net=2872944  success
+[gas] shielded_transfer replay (rejected)                  comp=1000000 stor=10199200 rebate=10097208 net=1101992  failure (MoveAbort(MoveLocation { module: ModuleId { address: b37c985)
+[gas] zk_withdraw abort: bad proof (post-verify)           comp=1000000 stor=10199200 rebate=10097208 net=1101992  failure (MoveAbort(MoveLocation { module: ModuleId { address: b37c985)
+[gas] zk_withdraw SUCCESS                                  comp=1000000 stor=15580000 rebate=12128688 net=4451312  success
+[gas] token_faucet::faucet #4 (probe)                      comp=1000000 stor=4043200 rebate=2678544 net=2364656  success
+[gas] deposit_and_register (probe commitment)              comp=1000000 stor=12251200 rebate=11421432 net=1829768  success
+[gas] zk_withdraw with ATTACKER recipient (proof bound to other recipient) comp=1000000 stor=15580000 rebate=12128688 net=4451312  success
+[probe] tx status = success; attacker-address token coins = 1 (balance 100)
+
+=== SUMMARY (gas units = cost / RGP) ===
+publish (6 modules)                                                comp_units=  1380  storage=156415600  rebate=  4890600  net_MIST= 152905000
+create_pool (transfer VK 488 B)                                    comp_units=  1000  storage=  8496800  rebate=   978120  net_MIST=   8518680
+token_faucet::faucet (mint 1000 VEIL)                              comp_units=  1000  storage=  4043200  rebate=  2678544  net_MIST=   2364656
+deposit_and_register #1 (pool has 0 commitments)                   comp_units=  1000  storage=  9021200  rebate=  8223732  net_MIST=   1797468
+token_faucet::faucet #2                                            comp_units=  1000  storage=  4043200  rebate=  2678544  net_MIST=   2364656
+deposit_and_register #2 (pool has 1 commitments)                   comp_units=  1000  storage=  9021200  rebate=  8223732  net_MIST=   1797468
+update_commitment_root (propose, 32 B)                             comp_units=  1000  storage=  8740000  rebate=  8411832  net_MIST=   1328168
+propose_withdraw_vk (424 B)                                        comp_units=  1000  storage= 11970000  rebate=  8652600  net_MIST=   4317400
+shielded_transfer abort: threshold mismatch (pre-verify)           comp_units=  1000  storage= 10442400  rebate= 10337976  net_MIST=   1104424
+shielded_transfer abort: bad proof (post-verify)                   comp_units=  1000  storage= 10442400  rebate= 10337976  net_MIST=   1104424
+shielded_transfer SUCCESS (dry-run)                                comp_units=  1000  storage= 14242400  rebate= 12369456  net_MIST=   2872944
+shielded_transfer SUCCESS                                          comp_units=  1000  storage= 14242400  rebate= 12369456  net_MIST=   2872944
+shielded_transfer replay (rejected)                                comp_units=  1000  storage= 10199200  rebate= 10097208  net_MIST=   1101992
+zk_withdraw abort: bad proof (post-verify)                         comp_units=  1000  storage= 10199200  rebate= 10097208  net_MIST=   1101992
+zk_withdraw SUCCESS                                                comp_units=  1000  storage= 15580000  rebate= 12128688  net_MIST=   4451312
+token_faucet::faucet #4 (probe)                                    comp_units=  1000  storage=  4043200  rebate=  2678544  net_MIST=   2364656
+deposit_and_register (probe commitment)                            comp_units=  1000  storage= 12251200  rebate= 11421432  net_MIST=   1829768
+zk_withdraw with ATTACKER recipient (proof bound to other recipient) comp_units=  1000  storage= 15580000  rebate= 12128688  net_MIST=   4451312

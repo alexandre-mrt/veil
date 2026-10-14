@@ -5,13 +5,13 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **Fix E7: bind the `zk_withdraw` recipient to the proof (security, found 2026-10-14).**
+   `pool.move` never compares the proof's `recipientHash` with the `recipient` argument; a proof
+   copied by any observer pays out to their address (reproduced on localnet — see LEDGER
+   2026-10-14 and `threat-model.md` E7). Pick the address→field mapping (`address mod r`),
+   enforce `poseidon_bn254([8, addr])` in Move (or move the check into the circuit), add Move
+   negative tests and a regression step in `scripts/bench/gas-bench.mjs`, and measure the extra gas.
+   Re-ranked to #1 because it is an unmitigated threat, not an optimisation.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
@@ -21,10 +21,11 @@ what matters most — say why in the commit, don't just reorder silently.
    instance from the current baseline) is the highest-leverage next number — it moves prover time
    directly, for every circuit, on every transfer.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+3. **k-transfer PTB: where does gas leave the 1000-unit floor?** 2026-10-14 measured a full verify
+   at 164–267 units against a 1000-unit floor, so ≈4 verifications per PTB are free. Build k valid
+   transfer proofs and measure real PTBs of k = 1..8 `shielded_transfer` calls (and what the shared
+   `Pool` lock does to them). This replaces "recursive batching" as the cheap first step: PTB
+   composition already amortizes the floor; recursion/aggregation only pays beyond that.
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
@@ -73,3 +74,10 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **Compliance entry-point gas.** `compliant_transfer` (two verifications ≈ 520 units of
+    verify alone), `create_compliance_config`, freeze / multisig admin calls — the rows still
+    missing from `BASELINE.md`'s gas table.
+
+14. **Storage-cost reduction.** A transfer's net 2.87 M MIST is ~65 % storage churn (2026-10-14).
+    Test one dynamic field instead of two / a bundled nullifier set and measure net MIST.

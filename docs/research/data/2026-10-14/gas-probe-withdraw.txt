@@ -1,0 +1,27 @@
+sui CLI: sui 1.72.1-94ad8ccd0ed6
+withdraw circuit: vk 424 B, proof 128 B, public inputs 160 B (5 signals)
+
+loop_noop: scan [[1,1000],[2,1000],[4,1000],[8,1000],[16,1000],[32,1000],[64,1000],[128,1000],[256,1000],[512,1000],[1024,1000],[2048,1000],[4096,1000]]
+  transitions []
+  fit null
+  loop_prepare n=1024: InsufficientGas in command 0
+
+loop_prepare: scan [[1,1000],[2,1000],[4,1000],[8,1000],[16,1350],[32,2670],[64,5320],[128,10700],[256,21400],[512,42800]]
+  transitions [{"n":12,"prevBucketUnits":1000},{"n":17,"prevBucketUnits":1350},{"n":33,"prevBucketUnits":2670},{"n":65,"prevBucketUnits":5320},{"n":129,"prevBucketUnits":10700},{"n":257,"prevBucketUnits":21400}]
+  fit {"slopeUnitsPerIter":83.46154277574004,"interceptUnits":-62.628573992439975}
+  loop_verify_prepared n=1024: InsufficientGas in command 0
+
+loop_verify_prepared: scan [[1,1000],[2,1000],[4,1000],[8,1420],[16,2730],[32,5350],[64,10600],[128,21100],[256,42200],[512,84300]]
+  transitions [{"n":6,"prevBucketUnits":1000},{"n":9,"prevBucketUnits":1420},{"n":17,"prevBucketUnits":2730},{"n":33,"prevBucketUnits":5350},{"n":65,"prevBucketUnits":10600},{"n":129,"prevBucketUnits":21100},{"n":257,"prevBucketUnits":42200}]
+  fit {"slopeUnitsPerIter":164.30396977998603,"interceptUnits":-54.406915210399475}
+  loop_verify_full n=512: InsufficientGas in command 0
+
+loop_verify_full: scan [[1,1000],[2,1000],[4,1010],[8,2000],[16,3970],[32,7920],[64,15900],[128,31700],[256,63500]]
+  transitions [{"n":4,"prevBucketUnits":1000},{"n":5,"prevBucketUnits":1010},{"n":9,"prevBucketUnits":2000},{"n":17,"prevBucketUnits":3970},{"n":33,"prevBucketUnits":7920},{"n":65,"prevBucketUnits":15900},{"n":129,"prevBucketUnits":31700}]
+  fit {"slopeUnitsPerIter":246.97900316203734,"interceptUnits":-172.64268977911186}
+
+=== per-iteration computation (gas units; 1 unit = reference-gas-price MIST) ===
+loop_noop              n/a units/iter
+loop_prepare           83.5 units/iter
+loop_verify_prepared   164.3 units/iter
+loop_verify_full       247.0 units/iter

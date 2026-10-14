@@ -1,0 +1,192 @@
+{
+  "sui": "sui 1.72.1-94ad8ccd0ed6",
+  "referenceGasPrice": 1000,
+  "rows": [
+    {
+      "label": "publish (6 modules)",
+      "status": "success",
+      "computationCost": 1380000,
+      "storageCost": 156415600,
+      "storageRebate": 4890600,
+      "nonRefundableStorageFee": 49400,
+      "net": 152905000,
+      "digest": "J58Gqg5aQ3GQ74vpoFiBctE7vZzuiQ4jx5V4FZCy9YRK"
+    },
+    {
+      "label": "create_pool (transfer VK 488 B)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 8496800,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 8518680,
+      "digest": "9jkHUdwg8pvRwhYR2pFS8sWgBs7FCohmMSBq4tFfpqaG"
+    },
+    {
+      "label": "token_faucet::faucet (mint 1000 VEIL)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 4043200,
+      "storageRebate": 2678544,
+      "nonRefundableStorageFee": 27056,
+      "net": 2364656,
+      "digest": "DzscDQsouS5rHzyjU6UTibFpn4xFVqqhHGVVhHvHsfB9"
+    },
+    {
+      "label": "deposit_and_register #1 (pool has 0 commitments)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 9021200,
+      "storageRebate": 8223732,
+      "nonRefundableStorageFee": 83068,
+      "net": 1797468,
+      "digest": "3WXv7fHCr6o7HY1ta4mq7kDty3D7FkipFvFtLJcm2HpC"
+    },
+    {
+      "label": "token_faucet::faucet #2",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 4043200,
+      "storageRebate": 2678544,
+      "nonRefundableStorageFee": 27056,
+      "net": 2364656,
+      "digest": "B4FxDZXQtqdfDdK97e2TVJy87YgqkS6T8GK8pD9gcDZH"
+    },
+    {
+      "label": "deposit_and_register #2 (pool has 1 commitments)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 9021200,
+      "storageRebate": 8223732,
+      "nonRefundableStorageFee": 83068,
+      "net": 1797468,
+      "digest": "G8n377e5jdL5qCmko1Zbjzoj21ZmVnNRtGVa4UC9ktg1"
+    },
+    {
+      "label": "update_commitment_root (propose, 32 B)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 8740000,
+      "storageRebate": 8411832,
+      "nonRefundableStorageFee": 84968,
+      "net": 1328168,
+      "digest": "6zbQCvWh9mu4np5zTv8nEPwLxqwPCqkhZu3mXXU24jtD"
+    },
+    {
+      "label": "propose_withdraw_vk (424 B)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 11970000,
+      "storageRebate": 8652600,
+      "nonRefundableStorageFee": 87400,
+      "net": 4317400,
+      "digest": "C6JJu9yuLmXg2nRhoKWJxcF1CJgKr6z7GG4GMPf56foC"
+    },
+    {
+      "label": "shielded_transfer abort: threshold mismatch (pre-verify)",
+      "status": "failure (MoveAbort(MoveLocation { module: ModuleId { address: b37c985)",
+      "computationCost": 1000000,
+      "storageCost": 10442400,
+      "storageRebate": 10337976,
+      "nonRefundableStorageFee": 104424,
+      "net": 1104424,
+      "dryRun": true
+    },
+    {
+      "label": "shielded_transfer abort: bad proof (post-verify)",
+      "status": "failure (MoveAbort(MoveLocation { module: ModuleId { address: b37c985)",
+      "computationCost": 1000000,
+      "storageCost": 10442400,
+      "storageRebate": 10337976,
+      "nonRefundableStorageFee": 104424,
+      "net": 1104424,
+      "dryRun": true
+    },
+    {
+      "label": "shielded_transfer SUCCESS (dry-run)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 14242400,
+      "storageRebate": 12369456,
+      "nonRefundableStorageFee": 124944,
+      "net": 2872944,
+      "dryRun": true
+    },
+    {
+      "label": "shielded_transfer SUCCESS",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 14242400,
+      "storageRebate": 12369456,
+      "nonRefundableStorageFee": 124944,
+      "net": 2872944,
+      "digest": "4iFepAzseeKub6pjFo3J8RMNoGN4kDZ79yVvABjyPeA7"
+    },
+    {
+      "label": "shielded_transfer replay (rejected)",
+      "status": "failure (MoveAbort(MoveLocation { module: ModuleId { address: b37c985)",
+      "computationCost": 1000000,
+      "storageCost": 10199200,
+      "storageRebate": 10097208,
+      "nonRefundableStorageFee": 101992,
+      "net": 1101992,
+      "dryRun": true
+    },
+    {
+      "label": "zk_withdraw abort: bad proof (post-verify)",
+      "status": "failure (MoveAbort(MoveLocation { module: ModuleId { address: b37c985)",
+      "computationCost": 1000000,
+      "storageCost": 10199200,
+      "storageRebate": 10097208,
+      "nonRefundableStorageFee": 101992,
+      "net": 1101992,
+      "dryRun": true
+    },
+    {
+      "label": "zk_withdraw SUCCESS",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 15580000,
+      "storageRebate": 12128688,
+      "nonRefundableStorageFee": 122512,
+      "net": 4451312,
+      "digest": "7qBj4iQAYn9hXCKN3HbB1hTAigD2npNJeRQTxMb4yAqH"
+    },
+    {
+      "label": "token_faucet::faucet #4 (probe)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 4043200,
+      "storageRebate": 2678544,
+      "nonRefundableStorageFee": 27056,
+      "net": 2364656,
+      "digest": "8HSU3sWDSKvMX3ybi9VcBVbP6X1xLh2Ky2opw93HSpoQ"
+    },
+    {
+      "label": "deposit_and_register (probe commitment)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 12251200,
+      "storageRebate": 11421432,
+      "nonRefundableStorageFee": 115368,
+      "net": 1829768,
+      "digest": "A9Untck1pH8udoLShduhDbs4pGUtvr7EqF4eLYvY9jic"
+    },
+    {
+      "label": "zk_withdraw with ATTACKER recipient (proof bound to other recipient)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 15580000,
+      "storageRebate": 12128688,
+      "nonRefundableStorageFee": 122512,
+      "net": 4451312,
+      "digest": "GuDQUzQDeFcfDTZaHdamWcggAQm8t1Uh4Agzg9LtbKx5"
+    }
+  ],
+  "recipientBindingProbe": {
+    "txStatus": "success",
+    "attackerCoins": [
+      "100"
+    ]
+  }
+}

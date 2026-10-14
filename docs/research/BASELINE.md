@@ -1,6 +1,6 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Measured 2026-07-22 (circuits, proving) and 2026-10-14 (on-chain gas), on one machine. See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
@@ -36,14 +36,49 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas (localnet, sui 1.72.1, reference gas price 1000 MIST/unit)
+
+Measured 2026-10-14 by `node scripts/bench/gas-bench.mjs` and `scripts/bench/gas-probe.mjs`; see
+[`2026-10-14-onchain-gas-baseline.md`](2026-10-14-onchain-gas-baseline.md). Computation in gas units
+(MIST = units × RGP); net = computation + storage − rebate, in MIST.
+
+| Entry point | Computation (units) | Net (MIST) |
+|---|---|---|
+| publish (6 modules) | 1380 | 152 905 000 |
+| `create_pool` | 1000 | 8 518 680 |
+| `deposit_and_register` | 1000 | 1 797 468 |
+| `update_commitment_root` (propose) | 1000 | 1 328 168 |
+| `propose_withdraw_vk` | 1000 | 4 317 400 |
+| `shielded_transfer` | 1000 | 2 872 944 |
+| `zk_withdraw` | 1000 | 4 451 312 |
+| aborted `shielded_transfer` / `zk_withdraw` (bad proof, replay) | 1000 | ≈1 102 000–1 104 000 |
+
+Every entry point except `publish` bills the **1000-unit computation floor**; the work actually done
+is below it. Groth16 verification, resolved by in-transaction repetition (units per call):
+
+| Circuit | `prepare_verifying_key` | verify (PVK cached) | prepare + verify (today) |
+|---|---|---|---|
+| withdraw (5 inputs) | 83.5 | 164.3 | 247.0 |
+| compliance (6 inputs) | 83.4 | 173.8 | 257.2 |
+| transfer (7 inputs) | 83.4 | 183.4 | 266.6 |
+
+Move test suite (`sui move test`, CLI 1.72.1 — must match the framework rev in `contracts/Move.toml`):
+**124 / 124 passed** (2026-10-14).
+
+Reproduce: start a local network (`SUI_CONFIG_DIR=<dir> sui start --force-regenesis --with-faucet`),
+compile the circuits, then `node scripts/bench/gas-bench.mjs --sui <path-to-sui-1.72.1>` (≈3 min:
+60 s epochs) and `node scripts/bench/gas-probe.mjs --sui <path> --circuit transfer`.
+
+## Known open security finding
+
+`zk_withdraw` does not check the proof's `recipientHash` against its `recipient` argument
+(`docs/threat-model.md` E7 — OPEN). Reproduced 2026-10-14.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
-| Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
-| Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
-
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+| Gas of `compliant_transfer`, `create_compliance_config`, freeze/multisig/other admin calls | **NOT MEASURED** | Out of scope of the 2026-10-14 run (transfer/withdraw lifecycle only). |
+| Gas with a PTB of k transfers; gas vs pool size beyond 2 commitments | **NOT MEASURED** | Needs k valid proofs; queued. |
+| Mobile WASM proving latency | **NOT MEASURED** | Browser harness runs desktop headless Chromium only. Cheap extension of `scripts/bench/browser-latency.mjs`. |
+| Relayer throughput / leakage under load | **NOT MEASURED** | Queued. |
