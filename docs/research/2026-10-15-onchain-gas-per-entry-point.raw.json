@@ -1,0 +1,147 @@
+{
+  "rgp": "1000",
+  "rows": [
+    {
+      "label": "publish (package + token init)",
+      "status": "success",
+      "computationCost": 1390000,
+      "storageCost": 156415600,
+      "storageRebate": 9781200,
+      "net": 148024400,
+      "digest": "BR3tfcLQ65d6qsNPBRMEQNzkSELCfDE31RbvR7E9wrbn",
+      "moduleBytes": 17046
+    },
+    {
+      "label": "create_pool",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 8496800,
+      "storageRebate": 978120,
+      "net": 8518680,
+      "digest": "6zyK8yDCLafz4CkWxsVS2fkqPcJKGSuW5C1LFYoW3Zm6",
+      "vkBytes": 488
+    },
+    {
+      "label": "token_faucet::faucet (mint 1000)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 4043200,
+      "storageRebate": 2678544,
+      "net": 2364656,
+      "digest": "9JjJsYzqQST8Nx1xQvpZZNja4rBorPc2NS8xWFypUETc"
+    },
+    {
+      "label": "splitCoins x5 (setup, not Veil)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 9013600,
+      "storageRebate": 2302344,
+      "net": 7711256,
+      "digest": "A3MFM7YMaDKu2ZWZkBgQckYvnHddKfsvXJTNRJTx1A8C"
+    },
+    {
+      "label": "deposit_and_register #1 (first leaf)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 9021200,
+      "storageRebate": 8223732,
+      "net": 1797468,
+      "digest": "DTxDtQXisLSJkQwqNMJZhk2nPrFT6oeKregSnNYAdqZJ"
+    },
+    {
+      "label": "deposit_and_register #2",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 9021200,
+      "storageRebate": 8223732,
+      "net": 1797468,
+      "digest": "12TVnh8dB1MRk7bcMZFmPipVmNpvAhsq9J5aZ4DUEsHy"
+    },
+    {
+      "label": "deposit_and_register #3",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 9021200,
+      "storageRebate": 8223732,
+      "net": 1797468,
+      "digest": "4Ma4Q7sVhq3Qz6MDiFYbBdadUJBGMDiGjRTVBEFhhhnd"
+    },
+    {
+      "label": "deposit_and_register #4",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 9021200,
+      "storageRebate": 8223732,
+      "net": 1797468,
+      "digest": "57DVCXw7Guwizy2KjBsfYye41qBLiewsJkjdsN7pdisq"
+    },
+    {
+      "label": "update_commitment_root (propose)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 8740000,
+      "storageRebate": 8411832,
+      "net": 1328168,
+      "digest": "E3Dso7BUYGb5Z8kSmzUpFRScwEDoxXU1ZXi6Td8uyZi7"
+    },
+    {
+      "label": "propose_withdraw_vk",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 11970000,
+      "storageRebate": 8652600,
+      "net": 4317400,
+      "digest": "4GG3rR3afT3QH8Rc8Wgdd2NKjRX342jugbzNr77QELbH",
+      "vkBytes": 424
+    },
+    {
+      "label": "freeze_pool",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 11970000,
+      "storageRebate": 11850300,
+      "net": 1119700,
+      "digest": "AXpdhanPFzaPej3HWNXhoPCZkiv9EHwhieLCTwu5Vfz4"
+    },
+    {
+      "label": "unfreeze_pool",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 11970000,
+      "storageRebate": 11850300,
+      "net": 1119700,
+      "digest": "BhubXErzsQDswB434y3Fd2j3x2HjKQRVZoDmKkEE1LrT"
+    },
+    {
+      "label": "shielded_transfer (real proof, 7 pub)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 14242400,
+      "storageRebate": 12369456,
+      "net": 2872944,
+      "digest": "6QZddTaWALcXavqPThgJi1B4WdNN4ZU1SEXirBFgMWzn",
+      "proofBytes": 128,
+      "publicInputBytes": 224
+    },
+    {
+      "label": "zk_withdraw (real proof, 5 pub)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 15580000,
+      "storageRebate": 12128688,
+      "net": 4451312,
+      "digest": "8u5U2mnuFvpAowtTr3Tn6SYQ2if37a7YoHt5EpxesXyG",
+      "proofBytes": 128,
+      "publicInputBytes": 160
+    },
+    {
+      "label": "shielded_transfer REPLAY (must fail)",
+      "status": "failure",
+      "computationCost": 1000000,
+      "storageCost": 10199200,
+      "storageRebate": 10097208,
+      "net": 1101992,
+      "digest": "9ySznw7tiApzMfFTJ5xpnMWwSFvcVYW8kfPLMhBA2Ehu"
+    }
+  ]
+}

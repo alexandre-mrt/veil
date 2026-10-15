@@ -5,13 +5,8 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. ~~On-chain gas per entry point~~ — **settled KEEP 2026-10-15** (see LEDGER). Result re-ranked
+   the queue: computation is at the floor everywhere, storage is the cost.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
@@ -21,10 +16,11 @@ what matters most — say why in the commit, don't just reorder silently.
    instance from the current baseline) is the highest-leverage next number — it moves prover time
    directly, for every circuit, on every transfer.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+3. **Storage-cost decomposition of `shielded_transfer`** *(new, from 2026-10-15)*. Storage is
+   ≥ 89% of gross cost in every entry point (transfer: 14.24M of 15.24M MIST). Split the nullifier vs commitment dynamic fields
+   vs Pool/gas-coin mutation, report permanent state cost (storage − rebate) per transfer, and
+   test cheaper nullifier storage (sharded bitmap / packed buckets). Harness exists:
+   `scripts/bench/gas-localnet.ts`.
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
@@ -73,3 +69,16 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **Compliance-path gas** *(new)*. Dual-proof transfer (`compliance.move`) in one tx: does
+    transfer + compliance verification (~532 units extrapolated, NOT measured) stay under the
+    1,000-unit floor? Needs compliance circuit build + config object; extend `gas-localnet.ts`.
+
+14. **Testnet re-measurement + pool shared-object contention** *(new)*. Real storage price / RGP
+    (fullnode hosts were proxy-denied on 2026-10-15) and concurrent transfers on the single
+    `Pool` shared object.
+
+15. **Batched/aggregated proof verification (N transfers → 1)** — *demoted from #3 on
+    2026-10-15.* One verification is ~266 units, under the 1,000-unit floor, so aggregation cannot
+    reduce computation cost for a single transfer and nullifiers/commitments must still be stored
+    per transfer. Only revisit if storage (item 3) is restructured or per-tx proof counts exceed ~4.
