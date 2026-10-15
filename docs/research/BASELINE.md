@@ -36,14 +36,36 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas (localnet, Sui 1.72.1, real Groth16 proofs, RGP 1000 MIST/unit)
+
+Measured 2026-10-15 — see [`2026-10-15-onchain-gas-per-entry-point.md`](2026-10-15-onchain-gas-per-entry-point.md).
+Localnet storage prices differ from testnet/mainnet: unit counts transfer, MIST amounts do not.
+
+| Entry point | Computation (MIST) | Storage | Rebate | Net |
+|---|---|---|---|---|
+| publish | 1,390,000 | 156,415,600 | 9,781,200 | 148,024,400 |
+| `create_pool` | 1,000,000 | 8,496,800 | 978,120 | 8,518,680 |
+| `deposit_and_register` | 1,000,000 | 9,021,200 | 8,223,732 | 1,797,468 |
+| `shielded_transfer` | 1,000,000 | 14,242,400 | 12,369,456 | 2,872,944 |
+| `zk_withdraw` | 1,000,000 | 15,580,000 | 12,128,688 | 4,451,312 |
+| `update_commitment_root` / `propose_withdraw_vk` | 1,000,000 | 8,740,000 / 11,970,000 | 8,411,832 / 8,652,600 | 1,328,168 / 4,317,400 |
+| `freeze_pool` / `unfreeze_pool` | 1,000,000 | 11,970,000 | 11,850,300 | 1,119,700 |
+
+Every entry point sits at the 1,000-unit minimum computation bucket. Marginal `sui::groth16`
+cost (BN254, 7 inputs): verify ≈ 183 units, VK preparation ≈ 83 units, both ≈ 266 units per proof
+(~27% of the floor). Reproduce: `bun run bench/gas-localnet.ts` and
+`bun run bench/gas-verify-scaling.ts` from `scripts/` against a local network.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| Compliance-path gas (`compliance.move`, dual proof) | **NOT MEASURED** | Needs the compliance circuit build + config object; queued. |
+| Gas on testnet/mainnet (real storage price, RGP) | **NOT MEASURED** | Public fullnode hosts are denied by the sandbox proxy; localnet only. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Move test suite: 124/124 pass (`sui move test`, Sui 1.72.1, 2026-10-15).
+
+Whatever comes out of a future run should replace the corresponding row above in place, not be
+appended as a separate table.
