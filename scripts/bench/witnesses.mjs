@@ -37,9 +37,12 @@ function merkleRootFromPath(poseidon, leaf, pathElements, pathIndices) {
   return node;
 }
 
-export function buildTransferWitness(poseidon) {
+// `opts` lets gas-localnet.mjs bind a witness to a live pool (epochId, threshold, a distinct
+// userSecret per pool); with no opts the values are exactly what prove-latency.mjs always used.
+export function buildTransferWitness(poseidon, opts = {}) {
   const cumulativeOld = 0n, txAmount = 100n, randomnessOld = 0n, randomnessNew = 12345n;
-  const userSecret = 987654321n, epochId = 1n, threshold = 1_000_000_000n, salt = 99n;
+  const userSecret = opts.userSecret ?? 987654321n, epochId = opts.epochId ?? 1n;
+  const threshold = opts.threshold ?? 1_000_000_000n, salt = 99n;
   const cumulativeNew = cumulativeOld + txAmount;
   const oldCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
   const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeNew, randomnessNew, userSecret]));
@@ -55,9 +58,9 @@ export function buildTransferWitness(poseidon) {
   };
 }
 
-export function buildWithdrawWitness(poseidon) {
-  const cumulativeOld = 500n, randomnessOld = 12345n, userSecret = 987654321n;
-  const withdrawAmount = 100n, recipient = 0xABCDEF123456n, randomnessNew = 77777n;
+export function buildWithdrawWitness(poseidon, opts = {}) {
+  const cumulativeOld = 500n, randomnessOld = 12345n, userSecret = opts.userSecret ?? 987654321n;
+  const withdrawAmount = 100n, recipient = opts.recipient ?? 0xABCDEF123456n, randomnessNew = 77777n;
   const commitment = toBI(poseidon([DOMAIN_COMMITMENT, cumulativeOld, randomnessOld, userSecret]));
   const remainingBalance = cumulativeOld - withdrawAmount;
   const newCommitment = toBI(poseidon([DOMAIN_COMMITMENT, remainingBalance, randomnessNew, userSecret]));
@@ -69,9 +72,10 @@ export function buildWithdrawWitness(poseidon) {
   };
 }
 
-export function buildComplianceWitness(poseidon) {
-  const userSecret = 987654321n, kycLevel = 2n, expiryEpoch = 1000n, issuerId = 42n;
-  const currentEpoch = 500n, requiredKycLevel = 1n, transferNullifier = 111222333n;
+export function buildComplianceWitness(poseidon, opts = {}) {
+  const userSecret = opts.userSecret ?? 987654321n, kycLevel = 2n, issuerId = 42n;
+  const currentEpoch = opts.currentEpoch ?? 500n, requiredKycLevel = 1n;
+  const expiryEpoch = opts.expiryEpoch ?? 1000n, transferNullifier = opts.transferNullifier ?? 111222333n;
   const credentialLeaf = toBI(poseidon([DOMAIN_CREDENTIAL_LEAF, userSecret, kycLevel, expiryEpoch, issuerId]));
   const pathElements = [];
   const pathIndices = [];
