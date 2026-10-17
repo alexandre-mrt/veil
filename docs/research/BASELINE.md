@@ -1,13 +1,13 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Measured 2026-07-22 (circuits, proving) and 2026-10-17 (gas), each in one run on one machine. See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
 reflects the current state of the protocol, not history.
 
 Toolchain: circom 2.2.2 (built from source, `iden3/circom` tag `v2.2.2`), snarkjs 0.7.6, Node
-v22.22.2, Chromium 141 (headless, via Playwright), pot15 Powers of Tau (Hermez, `2^15` — reused
+v22.22.2, Chromium 141 (headless, via Playwright), sui 1.72.1 (local network, release binary `testnet-v1.72.1`, matches the pinned framework rev), pot15 Powers of Tau (Hermez, `2^15` — reused
 for all three circuits per the existing `compile*.sh` scripts), single dev-only Groth16
 contribution (matches `circuits/scripts/compile*.sh` — **not** a production ceremony; see
 `ceremony.sh` and `docs/threat-model.md` RR2).
@@ -36,14 +36,32 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point (2026-10-17, local network, RGP 1000 MIST/unit, no tip)
+
+Full methodology and raw output: [`2026-10-17-gas-per-entry-point.md`](2026-10-17-gas-per-entry-point.md).
+Reproduce: `node scripts/bench/gas.mjs` against `sui start --force-regenesis --with-faucet`.
+
+| Entry point | Computation (units) | Net cost (MIST) = comp + storage − rebate |
+|---|---|---|
+| `publish` (6 modules) | 1,380 | 152,905,000 |
+| `pool::create_pool` | 1,000 | 8,518,680 |
+| `pool::deposit_and_register` | 1,000 | 3,135,068 |
+| `pool::shielded_transfer` (1 verify) | 1,000 | 2,875,376 |
+| `compliance::compliant_transfer` (2 verifies) | 1,000 | 5,288,528 |
+| `pool::zk_withdraw` (1 verify) | 1,000 | 4,453,744 |
+| `compliance::create_compliance_config` | 1,000 | 7,321,300 |
+| `pool::update_commitment_root` / `propose_withdraw_vk` / `freeze_pool` | 1,000 | 1,328,168 / 4,317,400 / 1,119,700 |
+| `shielded_transfer`, rejected proof | 1,000 | 1,106,856 |
+
+Every entry point sits on Sui's 1,000-unit minimum computation bucket; the bill is mostly storage.
+Groth16 marginal cost (framework only): ≈188 units/verify (7 inputs), ≈167 (5 inputs), ≈10.7
+units/public input, ≈86 units/`prepare_verifying_key`. Move test suite: 124/124 pass.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Any future gas run should replace the gas table above in place, not be appended as a separate table.
