@@ -5,13 +5,11 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **Fix `zk_withdraw` recipient binding (security).** Found 2026-10-17: the contract pays out to a
+   `recipient` argument it never checks against the proven `recipientHash`; reproduced on a local
+   network, threat-model E7 corrected. Recompute `Poseidon(8, recipient)` on-chain
+   (`sui::poseidon::poseidon_bn254`) with a field-safe address encoding, add a Move negative test
+   and a circuit-side agreement test. Outranks every performance item.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
@@ -21,10 +19,11 @@ what matters most — say why in the commit, don't just reorder silently.
    instance from the current baseline) is the highest-leverage next number — it moves prover time
    directly, for every circuit, on every transfer.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+3. **Gas follow-ups from the 2026-10-17 baseline** (replaces "batched proof verification"). Gas is
+   storage-bound and verification sits below the 1,000-unit floor, so aggregation saves nothing
+   until a tx carries >3–5 verifies. Measure instead: (a) k `shielded_transfer`s in one PTB, k=1..8
+   — where computation leaves the floor; (b) moving the ~4 KB VKs out of the hot `Pool` object —
+   does net storage per transfer fall; (c) N concurrent transfers on one Pool — abort rate.
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
@@ -32,7 +31,8 @@ what matters most — say why in the commit, don't just reorder silently.
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
    is the main lever available without redesigning the deposit flow).
 
-5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
+5. **Independent circuit soundness audit.** Add: does `compliant_transfer` bind the compliance
+   proof's `contextId` and `encrypted_amount` to the transfer it accompanies? (code reading says no; untested.) Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
    across the three circuits' eight domain tags, proof malleability. Adversarial, not a redesign —
    the existing test suites are thorough but self-referential; worth a pass that tries to break the
