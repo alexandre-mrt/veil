@@ -33,7 +33,7 @@ import { proofToSuiBytes, publicInputsToSuiBytes, vkToSuiBytes } from "../src/pr
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..", "..");
-const BUILD = join(ROOT, "circuits", "build");
+const buildDir = (n: string) => join(ROOT, "circuits", n === "transfer" ? "build" : `build-${n}`);
 const SUI_BIN = process.env.SUI_BIN ?? "sui";
 const RPC = process.env.SUI_RPC ?? getJsonRpcFullnodeUrl("localnet");
 const FAUCET = process.env.SUI_FAUCET ?? "http://127.0.0.1:9123";
@@ -105,13 +105,13 @@ async function main() {
   const H = (xs: bigint[]): bigint => F.toObject(poseidon(xs));
 
   // ---- keys & artifacts ------------------------------------------------------------------
-  const vk = (n: string) => vkToSuiBytes(JSON.parse(readFileSync(join(BUILD, `${n}_vk.json`), "utf8")));
+  const vk = (n: string) => vkToSuiBytes(JSON.parse(readFileSync(join(buildDir(n), `${n}_vk.json`), "utf8")));
   const vkTransfer = vk("transfer"), vkWithdraw = vk("withdraw"), vkCompliance = vk("compliance");
   const prove = async (name: string, input: Record<string, unknown>) => {
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
       input,
-      join(BUILD, `${name}_js`, `${name}.wasm`),
-      join(BUILD, `${name}_final.zkey`),
+      join(buildDir(name), `${name}_js`, `${name}.wasm`),
+      join(buildDir(name), `${name}_final.zkey`),
     );
     return { proof: proofToSuiBytes(proof), inputs: publicInputsToSuiBytes(publicSignals) };
   };
@@ -122,7 +122,7 @@ async function main() {
 
   // ---- publish ---------------------------------------------------------------------------
   const built = JSON.parse(
-    execFileSync(SUI_BIN, ["move", "build", "--dump-bytecode-as-base64", "--path", join(ROOT, "contracts")], {
+    execFileSync(SUI_BIN, ["move", "build", "--dump-bytecode-as-base64", "--no-tree-shaking", "--path", join(ROOT, "contracts")], {
       encoding: "utf8",
       maxBuffer: 64 * 1024 * 1024,
     }).replace(/^[^{]*/, ""),
