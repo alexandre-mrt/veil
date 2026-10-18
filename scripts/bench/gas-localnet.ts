@@ -71,6 +71,7 @@ async function run(label: string, tx: Transaction, expectFail = false) {
   await client.waitForTransaction({ digest: r.digest });
   const g = r.effects!.gasUsed;
   const status = r.effects!.status.status;
+  if (status !== "success") console.log(`# ${label} aborted: ${JSON.stringify(r.effects!.status)}`);
   const row: GasRow = {
     label,
     computationCost: Number(g.computationCost),
@@ -269,8 +270,8 @@ async function main() {
   }
 
   // ---- zk_withdraw: honest, then recipient-substitution probe ----------------------------
-  const withdrawProof = async (cOld: bigint, rOld: bigint, recipient: bigint) => {
-    const cumOld = 500n, amt = 100n, rNew = 77777n;
+  const withdrawProof = async (cOld: bigint, rOld: bigint, recipient: bigint, rNew = 77777n) => {
+    const cumOld = 500n, amt = 100n;
     return prove("withdraw", str({
       commitment: cOld,
       withdrawAmount: amt,
@@ -293,7 +294,7 @@ async function main() {
   await run("zk_withdraw (honest recipient)", zkw(await withdrawProof(Cw1, 12345n, alice), addr(alice)));
   const probe = await run(
     "zk_withdraw (PROBE: proof bound to A, submitted with recipient B)",
-    zkw(await withdrawProof(Cw2, 12346n, alice), addr(mallory)),
+    zkw(await withdrawProof(Cw2, 12346n, alice, 88888n), addr(mallory)),
     true,
   );
   const probeAccepted = probe.effects!.status.status === "success";
@@ -333,7 +334,7 @@ async function main() {
   await admin("unfreeze_pool", "unfreeze_pool", () => [], false);
 
   const rgp = await client.getReferenceGasPrice();
-  writeFileSync(OUT, JSON.stringify({ referenceGasPrice: rgp, probeAccepted, rows }, null, 2));
+  writeFileSync(OUT, JSON.stringify({ referenceGasPrice: String(rgp), probeAccepted, rows }, null, 2));
   console.log(`# reference gas price: ${rgp} MIST/unit; wrote ${OUT}`);
   console.table(rows.map((r) => ({ label: r.label, comp: r.computationCost, storage: r.storageCost, rebate: r.storageRebate, net: r.net, status: r.status })));
 }
