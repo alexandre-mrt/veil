@@ -137,6 +137,7 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | RR7 | Relayer centralization | Low | Single relayer can censor. | Multiple independent relayers + direct submission fallback. |
 | RR8 | PBKDF2 fallback key derivation | Low | In incognito mode, encryption key derived from wallet address (public). Weaker than IndexedDB non-extractable keys. | Acceptable for incognito sessions. Primary path uses non-extractable keys. |
 | RR9 | Token faucet in production bytecode | Low | `token_faucet.move` allows free minting (gated by TreasuryCap). | Remove from sources before mainnet deployment. Separate module file for easy exclusion. |
+| RR10 | `zk_withdraw` recipient not bound to proof | **High** | `recipientHash` is a public input but the contract never compares it to the `recipient` argument. Confirmed 2026-10-18 on a local network: a proof for address A submitted with recipient B is accepted and pays B. Any relayer/observer of the tx arguments can redirect a withdrawal. | Open. See `docs/research/2026-10-18-onchain-gas.md`; fix is queue item #1. Do not deploy withdraw VK to mainnet until fixed. |
 
 ## Security Controls Summary Table
 
