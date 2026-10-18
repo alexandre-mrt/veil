@@ -1,6 +1,6 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Measured 2026-07-22 (proving, constraints) and 2026-10-18 (on-chain gas), on one machine per run. See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
@@ -36,14 +36,29 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas (local Sui 1.72.1 network, RGP 1000 MIST/unit, measured 2026-10-18)
+
+Net = computation + storage − rebate, MIST. Full table and raw JSON:
+[`2026-10-18-onchain-gas.md`](2026-10-18-onchain-gas.md). Computation is the minimum bucket
+(1,000,000) for every call, including proof-verifying ones; cost is storage.
+
+| Entry point | Net MIST |
+|---|---|
+| `deposit_and_register` | 1,797,468 |
+| `shielded_transfer` | 2,875,376 |
+| `zk_withdraw` | 4,453,744 |
+| `compliant_transfer` (2 proofs) | 5,283,436 |
+| `create_pool` / `create_compliance_config` | 8,518,680 / 7,564,500 |
+| timelocked admin proposals / freeze | 1.1–4.3 M |
+| publish | 152,905,000 |
+
+Move tests: 124/124 pass (`sui move test`, 1.72.1). Reproduce: `scripts/bench/gas-localnet.ts`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Still open on gas: testnet/mainnet RGP, shared-object contention, growth with pool size.
