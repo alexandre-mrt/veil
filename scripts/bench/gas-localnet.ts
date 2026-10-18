@@ -108,6 +108,7 @@ async function main() {
   const vk = (n: string) => vkToSuiBytes(JSON.parse(readFileSync(join(buildDir(n), `${n}_vk.json`), "utf8")));
   const vkTransfer = vk("transfer"), vkWithdraw = vk("withdraw"), vkCompliance = vk("compliance");
   const prove = async (name: string, input: Record<string, unknown>) => {
+    console.log(`# proving ${name}`);
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
       input,
       join(buildDir(name), `${name}_js`, `${name}.wasm`),
@@ -337,4 +338,5 @@ async function main() {
   console.table(rows.map((r) => ({ label: r.label, comp: r.computationCost, storage: r.storageCost, rebate: r.storageRebate, net: r.net, status: r.status })));
 }
 
+process.on("exit", (c) => console.log(`# process exit ${c}`));
 main().then(() => process.exit(0), (e) => { console.error(e); process.exit(1); });
