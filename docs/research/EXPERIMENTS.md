@@ -5,25 +5,21 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **Integrate the 4-ary Merkle path (PARKED from 2026-10-19).** Measured −21.5 % constraints,
+   −11.6 % proving time on `transfer.circom` (see `2026-10-19-poseidon2-and-arity4-merkle.md`). Needs the
+   tree builder/indexer, frontend path assembly, test-suite port with negatives, new vk and a re-based
+   root. Also measure arity 8 (depth 7) and whether the circuit can drop under 2^13 constraints, which
+   would halve the FFT domain. Re-ranked to #1: it is the only measured, positive prover-time lever.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **On-chain gas per entry point.** BLOCKED three times (2026-07-22 twice, 2026-10-19: egress proxy
+   returns 403 for `fullnode.testnet.sui.io` and GitHub releases). **Cannot proceed without an
+   environment network-policy change** (allow-list the testnet fullnode and/or sui release assets, or ship
+   a `sui` binary in the image). Do not spend another night probing — check the policy first. Still the
+   missing axis in `BASELINE.md`, and the prerequisite for item 3.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
+   Depends on the gas item (#2) existing first (need a real per-verify gas number to know how much this would
    actually save).
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
@@ -73,3 +69,9 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **Domain-separate Merkle node hashes from leaf hashes.** Leaf/internal-node confusion is only prevented
+    by fixed depth today (noted in the 2026-10-19 report). Small, circuit-touching; fold into the 4-ary
+    integration.
+
+*Settled: "Poseidon2 vs Poseidon" — REJECT for R1CS (2026-10-19). Revisit only with a Plonk/Halo2 port.*
