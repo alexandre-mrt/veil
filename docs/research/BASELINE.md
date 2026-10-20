@@ -1,6 +1,6 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Measured 2026-07-22 (circuits) and 2026-10-20 (on-chain gas), on one machine per run. See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
@@ -14,7 +14,7 @@ contribution (matches `circuits/scripts/compile*.sh` — **not** a production ce
 
 ## Constraint counts, artifact sizes
 
-| Circuit | R1CS constraints | Non-linear | Linear | Wires | Public / private inputs | zkey (bytes) | vk (bytes) | Compressed on-chain proof (bytes) |
+| Circuit | R1CS constraints | Non-linear | Linear | Wires | Public / private inputs | zkey (bytes) | vk JSON (bytes) | Compressed on-chain proof (bytes) |
 |---|---|---|---|---|---|---|---|---|
 | `transfer.circom` | 13,611 | 6,470 | 7,141 | 13,632 | 7 / 47 | 6,001,431 | 4,025 | 128 |
 | `compliance.circom` | 12,743 | 6,057 | 6,686 | 12,762 | 6 / 45 | 5,682,155 | 3,841 | 128 |
@@ -36,14 +36,40 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas (local Sui network, sui 1.71.0, reference gas price 1000 MIST)
+
+Measured 2026-10-20 with real Groth16 proofs — report
+[`2026-10-20-gas-localnet.md`](2026-10-20-gas-localnet.md), raw data
+[`2026-10-20-gas-localnet.json`](2026-10-20-gas-localnet.json). MIST; net = computation + storage − rebate.
+Localnet protocol config: storage prices and the computation bucket table may differ on mainnet.
+
+| Entry point | computation | net | net (SUI) |
+|---|---:|---:|---:|
+| `shielded_transfer` | 1,000,000 | 2,875,984 | 0.0029 |
+| `zk_withdraw` | 1,000,000 | 4,454,352 | 0.0045 |
+| `compliant_transfer` (transfer + compliance proof) | 1,000,000 | 5,015,460 | 0.0050 |
+| `deposit_and_register` | 1,000,000 | 1,797,468 | 0.0018 |
+| `create_pool` (488 B VK) | 1,000,000 | 8,518,680 | 0.0085 |
+| `create_compliance_config` | 1,000,000 | 7,289,000 | 0.0073 |
+| `update_commitment_root` | 1,000,000 | 1,328,168 | 0.0013 |
+| `propose_vk_update` / `propose_withdraw_vk` | 1,000,000 | 4,839,140 / 4,317,400 | 0.0048 / 0.0043 |
+| `propose_withdrawal` / `execute_pending_withdrawal` | 1,000,000 | 1,423,700 / 2,153,908 | 0.0014 / 0.0022 |
+| `freeze_pool` / `unfreeze_pool` | 1,000,000 | 1,122,740 | 0.0011 |
+| rejected `shielded_transfer` (bad proof / replay) | 1,000,000 | ≈ 1,105,000–1,107,000 | 0.0011 |
+| `publish` (whole package) | 1,370,000 | 156,807,480 | 0.1568 |
+
+Every call, including those running Groth16 verification, reports computation = 1,000,000 MIST
+(the minimum bucket); verification is below that floor, so cost is storage-driven. On-chain VK bytes:
+488 (transfer), 424 (withdraw), 456 (compliance) — the "vk JSON" column above is the snarkjs file.
+Reproduce: `sui start --force-regenesis --with-faucet &`, `sui client switch --env local`,
+`sui client faucet`, then `node scripts/bench/gas-localnet.mjs` (needs compiled circuits).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Move contract suite: 124/124 passing under sui 1.71.0 (run 2026-10-20). The gas/Move rows that
+used to live here were closed by the 2026-10-20 run and replaced in place above.
