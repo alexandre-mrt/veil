@@ -1,0 +1,241 @@
+{
+  "meta": {
+    "rpc": "http://127.0.0.1:9000",
+    "chain": "31c7e7fc",
+    "epochMs": 60000,
+    "referenceGasPrice": "1000",
+    "sui": "sui 1.71.0-a3cc4467c9de",
+    "vkBytes": {
+      "transfer": 488,
+      "withdraw": 424,
+      "compliance": 456
+    }
+  },
+  "rows": [
+    {
+      "label": "publish (whole package)",
+      "status": "success",
+      "computationCost": "1370000",
+      "storageCost": "156415600",
+      "storageRebate": "978120",
+      "net": "156807480",
+      "digest": "6YxmsXeYbovkGJdSUYrVorazAi6VhsoeQgJmTkZjZRQd"
+    },
+    {
+      "label": "create_pool (transfer VK 488 B)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "8496800",
+      "storageRebate": "978120",
+      "net": "8518680",
+      "digest": "HHQVYZk1wKrXrksirFe51hPJHVyNpEEHzgBLPKELtnZA"
+    },
+    {
+      "label": "create_pool (second pool)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "8496800",
+      "storageRebate": "978120",
+      "net": "8518680",
+      "digest": "EJZ12JLp43RispPyGMciPmL9xnDtiMfGgqmKVBXQgqk"
+    },
+    {
+      "label": "faucet (test helper) #1",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "4043200",
+      "storageRebate": "2678544",
+      "net": "2364656",
+      "digest": "Cgx9UzQo37eFKWZBarXc2UKe4QNp7669Zw8Ddfmffywb"
+    },
+    {
+      "label": "faucet (test helper) #2",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "4043200",
+      "storageRebate": "2678544",
+      "net": "2364656",
+      "digest": "Drvbs8ZeCyq9xBRWiA62rMqFtqP182rW4peWUw1EHa3j"
+    },
+    {
+      "label": "faucet (test helper) #3",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "4043200",
+      "storageRebate": "2678544",
+      "net": "2364656",
+      "digest": "HCeH2o6BhDAkjr5G79nH9sbeiUNUhBVUSyEavGLivDiL"
+    },
+    {
+      "label": "faucet (test helper) #4",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "4043200",
+      "storageRebate": "2678544",
+      "net": "2364656",
+      "digest": "6DNBWFa2cWDGuyqk4X6qdk9d8NEoy8biQTS7V4vhrAPG"
+    },
+    {
+      "label": "deposit_and_register (1st leaf in pool)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "9021200",
+      "storageRebate": "8223732",
+      "net": "1797468",
+      "digest": "7v89GmdvwPthETuwUwusEfMhFYzEVLtSiVc4CLHdRKKi"
+    },
+    {
+      "label": "deposit_and_register (2nd leaf in pool)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "9021200",
+      "storageRebate": "8223732",
+      "net": "1797468",
+      "digest": "2ePUdsa7KPCz9jEpxw4iPqjsdDZoB211FydTfi3MFrJK"
+    },
+    {
+      "label": "deposit_and_register (compliance pool)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "9021200",
+      "storageRebate": "8223732",
+      "net": "1797468",
+      "digest": "5Ygf6RZpaQw1pKNA6sXNpGEaNexfs5vYbxQLUzLGFqPy"
+    },
+    {
+      "label": "update_commitment_root (pool A)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "8740000",
+      "storageRebate": "8411832",
+      "net": "1328168",
+      "digest": "7kbzimtbh67HXuBL4y7865U5eAninv8pSpig77WV6shs"
+    },
+    {
+      "label": "update_commitment_root (pool B)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "8740000",
+      "storageRebate": "8411832",
+      "net": "1328168",
+      "digest": "FL9uHGDCPcPGoaydXaqEpyhvz4rSkFQDhfGhJGYAWUZC"
+    },
+    {
+      "label": "propose_withdraw_vk (withdraw VK 424 B)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "8652600",
+      "net": "4317400",
+      "digest": "CAfuhJtgMqKansDGtsKRGAggdqpa9aRDxjgbUxdwCWKQ"
+    },
+    {
+      "label": "create_compliance_config",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "14941600",
+      "storageRebate": "8652600",
+      "net": "7289000",
+      "digest": "5R4CWnEBw2AiRejbKUjZ25dfRz9LJ13swekYd8rWGHoQ"
+    },
+    {
+      "label": "propose_withdrawal",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "12274000",
+      "storageRebate": "11850300",
+      "net": "1423700",
+      "digest": "3131w1wt3hKbKSBDSF7yBcbTP7oZiXphPsW9UMtwmdZr"
+    },
+    {
+      "label": "propose_vk_update",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "15990400",
+      "storageRebate": "12151260",
+      "net": "4839140",
+      "digest": "AEZorvajbkrcLxjpMSAzdkV5RCz8e1YdUWSGUrWCpeP7"
+    },
+    {
+      "label": "cancel_vk_update",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "12274000",
+      "storageRebate": "15830496",
+      "net": "-2556496",
+      "digest": "5i3e9rRqSuM67bxYr5fHuoPPg4wNme1boSFhyY3kGgMG"
+    },
+    {
+      "label": "freeze_pool",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "12274000",
+      "storageRebate": "12151260",
+      "net": "1122740",
+      "digest": "FpnxH6EbHKyyy1bM5VsjwJZdofT5XqwpqoiEWtjXnjJk"
+    },
+    {
+      "label": "unfreeze_pool",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "12274000",
+      "storageRebate": "12151260",
+      "net": "1122740",
+      "digest": "FyfQgGVcbM5mV9njQudYwgDu34LAeieoUHkYzFD8cEf"
+    },
+    {
+      "label": "shielded_transfer, TAMPERED input (abort)",
+      "status": "failure",
+      "computationCost": "1000000",
+      "storageCost": "10746400",
+      "storageRebate": "10638936",
+      "net": "1107464",
+      "digest": "7hgguuHeh22B6W1WiGm13AoT54gNS4xLMVE2qrbiKUhz"
+    },
+    {
+      "label": "shielded_transfer (valid proof)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "14546400",
+      "storageRebate": "12670416",
+      "net": "2875984",
+      "digest": "B3keFfvxN1J6dsE8TEjyhjEHjG99tKr5frXQdrFb2E52"
+    },
+    {
+      "label": "shielded_transfer REPLAY (abort)",
+      "status": "failure",
+      "computationCost": "1000000",
+      "storageCost": "10503200",
+      "storageRebate": "10398168",
+      "net": "1105032",
+      "digest": "9e6FXPnLbj74J5ephvQn39aAwdMnDvTbKoBfaQfCeuaM"
+    },
+    {
+      "label": "zk_withdraw (valid proof)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "15884000",
+      "storageRebate": "12429648",
+      "net": "4454352",
+      "digest": "6prCg6PeojuFDiSypRrzy37wHf8eJKhMHstXPXiNAPoj"
+    },
+    {
+      "label": "compliant_transfer (dual proof)",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "19326800",
+      "storageRebate": "15311340",
+      "net": "5015460",
+      "digest": "BCcib9jNURKUB8EEDWQTEjwMJB9VdubQf13XWPMYofeD"
+    },
+    {
+      "label": "execute_pending_withdrawal",
+      "status": "success",
+      "computationCost": "1000000",
+      "storageCost": "13064400",
+      "storageRebate": "11910492",
+      "net": "2153908",
+      "digest": "ChgK1C12cRpPXQ4ZXNU3d49oNsqKYRa2BgN9NkbXGQ36"
+    }
+  ]
+}
