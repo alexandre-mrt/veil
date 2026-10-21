@@ -1,0 +1,101 @@
+{
+  "referenceGasPrice": "1000",
+  "rows": [
+    {
+      "name": "publish (one-off)",
+      "computation": 1380000,
+      "storage": 156415600,
+      "rebate": 4890600,
+      "net": 152905000,
+      "status": "success"
+    },
+    {
+      "name": "create_pool",
+      "computation": 1000000,
+      "storage": 8496800,
+      "rebate": 978120,
+      "net": 8518680,
+      "status": "success"
+    },
+    {
+      "name": "token_faucet::faucet (testnet only)",
+      "computation": 1000000,
+      "storage": 4043200,
+      "rebate": 2678544,
+      "net": 2364656,
+      "status": "success"
+    },
+    {
+      "name": "propose commitment root",
+      "computation": 1000000,
+      "storage": 8740000,
+      "rebate": 8411832,
+      "net": 1328168,
+      "status": "success"
+    },
+    {
+      "name": "propose_withdraw_vk",
+      "computation": 1000000,
+      "storage": 11970000,
+      "rebate": 8652600,
+      "net": 4317400,
+      "status": "success"
+    },
+    {
+      "name": "create_compliance_config",
+      "computation": 1000000,
+      "storage": 18414800,
+      "rebate": 11850300,
+      "net": 7564500,
+      "status": "success"
+    },
+    {
+      "name": "deposit_and_register (A)",
+      "computation": 1000000,
+      "storage": 14075200,
+      "rebate": 11902968,
+      "net": 3172232,
+      "status": "success"
+    },
+    {
+      "name": "deposit_and_register (B)",
+      "computation": 1000000,
+      "storage": 14075200,
+      "rebate": 11902968,
+      "net": 3172232,
+      "status": "success"
+    },
+    {
+      "name": "deposit_and_register (W)",
+      "computation": 1000000,
+      "storage": 14075200,
+      "rebate": 11902968,
+      "net": 3172232,
+      "status": "success"
+    },
+    {
+      "name": "shielded_transfer",
+      "computation": 1000000,
+      "storage": 14485600,
+      "rebate": 12610224,
+      "net": 2875376,
+      "status": "success"
+    },
+    {
+      "name": "compliant_transfer (2 proofs)",
+      "computation": 1000000,
+      "storage": 22800000,
+      "rebate": 18509040,
+      "net": 5290960,
+      "status": "success"
+    },
+    {
+      "name": "zk_withdraw",
+      "computation": 1000000,
+      "storage": 15823200,
+      "rebate": 12369456,
+      "net": 4453744,
+      "status": "success"
+    }
+  ]
+}
