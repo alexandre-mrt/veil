@@ -1,0 +1,157 @@
+{
+  "sui": "sui 1.72.2-85b460a63fd7",
+  "rows": [
+    {
+      "label": "publish (package)",
+      "computation": "1390000",
+      "storage": "156415600",
+      "rebate": "9781200",
+      "net": "148024400",
+      "computationUnits": 1390
+    },
+    {
+      "label": "create_pool (A)",
+      "computation": "1000000",
+      "storage": "8496800",
+      "rebate": "978120",
+      "net": "8518680",
+      "computationUnits": 1000
+    },
+    {
+      "label": "token_faucet::faucet",
+      "computation": "1000000",
+      "storage": "4043200",
+      "rebate": "2678544",
+      "net": "2364656",
+      "computationUnits": 1000
+    },
+    {
+      "label": "deposit_and_register",
+      "computation": "1000000",
+      "storage": "9021200",
+      "rebate": "8223732",
+      "net": "1797468",
+      "computationUnits": 1000
+    },
+    {
+      "label": "token_faucet::faucet",
+      "computation": "1000000",
+      "storage": "4043200",
+      "rebate": "2678544",
+      "net": "2364656",
+      "computationUnits": 1000
+    },
+    {
+      "label": "deposit_and_register (100-unit denom)",
+      "computation": "1000000",
+      "storage": "10358800",
+      "rebate": "8223732",
+      "net": "3135068",
+      "computationUnits": 1000
+    },
+    {
+      "label": "update_commitment_root (propose)",
+      "computation": "1000000",
+      "storage": "8740000",
+      "rebate": "8411832",
+      "net": "1328168",
+      "computationUnits": 1000
+    },
+    {
+      "label": "propose_withdraw_vk",
+      "computation": "1000000",
+      "storage": "11970000",
+      "rebate": "8652600",
+      "net": "4317400",
+      "computationUnits": 1000
+    },
+    {
+      "label": "create_pool (B)",
+      "computation": "1000000",
+      "storage": "8496800",
+      "rebate": "978120",
+      "net": "8518680",
+      "computationUnits": 1000
+    },
+    {
+      "label": "token_faucet::faucet",
+      "computation": "1000000",
+      "storage": "4043200",
+      "rebate": "2678544",
+      "net": "2364656",
+      "computationUnits": 1000
+    },
+    {
+      "label": "deposit_and_register",
+      "computation": "1000000",
+      "storage": "9021200",
+      "rebate": "8223732",
+      "net": "1797468",
+      "computationUnits": 1000
+    },
+    {
+      "label": "update_commitment_root (propose)",
+      "computation": "1000000",
+      "storage": "8740000",
+      "rebate": "8411832",
+      "net": "1328168",
+      "computationUnits": 1000
+    },
+    {
+      "label": "create_compliance_config",
+      "computation": "1000000",
+      "storage": "14941600",
+      "rebate": "8652600",
+      "net": "7289000",
+      "computationUnits": 1000
+    },
+    {
+      "label": "freeze_pool",
+      "computation": "1000000",
+      "storage": "8983200",
+      "rebate": "8893368",
+      "net": "1089832",
+      "computationUnits": 1000
+    },
+    {
+      "label": "unfreeze_pool",
+      "computation": "1000000",
+      "storage": "8983200",
+      "rebate": "8893368",
+      "net": "1089832",
+      "computationUnits": 1000
+    },
+    {
+      "label": "shielded_transfer",
+      "computation": "1000000",
+      "storage": "14242400",
+      "rebate": "12369456",
+      "net": "2872944",
+      "computationUnits": 1000
+    },
+    {
+      "label": "zk_withdraw",
+      "computation": "1000000",
+      "storage": "15580000",
+      "rebate": "12128688",
+      "net": "4451312",
+      "computationUnits": 1000
+    },
+    {
+      "label": "compliant_transfer (2 proofs)",
+      "computation": "1000000",
+      "storage": "19326800",
+      "rebate": "15311340",
+      "net": "5015460",
+      "computationUnits": 1000
+    },
+    {
+      "label": "shielded_transfer REPLAY (aborts)",
+      "computation": "1000000",
+      "storage": "10199200",
+      "rebate": "10097208",
+      "net": "1101992",
+      "computationUnits": 1000
+    }
+  ]
+}

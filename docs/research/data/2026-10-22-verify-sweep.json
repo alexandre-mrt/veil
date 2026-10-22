@@ -1,0 +1,266 @@
+{
+  "sui": "sui 1.72.2-85b460a63fd7",
+  "results": {
+    "full_n": [
+      {
+        "n": 0,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 1,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 2,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 3,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 4,
+        "ok": true,
+        "computationUnits": 1090
+      },
+      {
+        "n": 6,
+        "ok": true,
+        "computationUnits": 1620
+      },
+      {
+        "n": 8,
+        "ok": true,
+        "computationUnits": 2150
+      },
+      {
+        "n": 12,
+        "ok": true,
+        "computationUnits": 3210
+      },
+      {
+        "n": 16,
+        "ok": true,
+        "computationUnits": 4280
+      },
+      {
+        "n": 24,
+        "ok": true,
+        "computationUnits": 6400
+      },
+      {
+        "n": 32,
+        "ok": true,
+        "computationUnits": 8530
+      },
+      {
+        "n": 48,
+        "ok": true,
+        "computationUnits": 12800
+      },
+      {
+        "n": 64,
+        "ok": true,
+        "computationUnits": 17100
+      },
+      {
+        "n": 96,
+        "ok": true,
+        "computationUnits": 25600
+      },
+      {
+        "n": 128,
+        "ok": true,
+        "computationUnits": 34200
+      },
+      {
+        "n": 192,
+        "ok": true,
+        "computationUnits": 51300
+      },
+      {
+        "n": 256,
+        "ok": true,
+        "computationUnits": 68400
+      }
+    ],
+    "prepare_n": [
+      {
+        "n": 0,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 1,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 2,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 3,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 4,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 6,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 8,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 12,
+        "ok": true,
+        "computationUnits": 1020
+      },
+      {
+        "n": 16,
+        "ok": true,
+        "computationUnits": 1350
+      },
+      {
+        "n": 24,
+        "ok": true,
+        "computationUnits": 2010
+      },
+      {
+        "n": 32,
+        "ok": true,
+        "computationUnits": 2670
+      },
+      {
+        "n": 48,
+        "ok": true,
+        "computationUnits": 4000
+      },
+      {
+        "n": 64,
+        "ok": true,
+        "computationUnits": 5330
+      },
+      {
+        "n": 96,
+        "ok": true,
+        "computationUnits": 7980
+      },
+      {
+        "n": 128,
+        "ok": true,
+        "computationUnits": 10700
+      },
+      {
+        "n": 192,
+        "ok": true,
+        "computationUnits": 16000
+      },
+      {
+        "n": 256,
+        "ok": true,
+        "computationUnits": 21400
+      }
+    ],
+    "prepared_n": [
+      {
+        "n": 0,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 1,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 2,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 3,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 4,
+        "ok": true,
+        "computationUnits": 1000
+      },
+      {
+        "n": 6,
+        "ok": true,
+        "computationUnits": 1200
+      },
+      {
+        "n": 8,
+        "ok": true,
+        "computationUnits": 1570
+      },
+      {
+        "n": 12,
+        "ok": true,
+        "computationUnits": 2300
+      },
+      {
+        "n": 16,
+        "ok": true,
+        "computationUnits": 3030
+      },
+      {
+        "n": 24,
+        "ok": true,
+        "computationUnits": 4500
+      },
+      {
+        "n": 32,
+        "ok": true,
+        "computationUnits": 5960
+      },
+      {
+        "n": 48,
+        "ok": true,
+        "computationUnits": 8890
+      },
+      {
+        "n": 64,
+        "ok": true,
+        "computationUnits": 11900
+      },
+      {
+        "n": 96,
+        "ok": true,
+        "computationUnits": 17700
+      },
+      {
+        "n": 128,
+        "ok": true,
+        "computationUnits": 23600
+      },
+      {
+        "n": 192,
+        "ok": true,
+        "computationUnits": 35300
+      },
+      {
+        "n": 256,
+        "ok": true,
+        "computationUnits": 47100
+      }
+    ]
+  }
+}
