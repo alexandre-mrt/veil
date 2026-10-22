@@ -5,13 +5,7 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. ~~On-chain gas per entry point~~ — **SETTLED KEEP 2026-10-22** (see LEDGER). Result re-ranked items 2–4 below.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
@@ -21,10 +15,15 @@ what matters most — say why in the commit, don't just reorder silently.
    instance from the current baseline) is the highest-leverage next number — it moves prover time
    directly, for every circuit, on every transfer.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+2b. **NEW (2026-10-22): storage cost of a transfer.** Storage is ≈65% of `shielded_transfer`'s net 2,872,944 MIST.
+   Decompose per dynamic field (nullifier, new commitment, removed old commitment, Pool rewrite) and test cheaper layouts
+   (bucketed nullifier objects, `Table` vs raw DF). Moves a number users pay for on every transfer.
+
+2c. **NEW: PTB batch sizing.** Does a PTB of 3 shielded transfers stay at 1,000 computation units? Where does it leave the floor?
+
+3. **Batched/aggregated proof verification — DEMOTED 2026-10-22.** Measured: one verify ≈ 267 computation
+   units and the 1,000-unit floor absorbs ~3.7 of them, so aggregation saves 0 MIST per tx until a PTB carries ≥4
+   verifications. Only revisit for a many-transfer-per-tx design (payroll batch) or as proof-size/throughput work.
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
@@ -68,7 +67,7 @@ what matters most — say why in the commit, don't just reorder silently.
     (requests/sec before rate-limiting kicks in, timing side-channels that could deanonymize
     sender-relayer pairs under concurrent load) is unmeasured.
 
-12. **Fix `circuits`' chained `npm test` hang.** Not a research experiment — a small tooling
+12. ~~Fix `circuits`' chained `npm test` hang~~ — fixed upstream in #17 (tests exit explicitly). Original note: Not a research experiment — a small tooling
     papercut noticed during the 2026-07-22 baseline run: real (non-hash-only) `snarkjs.groth16`
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
