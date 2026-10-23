@@ -1,6 +1,6 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Measured 2026-07-22 (updated 2026-10-23: circuits now built with `circom --O2`), each table from one machine in one run. See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
@@ -12,29 +12,35 @@ for all three circuits per the existing `compile*.sh` scripts), single dev-only 
 contribution (matches `circuits/scripts/compile*.sh` — **not** a production ceremony; see
 `ceremony.sh` and `docs/threat-model.md` RR2).
 
-## Constraint counts, artifact sizes
+## Constraint counts, artifact sizes (current build: `circom --O2`, measured 2026-10-23)
 
-| Circuit | R1CS constraints | Non-linear | Linear | Wires | Public / private inputs | zkey (bytes) | vk (bytes) | Compressed on-chain proof (bytes) |
-|---|---|---|---|---|---|---|---|---|
-| `transfer.circom` | 13,611 | 6,470 | 7,141 | 13,632 | 7 / 47 | 6,001,431 | 4,025 | 128 |
-| `compliance.circom` | 12,743 | 6,057 | 6,686 | 12,762 | 6 / 45 | 5,682,155 | 3,841 | 128 |
-| `withdraw.circom` | 3,058 | 1,465 | 1,593 | 3,058 | 5 / 5 | 1,385,335 | 3,656 | 128 |
+Rows replaced in place by [`2026-10-23-poseidon2-circuit-cost.md`](2026-10-23-poseidon2-circuit-cost.md).
+Machine: 4 vCPU Xeon @ 2.80GHz, Node v22.22.0, circom 2.2.2, snarkjs 0.7.6, **locally generated dev-only
+pot15** (the Hermez download was proxy-blocked that night; sizes/times don't depend on ptau entropy).
 
-Groth16 proofs are three fixed-size group elements (2×G1 + 1×G2) regardless of circuit — the
-128-byte compressed on-chain figure (from `scripts/src/test-converter.ts`, `proofToSuiBytes`) is
-constant across all three circuits. snarkjs's own JSON proof encoding (decimal-string field
-elements) runs ~721–726 bytes for the same data.
+| Circuit | R1CS constraints (was, O1) | Non-linear | zkey (bytes) | vk (bytes) | Compressed on-chain proof (bytes) |
+|---|---|---|---|---|---|
+| `transfer.circom` | 6,384 (13,611) | 6,384 | 4,466,607 | 4,025 | 128 |
+| `compliance.circom` | 5,979 (12,743) | 5,979 | 3,785,551 | 3,841 | 128 |
+| `withdraw.circom` | 1,439 (3,058) | 1,439 | 1,608,143 | 3,656 | 128 |
 
-## Proving time (mean of 10 runs, includes witness generation)
+vk and proof sizes depend only on the public-input count, not on constraints (unchanged from 2026-07-22).
+Public / private inputs: transfer 7 / 47, compliance 6 / 45, withdraw 5 / 5.
 
-| Circuit | Node.js (this machine) | Chromium (headless, this machine) | Browser / Node ratio |
+## Proving time, Node (mean of 20 runs after warm-up, includes witness generation; 2026-10-23, same run)
+
+| Circuit | `--O2` (current) | O1 (previous build, same machine/run) | Change |
 |---|---|---|---|
-| `transfer.circom` | 751.9 ms (σ 17.3) | 1213.3 ms (σ 32.6, 8 runs) | 1.61x |
-| `compliance.circom` | 738.1 ms (σ 20.9) | 1163.4 ms (σ 58.6, 8 runs) | 1.58x |
-| `withdraw.circom` | 244.3 ms (σ 7.9) | 382.9 ms (σ 9.9, 8 runs) | 1.57x |
+| `transfer.circom` | 790.8 ms (σ 48.4) | 984.2 ms (σ 30.4) | −19.7% |
+| `compliance.circom` | 746.7 ms (σ 40.1) | 946.8 ms (σ 38.4) | −21.1% |
+| `withdraw.circom` | 292.6 ms (σ 18.6) | 345.2 ms (σ 24.2) | −15.2% |
 
-Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
-`node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
+Absolute times vary by machine state (the 2026-07-22 run measured O1 transfer at 751.9 ms); compare
+only within a run. **Browser (Chromium) latency was not re-measured under `--O2`** — the 2026-07-22
+figures (transfer 1213 ms, compliance 1163 ms, withdraw 383 ms) are for the O1 build. Expect the same
+direction; unmeasured. The deployed testnet VKs correspond to the O1 build until a new ceremony.
+
+Reproduce: `bash scripts/bench/poseidon2/run.sh 20` (see that dir) or `node scripts/bench/prove-latency.mjs --runs 10`.
 
 ## Not yet measured
 

@@ -5,32 +5,30 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+*Re-ranked 2026-10-23: Poseidon2 settled (REJECT, see LEDGER); the night's side-finding (`circom --O2`) creates a new
+#2; Merkle depth moved up because depth is now cheaper to test under O2.*
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. **Blocked three times**
+   (LEDGER 2026-07-22, 2026-10-23). Tonight's cause is concrete: the session's egress proxy returns
+   403 for GitHub release assets and for every Sui fullnode tried (`fullnode.{testnet,mainnet}.sui.io`,
+   `sui-testnet-rpc.publicnode.com`). Unblock = an allow-list entry for one fullnode, or a vendored
+   `sui` binary. Without it, do not attempt again — pick the next item. Real package/pool IDs are in `README.md`.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+2. **`--O2` rollout validation (follow-up to 2026-10-23).** Rebuild artifacts with `--O2`, then measure
+   browser (Chromium) proving latency and zkey download size (`withdraw`'s zkey grew 16%), run the
+   frontend proof path end-to-end, and plan the VK regeneration (new ceremony + T3 timelock) that the
+   changed R1CS requires. Uses `scripts/bench/browser-latency.mjs` as-is.
 
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
+3. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
    is the main lever available without redesigning the deposit flow).
+
+4. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
+   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
+   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
+   actually save).
 
 5. **Independent circuit soundness audit.** Under-constrained signals, alias checks (BN254 field
    wraparound beyond what T30 in `transfer.test.mjs` already covers), nullifier collision analysis
@@ -73,3 +71,7 @@ what matters most — say why in the commit, don't just reorder silently.
     calls leave the Node process alive after the test file finishes printing results, which stalls
     the `&&`-chained `npm test` script after the first file. Each file passes fine run
     individually. Low priority; fold into whichever future night touches `circuits/test/`.
+
+13. **Poseidon2 t=5 instance (low priority rematch).** Generate Grain-LFSR constants for t=5 to make
+    4/5-input hashes single-permutation; only worthwhile if a non-R1CS proof system (queue #9) is
+    on the table. 2026-10-23 results: Poseidon2 on R1CS loses to `--O2` circomlib.

@@ -1,0 +1,2 @@
+{ "name": "veil-bench-poseidon2", "version": "0.1.0", "private": true, "type": "module",
+  "dependencies": { "@zkpassport/poseidon2": "0.6.2", "snarkjs": "0.7.6", "circomlibjs": "^0.1.7" } }
