@@ -59,7 +59,7 @@ jobs:
           curl -fsSL -o build/pot15_final.ptau \
             https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_15.ptau
           for c in transfer compliance withdraw; do
-            circom "$c.circom" --r1cs --wasm --sym -o build -l node_modules
+            circom "$c.circom" --r1cs --wasm --sym --O2 -o build -l node_modules
             npx snarkjs r1cs info "build/$c.r1cs"
             npx snarkjs groth16 setup "build/$c.r1cs" build/pot15_final.ptau "build/${c}_0000.zkey"
             echo "ci-entropy-$GITHUB_SHA" | npx snarkjs zkey contribute \
