@@ -137,6 +137,7 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | RR7 | Relayer centralization | Low | Single relayer can censor. | Multiple independent relayers + direct submission fallback. |
 | RR8 | PBKDF2 fallback key derivation | Low | In incognito mode, encryption key derived from wallet address (public). Weaker than IndexedDB non-extractable keys. | Acceptable for incognito sessions. Primary path uses non-extractable keys. |
 | RR9 | Token faucet in production bytecode | Low | `token_faucet.move` allows free minting (gated by TreasuryCap). | Remove from sources before mainnet deployment. Separate module file for easy exclusion. |
+| RR10 | Compliance proof not bound to the transfer | High | `compliant_transfer` never checks the compliance proof's `contextId` against anything the transfer proof commits to, and `transferNullifier` is private to the compliance circuit. A credential holder can produce compliance proofs for arbitrary `transferNullifier`s and give them to non-KYC users; a transfer by an uncredentialed user was accepted on localnet with another user's compliance proof (2026-10-24, `DECOUPLE=1` mode of `scripts/bench/gas-localnet.ts`). | Unmitigated. Needs a circuit change that makes both proofs share a public binding value; see `docs/research/2026-10-24-onchain-gas-baseline.md`. |
 
 ## Security Controls Summary Table
 
