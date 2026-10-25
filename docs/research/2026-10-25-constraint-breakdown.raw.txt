@@ -1,0 +1,15 @@
+--- Poseidon(n) standalone (circomlib), non-linear / linear
+Poseidon(2): non-linear constraints: 243 linear constraints: 274 
+Poseidon(3): non-linear constraints: 264 linear constraints: 341 
+Poseidon(4): non-linear constraints: 300 linear constraints: 436 
+Poseidon(5): non-linear constraints: 324 linear constraints: 511 
+--- MerkleProof(d) standalone
+MerkleProof(1): non-linear constraints: 246 linear constraints: 274 
+MerkleProof(10): non-linear constraints: 2460 linear constraints: 2740 
+MerkleProof(20): non-linear constraints: 4920 linear constraints: 5480 
+--- Range/comparator block of transfer.circom (4x Num2Bits(64) + GreaterThan(64) + LessEqThan(64))
+non-linear constraints: 386 linear constraints: 11 
+--- full circuits
+transfer: non-linear constraints: 6470 linear constraints: 7141 
+compliance: non-linear constraints: 6057 linear constraints: 6686 
+withdraw: non-linear constraints: 1465 linear constraints: 1593 
