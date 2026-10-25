@@ -1,0 +1,57 @@
+{"label":"binary d20 (production transfer.circom)","nl":6470,"lin":7141,"zkey":6001020,"mean":"992.5","sd":"19.4","verified":true}
+ERROR:  4 Error in template TransferK_219 line: 63
+
+ERROR:  4 Error in template KaryMerkleProof_71 line: 32
+Error in template TransferK_219 line: 61
+
+ERROR:  4 Error in template KaryMerkleProof_71 line: 32
+Error in template TransferK_219 line: 61
+
+ERROR:  4 Error in template KaryMerkleProof_71 line: 27
+Error in template TransferK_219 line: 61
+
+{"label":"2-ary d20 (1048576 leaves)","nl":6490,"lin":7221,"zkey":6035660,"mean":"984.4","sd":"36.1","verified":true,"neg":{"wrong sibling -> root mismatch":"rejected","all-ones position (sum != 1)":"rejected","all-zero position":"rejected","non-boolean position summing to 1":"rejected"},"deadSlotStillAccepted":true}
+ERROR:  4 Error in template TransferK_149 line: 63
+
+ERROR:  4 Error in template KaryMerkleProof_74 line: 32
+Error in template TransferK_149 line: 61
+
+ERROR:  4 Error in template KaryMerkleProof_74 line: 32
+Error in template TransferK_149 line: 61
+
+ERROR:  4 Error in template KaryMerkleProof_74 line: 27
+Error in template TransferK_149 line: 61
+
+{"label":"4-ary d10 (1048576 leaves)","nl":4630,"lin":6101,"zkey":4921580,"mean":"866.5","sd":"64.2","verified":true,"neg":{"wrong sibling -> root mismatch":"rejected","all-ones position (sum != 1)":"rejected","all-zero position":"rejected","non-boolean position summing to 1":"rejected"},"deadSlotStillAccepted":true}
+ERROR:  4 Error in template TransferK_225 line: 63
+
+ERROR:  4 Error in template KaryMerkleProof_77 line: 32
+Error in template TransferK_225 line: 61
+
+ERROR:  4 Error in template KaryMerkleProof_77 line: 32
+Error in template TransferK_225 line: 61
+
+ERROR:  4 Error in template KaryMerkleProof_77 line: 27
+Error in template TransferK_225 line: 61
+
+{"label":"8-ary d7 (2097152 leaves)","nl":4497,"lin":7135,"zkey":5205684,"mean":"877.5","sd":"55.2","verified":true,"neg":{"wrong sibling -> root mismatch":"rejected","all-ones position (sum != 1)":"rejected","all-zero position":"rejected","non-boolean position summing to 1":"rejected"},"deadSlotStillAccepted":true}
+ERROR:  4 Error in template TransferK_230 line: 63
+
+ERROR:  4 Error in template KaryMerkleProof_82 line: 32
+Error in template TransferK_230 line: 61
+
+ERROR:  4 Error in template KaryMerkleProof_82 line: 32
+Error in template TransferK_230 line: 61
+
+ERROR:  4 Error in template KaryMerkleProof_82 line: 27
+Error in template TransferK_230 line: 61
+
+{"label":"16-ary d5 (1048576 leaves)","nl":4770,"lin":9221,"zkey":5995020,"mean":"1012.7","sd":"42.0","verified":true,"neg":{"wrong sibling -> root mismatch":"rejected","all-ones position (sum != 1)":"rejected","all-zero position":"rejected","non-boolean position summing to 1":"rejected"},"deadSlotStillAccepted":true}
+
+| config | non-linear | linear | zkey bytes | prove mean ms (σ) | verifies |
+|---|---|---|---|---|---|
+| binary d20 (production transfer.circom) | 6470 | 7141 | 6001020 | 992.5 (19.4) | true |
+| 2-ary d20 (1048576 leaves) | 6490 | 7221 | 6035660 | 984.4 (36.1) | true |
+| 4-ary d10 (1048576 leaves) | 4630 | 6101 | 4921580 | 866.5 (64.2) | true |
+| 8-ary d7 (2097152 leaves) | 4497 | 7135 | 5205684 | 877.5 (55.2) | true |
+| 16-ary d5 (1048576 leaves) | 4770 | 9221 | 5995020 | 1012.7 (42.0) | true |

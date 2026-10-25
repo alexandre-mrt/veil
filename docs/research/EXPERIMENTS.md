@@ -5,6 +5,12 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
+0. **K-ary Merkle tree integration (from 2026-10-25, PARK).** Prototype shows 4-ary d10 cuts transfer
+   non-linear constraints 28.4% and proving ~12.7%. Needs: Move K-ary incremental insert + gas
+   measurement, indexer/SDK changes, 50-sample rerun, compliance circuit port. Ranked above #1
+   because #1 is blocked by sandbox network policy, not by effort; do #1's gas number first if the
+   environment allows `fullnode.*.sui.io`.
+
 1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
@@ -13,7 +19,7 @@ what matters most — say why in the commit, don't just reorder silently.
    permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
+2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** (Premise corrected 2026-10-25: 24 instances, 20 in the Merkle path — see the kary report.) Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
    baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
    Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
