@@ -5,7 +5,7 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
+1. **On-chain gas per entry point.** (BLOCKED three times — see LEDGER 2026-10-27; do not retry until `sui` is preinstalled in the routine environment. Until then, nights should take item 8 or 12 only if a toolchain is present, otherwise stop early.) `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
