@@ -1,0 +1,80 @@
+{"op":"publish (whole package)","computation":1380000,"storage":156415600,"rebate":4890600,"net":152905000,"digest":"4RUuF6JasYQw4fJYWmg7vLaVovd1kKMQkt7gYwS6URLP","status":"success"}
+{"op":"create_pool (transfer VK, 488 B)","computation":1000000,"storage":8496800,"rebate":978120,"net":8518680,"digest":"7HpHiSSbFqAhWzNEdgoEetubsZxuRN88ZCsv6j9AiLdS","status":"success"}
+{"op":"propose_withdraw_vk (VK 392 B)","computation":1000000,"storage":11726800,"rebate":8411832,"net":4314968,"digest":"Aw2YuG5e6VzTyGkJBKusFarFJM8tn7MZe3ZHsUKZDoJB","status":"success"}
+{"op":"token_faucet::faucet","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"xhqJ4fRSSZKZPihzaJLZFxcCWEcnaZykj4mzhz557ZS","status":"success"}
+{"op":"deposit_and_register","computation":1000000,"storage":12251200,"rebate":11421432,"net":1829768,"note":"first leaf (empty pool)","digest":"6qDFYa4JPFjvGwhmj75S4AmJqEpzp9wDWFnNX6jGzHTq","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"6SXkWNyMFGsoVcRLcF4dvsm2dRk6ncKXGPjZPgpC6UAM","status":"success"}
+{"op":"deposit_and_register (setup)","computation":1000000,"storage":12251200,"rebate":11421432,"net":1829768,"note":"","digest":"2KQvZzhFkpYyHJAzYWQ8ZEtUv3NmGxCCatWYip21ZSDk","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"HifYqCZdwTwZDE4xRp3jL6pqi1uFiDLeccav8rSxkvDG","status":"success"}
+{"op":"deposit_and_register (setup)","computation":1000000,"storage":12251200,"rebate":11421432,"net":1829768,"note":"","digest":"8WGYwLUBCPjUJdCd462AqzZCwjTb5CAoRShsmufu5Fgh","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"36FUebKJSggZBUDtmATcbXrBgWKqz8v1wEKT8tK6jtr9","status":"success"}
+{"op":"deposit_and_register (setup)","computation":1000000,"storage":12251200,"rebate":11421432,"net":1829768,"note":"","digest":"8iySG3VPLCHnjEBvDWouuifzvtE8fATVGWULrcGNxCs3","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"4k5ZqCCuYVDpbf9tVwzFYQWXEUhHpYKLz8iGmFzqsLbh","status":"success"}
+{"op":"deposit_and_register (setup)","computation":1000000,"storage":12251200,"rebate":11421432,"net":1829768,"note":"","digest":"7FTXmMVLkKBtKCtoqMDmz2cpjJtxn2uoB2u16dQPTgTt","status":"success"}
+{"op":"token_faucet::faucet","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"GL83cDQmc74eNF4TKtqceWJyxVWhowJcLtMX6xrNBfEM","status":"success"}
+{"op":"deposit_and_register","computation":1000000,"storage":12251200,"rebate":11421432,"net":1829768,"note":"6th deposit (pool already holds 5 commitments)","digest":"Cw5yAxrQ4LJgpL1pz1beLfDJPhB4hrcRWhLK7hrx6wVi","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"2L6C1XiZQ3NsddKHYSD1cuFf7X44iDcXx24PENUaBw6Q","status":"success"}
+{"op":"deposit_and_register x10 in one PTB","computation":1000000,"storage":30719200,"rebate":11421432,"net":20297768,"note":"10 deposits, 10 new dynamic fields","digest":"9duA6PhvAtxj63uujBCKAeiNGbLydGtfo99JazwLgAsa","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"ErESM1kpaxzcRMdVApRQXWUq2iDdaZChNWKp6QgJqecG","status":"success"}
+{"op":"deposit_and_register x10 in one PTB","computation":1000000,"storage":30719200,"rebate":11421432,"net":20297768,"note":"10 deposits, 10 new dynamic fields","digest":"9VNFmhNPm1MRU3q4KrqCwrGav1g9nJZU6jKt9DEZxPEU","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"DiYRipnswUgwfrgcbkvsq8gjfBMzPau6S1E5xdwYvamV","status":"success"}
+{"op":"deposit_and_register x10 in one PTB","computation":1000000,"storage":30719200,"rebate":11421432,"net":20297768,"note":"10 deposits, 10 new dynamic fields","digest":"A7g8cN1PJL8N29DGDdmQ9KFJ93nAXhnvmujTMRuyH14m","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"DeSFxEZ3WPSQD8aNL3VCDrsE6RbnPjHCfUCxatunjtrF","status":"success"}
+{"op":"deposit_and_register x10 in one PTB","computation":1000000,"storage":30719200,"rebate":11421432,"net":20297768,"note":"10 deposits, 10 new dynamic fields","digest":"7Kpf3ctvPae8V9DsTg52MHViyruhaEMkvCutZWnDgsiy","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"FpHkcxrNhSz1idPCpM7SQoQupLGnJgYG2u358aE3p4rR","status":"success"}
+{"op":"deposit_and_register x10 in one PTB","computation":1000000,"storage":30719200,"rebate":11421432,"net":20297768,"note":"10 deposits, 10 new dynamic fields","digest":"7bk2DU5Xcg8bxAA8Sw8AYo2yrqXFLjpM45aE1jgZXQtt","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"CMF7Nzumjo5biRD5ng7EHRU7tPwcf6t93bj2oLdWvWdL","status":"success"}
+{"op":"deposit_and_register x10 in one PTB","computation":1000000,"storage":30719200,"rebate":11421432,"net":20297768,"note":"10 deposits, 10 new dynamic fields","digest":"41Urb5GL1xYYngg6NjMuGgjATekBFpmPAt9gMa3NWy6z","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"96h31gBJW8NUBUGQhWAF5999fFNpCCC2PyEGc9tHturi","status":"success"}
+{"op":"deposit_and_register x10 in one PTB","computation":1000000,"storage":30719200,"rebate":11421432,"net":20297768,"note":"10 deposits, 10 new dynamic fields","digest":"3PPU7Kbg85w3UVvHVCk49uHumdhp6ateBoG8rbcEV4V3","status":"success"}
+{"op":"token_faucet::faucet (setup)","computation":1000000,"storage":4043200,"rebate":2678544,"net":2364656,"digest":"4tm2mRuKP25w92bqQUbPyDoXZeUsFpbqxKky7wGUG7Qe","status":"success"}
+{"op":"deposit_and_register x10 in one PTB","computation":1000000,"storage":30719200,"rebate":11421432,"net":20297768,"note":"10 deposits, 10 new dynamic fields","digest":"ECGzs5KNY8ngY3MR79XKHJUs2PcwgofT3Se5rp1HvA3A","status":"success"}
+waiting 63s for commitments to mature (epoch boundary)...
+{"op":"shielded_transfer (valid proof, 7 public inputs)","computation":1000000,"storage":14242400,"rebate":12128688,"net":3113712,"note":"Groth16 verify + VK prepare + 2 dynamic-field writes + 1 removal","digest":"9Rnvw1jGwLqUnNmhM1Gz7LKMrRBj7ZqQoNZ3BXjSwZb3","status":"success"}
+{"op":"zk_withdraw (valid proof, 5 public inputs)","computation":1000000,"storage":15580000,"rebate":12128688,"net":4451312,"note":"first call also applies the pending withdraw VK (storage write of 392 B)","digest":"GuUWktyCDwauHXeV9czy17rQLpxipsiw57hfX63LEaEk","status":"success"}
+{"op":"zk_withdraw (second call, VK already applied)","computation":1000000,"storage":15580000,"rebate":12128688,"net":4451312,"digest":"9vvLPwLEUG8zAcy4qGNYmC4ic9Erw1dhmZTJkynxCL83","status":"success"}
+{"op":"shielded_transfer (INVALID proof, aborts E_INVALID_PROOF)","computation":1000000,"storage":10199200,"rebate":10097208,"net":1101992,"note":"gas charged for a rejected proof","digest":"9vPtPW63P9ULG4XB65YmuicPtJo7TXon4iZq6swAAeWW","status":"failure","error":"MoveAbort(MoveLocation { module: ModuleId { address: dc540ffedf095afb8e0ee0868c4185d8430399bfb7f6ecf38e669bd96f7238da, name: Identifier(\"pool\") }, function: 4, instruction: 100, function_name: Some(\"execute_transfer\") }, 3) in command 0"}
+{"op":"freeze_pool","computation":1000000,"storage":11726800,"rebate":11609532,"net":1117268,"digest":"5ggRbNtmbuCaJmCxLTbiyKaFZXguK8Xz42e8FJWiZsM3","status":"success"}
+{"op":"unfreeze_pool","computation":1000000,"storage":11726800,"rebate":11609532,"net":1117268,"digest":"G3Z5c3FrbLd7A9TPghvv3spBUSYekugZyxqv11yrhhnG","status":"success"}
+{"op":"propose_vk_update (VK 488 B)","computation":1000000,"storage":15443200,"rebate":11609532,"net":4833668,"digest":"9LX6xkJWvTEV2ddCMjR7N5peEHcqJtWFMbWrRGC4DZHb","status":"success"}
+{"op":"cancel_vk_update","computation":1000000,"storage":11726800,"rebate":15288768,"net":-2561968,"digest":"7ovtQcbnM9bTc65aAL6QuKBJhzpdUy9RmYYU8AiQGyAd","status":"success"}
+{"op":"propose_withdrawal","computation":1000000,"storage":12030800,"rebate":11609532,"net":1421268,"digest":"2Qzg9GJoxr3hH5mrUSBikdGcbroaTvo6ppH8iWRiXzUs","status":"success"}
+{"op":"cancel_withdrawal","computation":1000000,"storage":11726800,"rebate":11910492,"net":816308,"digest":"24MxKQ6DkQ6ogfSRPhU3wqVeAHCM1wwoFTGk1TzwEimv","status":"success"}
+{"op":"1 x shielded_transfer in one PTB","computation":1000000,"storage":14242400,"rebate":12128688,"net":3113712,"note":"1 Groth16 verifies","digest":"Dx5eEfzgSrGqvQduzSKv7eYCKBJjzmQMdtR5dwuMaV4u","status":"success"}
+{"op":"5 x shielded_transfer in one PTB","computation":1810000,"storage":30415200,"rebate":20254608,"net":11970592,"note":"5 Groth16 verifies","digest":"H2HyrfTtdfZ38PqEFU46X96AbFMAZQH5AP2ySrkb8oU7","status":"success"}
+{"op":"10 x shielded_transfer in one PTB","computation":3400000,"storage":50631200,"rebate":30412008,"net":23619192,"note":"10 Groth16 verifies","digest":"CvULxoYMUnfwSsXusd5aLuLcbKnWPKCW4tc8tGcMwW5p","status":"success"}
+{"op":"20 x shielded_transfer in one PTB","computation":6830000,"storage":91063200,"rebate":50726808,"net":47166392,"note":"20 Groth16 verifies","digest":"9XL3URwfp6AJkbjhJYHgPASpojAtfLWfZ46KQZEHfbmY","status":"success"}
+{"op":"40 x shielded_transfer in one PTB","computation":152200000,"storage":171927200,"rebate":91356408,"net":232770792,"note":"40 Groth16 verifies","digest":"3uFZraQ1y7ts1QE8xTgLGaLwVmfsFaAq2JSQEWPQRbKE","status":"success"}
+
+| Entry point | Computation (MIST) | Storage (MIST) | Rebate (MIST) | Net (MIST) | Note |
+|---|---:|---:|---:|---:|---|
+| publish (whole package) | 1380000 | 156415600 | 4890600 | 152905000 |  |
+| create_pool (transfer VK, 488 B) | 1000000 | 8496800 | 978120 | 8518680 |  |
+| propose_withdraw_vk (VK 392 B) | 1000000 | 11726800 | 8411832 | 4314968 |  |
+| token_faucet::faucet | 1000000 | 4043200 | 2678544 | 2364656 |  |
+| deposit_and_register | 1000000 | 12251200 | 11421432 | 1829768 | first leaf (empty pool) |
+| token_faucet::faucet | 1000000 | 4043200 | 2678544 | 2364656 |  |
+| deposit_and_register | 1000000 | 12251200 | 11421432 | 1829768 | 6th deposit (pool already holds 5 commitments) |
+| deposit_and_register x10 in one PTB | 1000000 | 30719200 | 11421432 | 20297768 | 10 deposits, 10 new dynamic fields |
+| deposit_and_register x10 in one PTB | 1000000 | 30719200 | 11421432 | 20297768 | 10 deposits, 10 new dynamic fields |
+| deposit_and_register x10 in one PTB | 1000000 | 30719200 | 11421432 | 20297768 | 10 deposits, 10 new dynamic fields |
+| deposit_and_register x10 in one PTB | 1000000 | 30719200 | 11421432 | 20297768 | 10 deposits, 10 new dynamic fields |
+| deposit_and_register x10 in one PTB | 1000000 | 30719200 | 11421432 | 20297768 | 10 deposits, 10 new dynamic fields |
+| deposit_and_register x10 in one PTB | 1000000 | 30719200 | 11421432 | 20297768 | 10 deposits, 10 new dynamic fields |
+| deposit_and_register x10 in one PTB | 1000000 | 30719200 | 11421432 | 20297768 | 10 deposits, 10 new dynamic fields |
+| deposit_and_register x10 in one PTB | 1000000 | 30719200 | 11421432 | 20297768 | 10 deposits, 10 new dynamic fields |
+| shielded_transfer (valid proof, 7 public inputs) | 1000000 | 14242400 | 12128688 | 3113712 | Groth16 verify + VK prepare + 2 dynamic-field writes + 1 removal |
+| zk_withdraw (valid proof, 5 public inputs) | 1000000 | 15580000 | 12128688 | 4451312 | first call also applies the pending withdraw VK (storage write of 392 B) |
+| zk_withdraw (second call, VK already applied) | 1000000 | 15580000 | 12128688 | 4451312 |  |
+| shielded_transfer (INVALID proof, aborts E_INVALID_PROOF) | 1000000 | 10199200 | 10097208 | 1101992 | gas charged for a rejected proof |
+| freeze_pool | 1000000 | 11726800 | 11609532 | 1117268 |  |
+| unfreeze_pool | 1000000 | 11726800 | 11609532 | 1117268 |  |
+| propose_vk_update (VK 488 B) | 1000000 | 15443200 | 11609532 | 4833668 |  |
+| cancel_vk_update | 1000000 | 11726800 | 15288768 | -2561968 |  |
+| propose_withdrawal | 1000000 | 12030800 | 11609532 | 1421268 |  |
+| cancel_withdrawal | 1000000 | 11726800 | 11910492 | 816308 |  |
+| 1 x shielded_transfer in one PTB | 1000000 | 14242400 | 12128688 | 3113712 | 1 Groth16 verifies |
+| 5 x shielded_transfer in one PTB | 1810000 | 30415200 | 20254608 | 11970592 | 5 Groth16 verifies |
+| 10 x shielded_transfer in one PTB | 3400000 | 50631200 | 30412008 | 23619192 | 10 Groth16 verifies |
+| 20 x shielded_transfer in one PTB | 6830000 | 91063200 | 50726808 | 47166392 | 20 Groth16 verifies |
+| 40 x shielded_transfer in one PTB | 152200000 | 171927200 | 91356408 | 232770792 | 40 Groth16 verifies |
