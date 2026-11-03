@@ -1,6 +1,6 @@
 # Veil performance baseline
 
-Measured 2026-07-22, on one machine, in one run. See
+Measured 2026-07-22 (proving/size) and 2026-11-03 (gas, Move tests), on one machine, in one run. See
 [`2026-07-22-baseline-measurement.md`](2026-07-22-baseline-measurement.md) for the full
 methodology, raw command output, and what's still missing. Superseded rows should be replaced in
 place with a note in `LEDGER.md` pointing at the experiment that changed them — this file always
@@ -36,12 +36,30 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas, proof-free entry points (2026-11-03, local network)
+
+`sui` 1.83.0, local network (reference gas price 1000 MIST/unit — MIST figures are for that
+config; computation units and storage bytes transfer across networks). Move suite: 124/124 pass.
+Reproduce: `node scripts/bench/gas-local.mjs --deposits 40` (prereqs in its header). Raw per-tx
+data: `data/2026-11-03-gas-local.json`; report: `2026-11-03-onchain-gas.md`.
+
+| Entry point | computation (MIST) | storage (MIST) | rebate (MIST) | net (MIST) |
+|---|---|---|---|---|
+| publish (whole package, incl. faucet) | 1,380,000 | 156,415,600 | 5,927,407 | 151,868,193 |
+| `create_pool` | 1,000,000 | 6,551,200 | 987,901 | 6,563,299 |
+| `token_faucet::faucet` | 1,000,000 | 4,043,200 | 2,705,329 | 2,337,871 |
+| `deposit_and_register` (identical leaf 0 … 39) | 1,000,000 | 7,075,600 | 6,360,564 | 1,715,036 |
+| `propose_withdrawal` | 1,000,000 | 6,855,200 | 6,550,545 | 1,304,655 |
+| `cancel_withdrawal` | 1,000,000 | 6,551,200 | 6,854,514 | 696,686 |
+| `freeze_pool` / `unfreeze_pool` | 1,000,000 | 6,551,200 | 6,550,545 | 1,000,655 |
+| `propose_vk_update` (232-byte vk) | 1,000,000 | 8,322,000 | 6,550,545 | 2,771,455 |
+| `cancel_vk_update` | 1,000,000 | 6,551,200 | 8,321,168 | −769,968 |
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| On-chain gas for `shielded_transfer`, `zk_withdraw`, `compliant_transfer` (Groth16-verifying paths) | **UNMEASURED** | Need real proofs → compiled circuits → `circom`; its from-source build was denied by the permission layer on 2026-11-03. See `EXPERIMENTS.md` #1. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 

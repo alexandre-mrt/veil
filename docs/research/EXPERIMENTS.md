@@ -5,13 +5,13 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+1. **On-chain gas for the proof-verifying entry points** (`shielded_transfer`, `zk_withdraw`,
+   `compliant_transfer`). 2026-11-03 measured the ten proof-free ones (see `BASELINE.md`) and
+   unblocked the `sui` CLI (prebuilt release tarball works; testnet fullnode RPC is unreachable).
+   Remaining blocker: real proofs need compiled circuits → `circom` v2.2.2, whose from-source
+   build was denied by the permission layer on 2026-11-03 (the 2026-07-22 run did build it). Needs
+   that permission or a prebuilt circom; `scripts/bench/gas-local.mjs` then needs three more calls.
+   Re-ranked, not settled: stays #1 because #3 (batching) cannot be sized without it.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
