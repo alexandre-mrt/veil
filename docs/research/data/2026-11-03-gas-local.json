@@ -1,0 +1,414 @@
+{
+  "records": [
+    {
+      "name": "publish (whole package)",
+      "digest": "AZUtu99P6LZQK3CMMRskSoJyajDgrcwsGCYJfP6MQmT4",
+      "computation": 1380000,
+      "storage": 156415600,
+      "rebate": 5927407,
+      "net": 151868193
+    },
+    {
+      "name": "create_pool",
+      "digest": "9shJgA7bfRbt1sWztYkUm7c5FDhEVFcMpQSv175MjWrJ",
+      "computation": 1000000,
+      "storage": 6551200,
+      "rebate": 987901,
+      "net": 6563299
+    },
+    {
+      "name": "faucet (token_faucet::faucet)",
+      "digest": "EsUWWegvAUaysRg6Dc8XUtoWyf8FhEHQRvkj7vRvN8U4",
+      "computation": 1000000,
+      "storage": 4043200,
+      "rebate": 2705329,
+      "net": 2337871
+    },
+    {
+      "name": "deposit_and_register (leaf 0, empty pool)",
+      "digest": "78CHUfQdWPbqHCHs6SEjGYEJsHZq4rPQPZUVcfsCVnqM",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "deposit_and_register (leaf 39)",
+      "digest": "6mFA9WX2W5rN1ypr5mGVfMWARBH5qZGbLXNVtras1u6W",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "propose_withdrawal",
+      "digest": "7n9HuzeJY1yAqahxnCeKed5Peinb63zdgNpjCiERjUKg",
+      "computation": 1000000,
+      "storage": 6855200,
+      "rebate": 6550545,
+      "net": 1304655
+    },
+    {
+      "name": "cancel_withdrawal",
+      "digest": "5mXspU1zNY7ndjw2hPMC33k4tbtV1gmzf2yY7vLjPZZC",
+      "computation": 1000000,
+      "storage": 6551200,
+      "rebate": 6854514,
+      "net": 696686
+    },
+    {
+      "name": "freeze_pool",
+      "digest": "RtfA5je7hWPxYebH5HCtcw9PjA6qTfmD12MfvAxEjXk",
+      "computation": 1000000,
+      "storage": 6551200,
+      "rebate": 6550545,
+      "net": 1000655
+    },
+    {
+      "name": "unfreeze_pool",
+      "digest": "3hxdAF3PzwWaMRyzBmp8QbY3wxweBFP4pCo6expSXYKN",
+      "computation": 1000000,
+      "storage": 6551200,
+      "rebate": 6550545,
+      "net": 1000655
+    },
+    {
+      "name": "propose_vk_update (232-byte vk)",
+      "digest": "D4J9jJMww3fBHn9V5wE1LjdDKUK4E8hnRkaj8bq39isJ",
+      "computation": 1000000,
+      "storage": 8322000,
+      "rebate": 6550545,
+      "net": 2771455
+    },
+    {
+      "name": "cancel_vk_update",
+      "digest": "9mdgSjDipTaSb28SNypTw9asBr3VMsrUDyqv2JeyS8XR",
+      "computation": 1000000,
+      "storage": 6551200,
+      "rebate": 8321168,
+      "net": -769968
+    }
+  ],
+  "deposits": [
+    {
+      "name": "_deposit_0",
+      "digest": "78CHUfQdWPbqHCHs6SEjGYEJsHZq4rPQPZUVcfsCVnqM",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_1",
+      "digest": "G6npuZkQ9PVjVyjJKKZX67L49ixGy2pVPtkJhEPQMoBs",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_2",
+      "digest": "GvuUDY9hZEVu6goFgErLc85gjuKLH9XyDBgarkovamC3",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_3",
+      "digest": "DriJLHErDbboCdUDAi7G3kbT5WtXNdzyVKZVKNYUz5MQ",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_4",
+      "digest": "BL3nR9mmqmgxNCYPcoNASEh26NbmXxGFdocwGzZeMavu",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_5",
+      "digest": "6d1kzm9j7kYkA3ZyUxgnkj4PRgNNShQDRZk23qTVW5ox",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_6",
+      "digest": "BkjNdSxarEjgtqgPEoGpPWL2aXZCX5xaJpcrQqhyF9f3",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_7",
+      "digest": "CsYJ9hJ1pPRdZPrf5awTbtf3PqqUTVPNkwmJ53NJY9A2",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_8",
+      "digest": "5AYkhowThfmJdnd7t5EQxeuJWnrvKJiMWe56yyCsUcVW",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_9",
+      "digest": "FSKDAKtgmDG7YKUEE74e6HBZKGpKxCmt6gQ9hxUUFMB2",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_10",
+      "digest": "7KVtKWqVVtzkwFzEw2gKfx5i2mJ1eLEJbeKtxszV55WK",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_11",
+      "digest": "5esrrwZ9LssqWr9zPJF1fvoaF1QCZWDQtg4Q2HBg9t4b",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_12",
+      "digest": "CCRMidafmJY2x1XNVdKzYSRBSsoxC219GsspcmJXbN96",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_13",
+      "digest": "3jCgb4ZeaFvQkxFibUbVeHcKwitwDEXv3QmGbjH8KRs2",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_14",
+      "digest": "7Bud5vRxGGFCd9wkvwqgYA2Sed2Yh2qCjj5KTeePeQBx",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_15",
+      "digest": "4fAhAR8svP1ojwfNaQWFfRBm4TaXfhRG4Jm9MCEXmXAG",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_16",
+      "digest": "FTtSAEmT9rBRw1UQU681Ngttyyb2GQqxdP1LosGcgv37",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_17",
+      "digest": "GjLXD669RYiuEysNTCR4QeiVztbBjtHAjK9HoH9nh2Mx",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_18",
+      "digest": "41aJMwBotRoPPQYTYV5mB7TDHGHo5N4frmRvjUcDrFs9",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_19",
+      "digest": "2hgpmakFypPHDzvkpgeZ88DvA6rdcY6zJe2NrGRUJzEa",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_20",
+      "digest": "3uhEyMLKRVkQgBPRdh1gk8GUnbbgEMZ8NXLgEkeVNkLS",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_21",
+      "digest": "5x7YWEqpY1VSFXHCMahp9aoW7YaRXA1zBRVFJ54ozBHi",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_22",
+      "digest": "D1TP3T2z3ksN7sLnwNjrfiHczgJuYTt8a1UpT46TvG7a",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_23",
+      "digest": "AgU3HeDPo8YzoGUif5JqyLZR1F86r2PgXCPT5jb7pswE",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_24",
+      "digest": "ASTx5Htxrj6CXH2cufDPjnR42odKdXA2t3B2LVFf95XP",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_25",
+      "digest": "SwZBJuyYdAUMXfqTFrhWJ3Rw97qek1CWhMvgERnTo9U",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_26",
+      "digest": "9gyyTw66PNvH7BUQf3XXLTGZnrwPVmuLb7MpTgFAqg3L",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_27",
+      "digest": "4Dhgp3fDgmnnxTEykeFQP3JyAYH47fgMzrLR2TV3oe3K",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_28",
+      "digest": "BpsqQHaHw8tEBwu8kzgW2eVPhKVwiZ4MzB5XJJdEZPxj",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_29",
+      "digest": "3U9dSxxDjayjW92sZs6AMobd97VzLj4XsxyVT13NSuEs",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_30",
+      "digest": "7efbwS7fEWFYxhVdrMasUYHhkkLTpRcapADL74Q3wMYb",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_31",
+      "digest": "7VuvBiSY3ucKFy7yG8Wxj94FX7MwFUfaLZ3i8QoY8C8P",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_32",
+      "digest": "C6DLY1jz9LSP2k4NDsmC88Hx6hdGT3HMFte76LptAzdB",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_33",
+      "digest": "DryqsDjqiNqHhuFJBiYdKYxND7791Y2yeFTka3Cg2KwC",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_34",
+      "digest": "65ipcsANSVRhk5EjvJAAiQahmhZtqp8oNjyUKanwfJPV",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_35",
+      "digest": "Ao8XGMmrLNEYk3y9g9o7aPXkF3QrWzbGoMztebx2pMCS",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_36",
+      "digest": "3BRDUDMNWrUrJGsLcQJneZpCFC13GVwXk6QEPorkh5fF",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_37",
+      "digest": "ADLmZv58t21AFsBscw6CSo6q6242SQyki7g9ZQreKudC",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_38",
+      "digest": "3crEtiXYAqKLgqkQSJbBXEqnzu1rcCrRqnEJASih6Lh8",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    },
+    {
+      "name": "_deposit_39",
+      "digest": "6mFA9WX2W5rN1ypr5mGVfMWARBH5qZGbLXNVtras1u6W",
+      "computation": 1000000,
+      "storage": 7075600,
+      "rebate": 6360564,
+      "net": 1715036
+    }
+  ]
+}
