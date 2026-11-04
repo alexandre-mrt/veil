@@ -10,7 +10,7 @@ what matters most — say why in the commit, don't just reorder silently.
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
+   permitted). Blocked three times now (LEDGER 2026-07-22, 2026-11-04). 2026-11-04 findings: fullnode RPC is 403 at the proxy (option B dead); the prebuilt CLI *is* downloadable (`github.com/MystenLabs/sui/releases/download/testnet-v1.60.0/sui-testnet-v1.60.0-ubuntu-x86_64.tgz`) but running it needs human approval or a baked-in environment setup — do not spend the run re-discovering this. If still not runnable, skip to item 2 (measurable with circom/snarkjs alone) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
 
 2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
