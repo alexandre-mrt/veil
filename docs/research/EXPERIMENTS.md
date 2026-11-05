@@ -5,7 +5,7 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
+1. **On-chain gas for the proof-verifying entry points** (re-scoped 2026-11-05: toolchain and non-proof gas now done — see LEDGER). Remaining blocker: needs circom + `circuits/` deps to produce valid proofs; extend `scripts/bench/gas-localnet.py` with `shielded_transfer`/`zk_withdraw`. Original note: **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
