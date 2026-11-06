@@ -1,0 +1,75 @@
+sui: sui 1.83.1-0e0ede4cbf48
+[gas] publish (whole package) status=success computation=1370000 storage=156415600 rebate=987901 net=156797699
+package=0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f treasury=0x891327c344f425040b5aaece900ca39d87ce2de9bfecfefe2ef52a1b92baa1ab
+[gas] create_pool status=success computation=1000000 storage=8496800 rebate=987901 net=8508899
+[gas] create_pool status=success computation=1000000 storage=8496800 rebate=987901 net=8508899
+[gas] token_faucet::faucet status=success computation=1000000 storage=4043200 rebate=2705329 net=2337871
+[gas] deposit_and_register (split+deposit PTB; leaf #1) status=success computation=1000000 storage=10358800 rebate=8305969 net=3052831
+[gas] token_faucet::faucet status=success computation=1000000 storage=4043200 rebate=2705329 net=2337871
+[gas] deposit_and_register (split+deposit PTB; leaf #2) status=success computation=1000000 storage=10358800 rebate=8305969 net=3052831
+[gas] token_faucet::faucet status=success computation=1000000 storage=4043200 rebate=2705329 net=2337871
+[gas] deposit_and_register (split+deposit PTB; leaf #3) status=success computation=1000000 storage=10358800 rebate=8305969 net=3052831
+[gas] token_faucet::faucet status=success computation=1000000 storage=4043200 rebate=2705329 net=2337871
+[gas] deposit_and_register (split+deposit PTB; leaf #4) status=success computation=1000000 storage=10358800 rebate=8305969 net=3052831
+[gas] token_faucet::faucet status=success computation=1000000 storage=4043200 rebate=2705329 net=2337871
+[gas] deposit_and_register (split+deposit PTB; leaf #5) status=success computation=1000000 storage=10358800 rebate=8305969 net=3052831
+[gas] freeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] unfreeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] propose_withdrawal status=success computation=1000000 storage=8800800 rebate=8495950 net=1304850
+[gas] cancel_withdrawal status=success computation=1000000 storage=8496800 rebate=8799920 net=696880
+[gas] freeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] unfreeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] propose_withdrawal status=success computation=1000000 storage=8800800 rebate=8495950 net=1304850
+[gas] cancel_withdrawal status=success computation=1000000 storage=8496800 rebate=8799920 net=696880
+[gas] freeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] unfreeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] propose_withdrawal status=success computation=1000000 storage=8800800 rebate=8495950 net=1304850
+[gas] cancel_withdrawal status=success computation=1000000 storage=8496800 rebate=8799920 net=696880
+[gas] freeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] unfreeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] propose_withdrawal status=success computation=1000000 storage=8800800 rebate=8495950 net=1304850
+[gas] cancel_withdrawal status=success computation=1000000 storage=8496800 rebate=8799920 net=696880
+[gas] freeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] unfreeze_pool status=success computation=1000000 storage=8496800 rebate=8495950 net=1000850
+[gas] propose_withdrawal status=success computation=1000000 storage=8800800 rebate=8495950 net=1304850
+[gas] cancel_withdrawal status=success computation=1000000 storage=8496800 rebate=8799920 net=696880
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::execute_transfer' at instruction 100 with code 3
+[gas] shielded_transfer, garbage proof (aborts E_INVALID_PROOF after full verify) status=failure computation=1000000 storage=6969200 rebate=6968503 net=1000697
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::execute_transfer' at instruction 100 with code 3
+[gas] shielded_transfer, garbage proof (aborts E_INVALID_PROOF after full verify) status=failure computation=1000000 storage=6969200 rebate=6968503 net=1000697
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::execute_transfer' at instruction 100 with code 3
+[gas] shielded_transfer, garbage proof (aborts E_INVALID_PROOF after full verify) status=failure computation=1000000 storage=6969200 rebate=6968503 net=1000697
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::execute_transfer' at instruction 100 with code 3
+[gas] shielded_transfer, garbage proof (aborts E_INVALID_PROOF after full verify) status=failure computation=1000000 storage=6969200 rebate=6968503 net=1000697
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::execute_transfer' at instruction 100 with code 3
+[gas] shielded_transfer, garbage proof (aborts E_INVALID_PROOF after full verify) status=failure computation=1000000 storage=6969200 rebate=6968503 net=1000697
+[gas] propose_withdraw_vk status=success computation=1000000 storage=11726800 rebate=8495950 net=4230850
+waiting 125 s for the withdraw-VK timelock (2 epochs of 60 s)…
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::zk_withdraw' at instruction 60 with code 28
+[gas] zk_withdraw, garbage proof (aborts E_INVALID_WITHDRAW_PROOF after full verify) status=failure computation=1000000 storage=10199200 rebate=10198180 net=1001020
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::zk_withdraw' at instruction 60 with code 28
+[gas] zk_withdraw, garbage proof (aborts E_INVALID_WITHDRAW_PROOF after full verify) status=failure computation=1000000 storage=10199200 rebate=10198180 net=1001020
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::zk_withdraw' at instruction 60 with code 28
+[gas] zk_withdraw, garbage proof (aborts E_INVALID_WITHDRAW_PROOF after full verify) status=failure computation=1000000 storage=10199200 rebate=10198180 net=1001020
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::zk_withdraw' at instruction 60 with code 28
+[gas] zk_withdraw, garbage proof (aborts E_INVALID_WITHDRAW_PROOF after full verify) status=failure computation=1000000 storage=10199200 rebate=10198180 net=1001020
+[abort] aborted within function '0xbc404aa1ef10056c0f0ec22b40bd6a405909ace5646d704c4263375095c1ae2f::pool::zk_withdraw' at instruction 60 with code 28
+[gas] zk_withdraw, garbage proof (aborts E_INVALID_WITHDRAW_PROOF after full verify) status=failure computation=1000000 storage=10199200 rebate=10198180 net=1001020
+
+| Entry point | runs | status | computation (MIST) | storage (MIST) | rebate (MIST) | net (MIST) |
+|---|---|---|---|---|---|---|
+| publish (whole package) | 1 | success | 1370000 | 156415600 | 987901 | 156797699 |
+| create_pool | 2 | success | 1000000 | 8496800 | 987901 | 8508899 |
+| token_faucet::faucet | 5 | success | 1000000 | 4043200 | 2705329 | 2337871 |
+| deposit_and_register (split+deposit PTB; leaf #1) | 1 | success | 1000000 | 10358800 | 8305969 | 3052831 |
+| deposit_and_register (split+deposit PTB; leaf #2) | 1 | success | 1000000 | 10358800 | 8305969 | 3052831 |
+| deposit_and_register (split+deposit PTB; leaf #3) | 1 | success | 1000000 | 10358800 | 8305969 | 3052831 |
+| deposit_and_register (split+deposit PTB; leaf #4) | 1 | success | 1000000 | 10358800 | 8305969 | 3052831 |
+| deposit_and_register (split+deposit PTB; leaf #5) | 1 | success | 1000000 | 10358800 | 8305969 | 3052831 |
+| freeze_pool | 5 | success | 1000000 | 8496800 | 8495950 | 1000850 |
+| unfreeze_pool | 5 | success | 1000000 | 8496800 | 8495950 | 1000850 |
+| propose_withdrawal | 5 | success | 1000000 | 8800800 | 8495950 | 1304850 |
+| cancel_withdrawal | 5 | success | 1000000 | 8496800 | 8799920 | 696880 |
+| shielded_transfer, garbage proof (aborts E_INVALID_PROOF after full verify) | 5 | failure | 1000000 | 6969200 | 6968503 | 1000697 |
+| propose_withdraw_vk | 1 | success | 1000000 | 11726800 | 8495950 | 4230850 |
+| zk_withdraw, garbage proof (aborts E_INVALID_WITHDRAW_PROOF after full verify) | 5 | failure | 1000000 | 10199200 | 10198180 | 1001020 |

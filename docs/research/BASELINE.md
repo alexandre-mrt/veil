@@ -36,12 +36,31 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas (local Sui 1.83.1, measured 2026-11-06)
+
+Net MIST (computation + storage − rebate); computation is 1,000,000 (the floor bucket) for **every**
+call, including a full Groth16 verify. Full table, caveats (verify rows use a garbage proof and abort
+after the verify): [`2026-11-06-gas-localnet.md`](2026-11-06-gas-localnet.md). Reproduce:
+`bun run scripts/bench/gas-localnet.ts --runs 5`.
+
+| Entry point | net (MIST) |
+|---|---|
+| publish | 156,797,699 |
+| create_pool | 8,508,899 |
+| deposit_and_register (+split) | 3,052,831 |
+| freeze / unfreeze | 1,000,850 |
+| propose_withdrawal / cancel_withdrawal | 1,304,850 / 696,880 |
+| propose_withdraw_vk | 4,230,850 |
+| shielded_transfer (garbage proof, aborts post-verify) | 1,000,697 |
+| zk_withdraw (garbage proof, aborts post-verify) | 1,001,020 |
+
+Move tests: 124/124 pass (`sui move test --build-env testnet`, sui 1.83.1).
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| On-chain gas: successful-proof `shielded_transfer`/`zk_withdraw`, `compliant_transfer` | **PARTIAL** | Measured 2026-11-06 with garbage proofs (see below); real-proof rows need circom/ptau. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
