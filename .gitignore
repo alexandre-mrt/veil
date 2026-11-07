@@ -22,3 +22,5 @@ target/
 
 # Sui
 contracts/Published.toml
+build-p2src/
+build-p2/
