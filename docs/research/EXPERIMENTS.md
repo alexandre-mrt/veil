@@ -5,7 +5,7 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
+1. **On-chain gas per entry point.** *(BLOCKED a third time 2026-11-08: sandbox egress 403s both the Sui fullnode and the sui release download — needs an allowlisted RPC route or bundled binary, not more attempts.)* `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
@@ -13,20 +13,18 @@ what matters most — say why in the commit, don't just reorder silently.
    permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+2. **Merkle arity-4 / shallower tree (new, from 2026-11-08).** The 2026-11-08 Poseidon2 run (REJECT,
+   see LEDGER) showed the depth-20 binary Merkle path is 20×240 = 4,800 of transfer's 6,384
+   non-linear constraints (75%) — hash choice can't move that, depth/arity can. Measure arity-4
+   (depth 10, Poseidon t=5) vs depth-20 binary: constraints, proving time, client tree-update cost,
+   anonymity-set trade-off. Needs a new ceremony + tree migration if kept, so measure first.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
    Depends on item 1 existing first (need a real per-verify gas number to know how much this would
    actually save).
 
-4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
+4. **Merkle accumulator at scale (10^5–10^7 commitments).** *(Overlaps item 2 on depth; keep for batch-insertion/indexer throughput.)* Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
    circuit parameter), and indexer throughput for reconstructing the tree client-side. Directly
    relevant to `docs/threat-model.md` RR5 (deposit-commitment linkability — a bigger anonymity set
