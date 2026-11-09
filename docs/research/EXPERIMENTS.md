@@ -5,6 +5,8 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
+0. **UNBLOCK: provide `circom` (prebuilt, or approve building `iden3/circom` v2.2.2) and a `sui` CLI.** Nothing measurable runs without them; blocked 2026-07-22 and 2026-11-09 (see LEDGER).
+
 1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
@@ -13,7 +15,7 @@ what matters most — say why in the commit, don't just reorder silently.
    permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
+2. **Arity-4 depth-10 Merkle (and Poseidon2 as a control).** 2026-11-09 model predicts ≈ −27 % non-linear constraints for arity-4 vs ≈ −1 % for Poseidon2 (UNMEASURED, see report); needs circom to measure, plus soundness argument, leakage analysis and negative test. Original text: Poseidon2 vs current Poseidon (arity, domain-tag collisions). Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
    baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
    Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
