@@ -5,21 +5,15 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
+1. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** *(Re-ranked to #1 on 2026-11-10 while gas is blocked: it is fully measurable with the circom/snarkjs toolchain that already works. Depends on nothing else.)* Four Poseidon instances dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22 baseline: 6,470 and 6,057 non-linear, vs 1,465 for the Poseidon-light `withdraw.circom`). Measure the constraint-count and proving-time delta from Poseidon2 (or the exact per-instance contribution) — moves prover time on every transfer.
+
+2. **On-chain gas per entry point — BLOCKED (see LEDGER 2026-11-10; needs permission to run a pinned `sui` binary or an allowlisted RPC host).** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
    fullnode could recover real historical gas without the CLI at all, if that network call is
    permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
-
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
 
 3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
    per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
