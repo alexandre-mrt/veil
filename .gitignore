@@ -22,3 +22,7 @@ target/
 
 # Sui
 contracts/Published.toml
+
+# Nightly research build outputs
+circuits/research/build*/
+circuits/research/ptau/
