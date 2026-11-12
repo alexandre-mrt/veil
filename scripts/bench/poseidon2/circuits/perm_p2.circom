@@ -1,0 +1,3 @@
+pragma circom 2.1.0;
+include "../../../../circuits/research/poseidon2.circom";
+component main = Poseidon2PermT3();

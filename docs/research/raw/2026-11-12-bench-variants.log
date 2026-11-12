@@ -1,0 +1,143 @@
+=== Poseidon vs Poseidon2 Merkle hasher — 10 proving runs/variant ===
+node v22.23.4, linux/x64, 4x Intel(R) Xeon(R) Processor @ 2.30GHz
+circom compiler 2.2.2 | ptau /home/user/veil/circuits/build/pot15_final.ptau
+
+--- transfer ---
+[INFO]  snarkJS: # of Wires: 13632
+[INFO]  snarkJS: # of Constraints: 13611
+[INFO]  snarkJS: # of Private Inputs: 47
+[INFO]  snarkJS: # of Public Inputs: 7
+[INFO]  snarkJS: # of Outputs: 0
+  circom -O1: non-linear 6470, linear 7141, wires 13632 | --O2: non-linear 6384, linear 0
+  zkey 6001419 B, vk 4022 B, wasm 2846127 B, proof verifies: true
+  split: witness 70.1 ms + groth16.prove 637.6 ms (sd 31.8); A/B coefficients in zkey: 13394
+  prove: mean 714.3 ms, sd 33.7, min 680.2, max 781 (10 runs)
+
+--- transfer_p2 ---
+[INFO]  snarkJS: # of Wires: 8152
+[INFO]  snarkJS: # of Constraints: 8131
+[INFO]  snarkJS: # of Private Inputs: 47
+[INFO]  snarkJS: # of Public Inputs: 7
+[INFO]  snarkJS: # of Outputs: 0
+  circom -O1: non-linear 6410, linear 1721, wires 8152 | --O2: non-linear 6384, linear 0
+  zkey 8853051 B, vk 4020 B, wasm 2481297 B, proof verifies: true
+  split: witness 55.5 ms + groth16.prove 699 ms (sd 28.4); A/B coefficients in zkey: 129974
+  prove: mean 780.4 ms, sd 32.2, min 725.5, max 818.4 (10 runs)
+
+--- compliance ---
+[INFO]  snarkJS: # of Wires: 12762
+[INFO]  snarkJS: # of Constraints: 12743
+[INFO]  snarkJS: # of Private Inputs: 45
+[INFO]  snarkJS: # of Public Inputs: 6
+[INFO]  snarkJS: # of Outputs: 0
+  circom -O1: non-linear 6057, linear 6686, wires 12762 | --O2: non-linear 5979, linear 0
+  zkey 5682143 B, vk 3836 B, wasm 2931887 B, proof verifies: true
+  split: witness 82.4 ms + groth16.prove 636.7 ms (sd 30); A/B coefficients in zkey: 12465
+  prove: mean 719.6 ms, sd 39.3, min 654.4, max 799 (10 runs)
+
+--- compliance_p2 ---
+[INFO]  snarkJS: # of Wires: 7282
+[INFO]  snarkJS: # of Constraints: 7263
+[INFO]  snarkJS: # of Private Inputs: 45
+[INFO]  snarkJS: # of Public Inputs: 6
+[INFO]  snarkJS: # of Outputs: 0
+  circom -O1: non-linear 5997, linear 1266, wires 7282 | --O2: non-linear 5979, linear 0
+  zkey 8533775 B, vk 3842 B, wasm 2590273 B, proof verifies: true
+  split: witness 60.6 ms + groth16.prove 668.2 ms (sd 33.8); A/B coefficients in zkey: 129045
+  prove: mean 779.9 ms, sd 49, min 710.4, max 857.9 (10 runs)
+
+=== Summary (JSON) ===
+[
+ {
+  "variant": "transfer",
+  "nonLinear": 6470,
+  "linear": 7141,
+  "total": 13611,
+  "wires": 13632,
+  "o2NonLinear": 6384,
+  "o2Linear": 0,
+  "o2Total": 6384,
+  "zkeyBytes": 6001419,
+  "vkBytes": 4022,
+  "wasmBytes": 2846127,
+  "verifies": true,
+  "runs": 10,
+  "meanMs": 714.3,
+  "sdMs": 33.7,
+  "minMs": 680.2,
+  "maxMs": 781,
+  "witnessMeanMs": 70.1,
+  "proveOnlyMeanMs": 637.6,
+  "proveOnlySdMs": 31.8,
+  "abcCoefs": 13394
+ },
+ {
+  "variant": "transfer_p2",
+  "nonLinear": 6410,
+  "linear": 1721,
+  "total": 8131,
+  "wires": 8152,
+  "o2NonLinear": 6384,
+  "o2Linear": 0,
+  "o2Total": 6384,
+  "zkeyBytes": 8853051,
+  "vkBytes": 4020,
+  "wasmBytes": 2481297,
+  "verifies": true,
+  "runs": 10,
+  "meanMs": 780.4,
+  "sdMs": 32.2,
+  "minMs": 725.5,
+  "maxMs": 818.4,
+  "witnessMeanMs": 55.5,
+  "proveOnlyMeanMs": 699,
+  "proveOnlySdMs": 28.4,
+  "abcCoefs": 129974
+ },
+ {
+  "variant": "compliance",
+  "nonLinear": 6057,
+  "linear": 6686,
+  "total": 12743,
+  "wires": 12762,
+  "o2NonLinear": 5979,
+  "o2Linear": 0,
+  "o2Total": 5979,
+  "zkeyBytes": 5682143,
+  "vkBytes": 3836,
+  "wasmBytes": 2931887,
+  "verifies": true,
+  "runs": 10,
+  "meanMs": 719.6,
+  "sdMs": 39.3,
+  "minMs": 654.4,
+  "maxMs": 799,
+  "witnessMeanMs": 82.4,
+  "proveOnlyMeanMs": 636.7,
+  "proveOnlySdMs": 30,
+  "abcCoefs": 12465
+ },
+ {
+  "variant": "compliance_p2",
+  "nonLinear": 5997,
+  "linear": 1266,
+  "total": 7263,
+  "wires": 7282,
+  "o2NonLinear": 5979,
+  "o2Linear": 0,
+  "o2Total": 5979,
+  "zkeyBytes": 8533775,
+  "vkBytes": 3842,
+  "wasmBytes": 2590273,
+  "verifies": true,
+  "runs": 10,
+  "meanMs": 779.9,
+  "sdMs": 49,
+  "minMs": 710.4,
+  "maxMs": 857.9,
+  "witnessMeanMs": 60.6,
+  "proveOnlyMeanMs": 668.2,
+  "proveOnlySdMs": 33.8,
+  "abcCoefs": 129045
+ }
+]
