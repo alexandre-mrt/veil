@@ -5,6 +5,25 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
+0. **Loop health — do this before any new experiment (needs the repo owner).** As of 2026-11-12,
+   research PRs #108–#117 are all open and unmerged, so this file and `LEDGER.md` on main never
+   advance and nights re-run settled items (Poseidon2 has been REJECTed 4×). CI is red on main for
+   infrastructure reasons: the Hermez pot15 URL (`compile.sh`, `ci.yml`) returns 403, and the
+   `oven-sh/setup-bun@735343b6…` pin no longer resolves. Fix CI, then merge or close the open
+   research PRs, at least their ledger rows. **A nightly run should check open `research:` PRs
+   before picking an item.**
+
+0b. **Commitment linkability (PR #117, threat-model I7, unmerged).** #117 reports that
+   `oldCommitment` / `commitment` are public inputs that `pool.move` consumes by exact key, so the
+   Merkle proof provides no anonymity set. This is a privacy claim that outranks every performance
+   item below. Verify it on main and design the fix (Merkle-root-only public input +
+   nullifier-based spend).
+
+0c. **`circom --O2` for the production circuits.** Measured: transfer 13,611 → 6,384 constraints,
+   compliance 12,743 → 5,979 (2026-11-12 and PR #117). #117 measured a 22–25% proving speed-up. Before
+   adopting, re-check A/B coefficient density (`bench-variants.mjs` prints it) and re-run all 108
+   real-proof tests plus a fresh setup. Requires a VK rotation (1-epoch timelock).
+
 1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
@@ -12,8 +31,15 @@ what matters most — say why in the commit, don't just reorder silently.
    fullnode could recover real historical gas without the CLI at all, if that network call is
    permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
    early part of the next run purely on unblocking the toolchain before attempting the measurement.
+   2026-11-12: still BLOCKED (releases and fullnode return 403; from-source build of
+   `testnet-v1.72.1` denied by the permission layer). Check PRs #108/#110/#112 ("onchain-gas-baseline")
+   first. They may already contain numbers.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
+2. ~~**Poseidon2 vs current Poseidon.**~~ **SETTLED — REJECT** (2026-11-12, and PRs #113/#114/#117).
+   Do not re-run for Groth16/R1CS: identical under `--O2`, and slower under `-O1` even when it
+   halves the FFT domain (coefficient density). Revisit only if the proof system moves to a
+   PLONK-family prover (item 9). Original text kept below for history.
+   **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
    dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
    baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
    Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
