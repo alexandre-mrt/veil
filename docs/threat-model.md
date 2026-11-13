@@ -38,7 +38,7 @@ Data flows: User generates Groth16 proofs in-browser, submits proof bytes + publ
 |----|--------|------------|--------|
 | S1 | Attacker impersonates pool admin | AdminCap ownership check (`cap.pool_id == pool.id`) on every admin function. Sui object ownership model prevents transfer without possession. | Mitigated |
 | S2 | Attacker forges ZK proof to fake a valid transfer | Groth16 verification via `sui::groth16` native BN254 verifier. Computational soundness under discrete log assumption. | Mitigated |
-| S3 | Attacker replays a previously valid proof | Nullifier consumption: each transfer/withdrawal nullifier is stored as a dynamic field and checked for uniqueness (`E_NULLIFIER_SPENT`). Credential nullifiers are context-bound (unique per transfer). | Mitigated |
+| S3 | Attacker replays a previously valid proof | Nullifier consumption: each transfer/withdrawal nullifier is stored as a dynamic field and checked for uniqueness (`E_NULLIFIER_SPENT`). Credential nullifiers are context-bound (unique per transfer), **but the compliance proof is not bound to the transfer's owner on-chain.** `contextId` (compliance inputs 64..96) is never compared with anything in the transfer proof, and its `userSecret` is the credential holder's, not the spender's. Reproduced 2026-11-13: a spender with no credential completed `compliant_transfer` using another user's compliance proof (credential lending). See [2026-11-13 report](research/2026-11-13-onchain-gas-per-entry.md). | Transfer replay: Mitigated. **Compliance binding: Open** |
 | S4 | Attacker uses a fake ComplianceConfig with a permissive credential root | Pool stores registered `compliance_config: Option<ID>` and validates `pool.compliance_config == config.id` before accepting compliant transfers (`E_CONFIG_POOL_MISMATCH`). Single config per pool enforced. | Mitigated |
 | S5 | Attacker creates AdminCap for another pool | AdminCap is created only in `create_pool` and bound to the new pool's ID. Cross-pool admin access fails with `E_NOT_POOL_ADMIN`. Tested in 4 access-control tests. | Mitigated |
 
@@ -95,7 +95,7 @@ Data flows: User generates Groth16 proofs in-browser, submits proof bytes + publ
 | E4 | Withdraw more than deposited via ZK proof manipulation | Withdraw circuit enforces `withdrawAmount <= cumulativeOld` (constraint C5) with 64-bit range proofs on both values. On-chain checks pool balance sufficiency. | Mitigated |
 | E5 | Bypass compliance requirement via direct `shielded_transfer` | When `compliance_required == true`, `shielded_transfer` aborts with `E_COMPLIANCE_REQUIRED`. Compliance toggle applied lazily before the check. | Mitigated |
 | E6 | Sybil attack: create multiple userSecrets to bypass spending threshold | Known limitation. Each userSecret gets its own cumulative spending counter. Mitigation requires identity-binding at deposit time (future work). | Accepted risk |
-| E7 | Front-run ZK withdrawal to steal funds | Withdrawal circuit binds to recipient via `recipientHash = Poseidon(8, recipient)`. Changing recipient invalidates the Groth16 proof. | Mitigated |
+| E7 | Front-run ZK withdrawal to steal funds | The withdrawal circuit commits to `recipientHash = Poseidon(8, recipient)`, **but `zk_withdraw` never recomputes it from the `recipient` argument, so the commitment is not enforced.** Reproduced 2026-11-13 on localnet: a valid withdraw proof submitted with an arbitrary `recipient` paid that address (100 TOKEN to `0xbebe…be`). Anyone who sees the proof bytes before inclusion can redirect the funds: a relayer, or anyone reading the inputs of an aborted withdraw tx. Fix queued as `docs/research/EXPERIMENTS.md` #1. See [2026-11-13 report](research/2026-11-13-onchain-gas-per-entry.md). | **Open** |
 
 ## Attack Scenarios (tested in Move tests)
 
@@ -168,7 +168,7 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | Commitment uniqueness | `pool.move:244-249` | Preventive | `E_COMMITMENT_EXISTS` prevents duplicate commitments |
 | Upper bytes zero check | `verifier.move:67-73` | Preventive | Prevents u64 overflow via non-zero upper 24 bytes |
 | Epoch grace period | `pool.move:206-208` | Preventive | Accepts current or previous epoch to handle boundary races |
-| Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive | `recipientHash = Poseidon(8, recipient)` prevents front-running |
-| Context-bound credential nullifiers | `compliance.circom:79-87` | Preventive | `contextId = Poseidon(6, transferNullifier, userSecret)` unique per transfer |
+| Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive | `recipientHash = Poseidon(8, recipient)`, **not enforced on-chain (E7, Open since 2026-11-13)**. It prevents front-running only once `zk_withdraw` recomputes it. |
+| Context-bound credential nullifiers | `compliance.circom:79-87` | Preventive | `contextId = Poseidon(6, transferNullifier, userSecret)` unique per transfer. **Neither the context nor the owner is checked against the transfer proof on-chain (S3, Open since 2026-11-13).** |
 | Domain-separated Poseidon hashes | `transfer.circom`, `compliance.circom`, `withdraw.circom` | Preventive | Tags 1-8 prevent cross-domain hash collisions |
 | Merkle accumulator | `pool.move:77-80`, `transfer.circom:52-61` | Privacy | Anonymity set = all commitments, root verified in circuit |
