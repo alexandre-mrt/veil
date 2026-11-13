@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Reusable benchmark scripts for Veil's nightly research loop (proving time, R1CS, browser latency).",
+  "description": "Reusable benchmark scripts for Veil's nightly research loop (proving time, R1CS, browser latency, on-chain gas).",
   "scripts": {
-    "prove-latency": "node prove-latency.mjs --runs 10"
+    "prove-latency": "node prove-latency.mjs --runs 10",
+    "gas": "node --experimental-strip-types --no-warnings gas-per-entry.mjs --runs 3"
   },
   "dependencies": {
     "circomlibjs": "^0.1.7",
