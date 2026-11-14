@@ -40,10 +40,24 @@ Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
+| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** (3 attempts: 2026-07-22, 2026-11-14) | No `sui` CLI. GitHub release assets are out of the session's scope. Testnet JSON-RPC (`fullnode.testnet.sui.io`) is 403 at the egress proxy. Docker Hub is reachable and `mysten/sui-tools:testnet` carries a prebuilt `sui`, but fetching that layer was denied by the session permission layer (2026-11-14). A from-source build was not attempted within a single night. Unblock: owner approves the Docker Hub layer fetch, or allowlists the testnet fullnode, or budgets a from-source build. See [`2026-11-14-poseidon2-merkle-arity.md`](2026-11-14-poseidon2-merkle-arity.md) §Item #1. |
 | Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
+
+## Measured but not adopted (2026-11-14)
+
+These are not production numbers (production still compiles at circom's default `-O1`); they are
+recorded so the next experiment has a reference point. Different machine from the table above —
+production `transfer` at `-O1` measured 693.7 ms there. Source:
+[`2026-11-14-poseidon2-merkle-arity.md`](2026-11-14-poseidon2-merkle-arity.md).
+
+| Circuit | `-O1` prove (ms) | `-O2` prove (ms) | `-O1` → `-O2` |
+|---|---|---|---|
+| `transfer.circom` | 693.7 (σ 31.6) | 520.7 (σ 10.8) | −24.9% |
+| `compliance.circom` | 628.7 (σ 13.7) | 511.8 (σ 23.3) | −18.6% |
+
+Reproduce: `node scripts/bench/hash-arity/bench.mjs --ptau <pot14+> --runs 10 [--prove-opt O2]`.
 
 Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
 place, not be appended as a separate table.
