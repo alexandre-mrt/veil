@@ -10,7 +10,8 @@
  *   C1   credential leaf hash       Poseidon(5) with domain tag 4
  *   C2   Merkle membership          depth-20 Poseidon binary tree
  *   C3   nullifier derivation       Poseidon(3) with domain tag 5
- *   C_BIND context binding          Poseidon(3) with domain tag 6
+ *   C_BIND owner binding            contextId = Poseidon(2, userSecret, transferEpochId,
+ *                                   transferRandomnessOld) = the paired transfer nullifier
  *   C4   expiry check               expiryEpoch >= currentEpoch
  *   C5   KYC level check            kycLevel >= requiredKycLevel
  *   C6   validCredential output     expiryValid AND kycValid
@@ -50,7 +51,13 @@ const MAX_U64 = 2n ** 64n;
 const MAX_U8 = 2n ** 8n;
 const DOMAIN_CREDENTIAL_LEAF = 4n;
 const DOMAIN_COMPLIANCE_NULLIFIER = 5n;
-const DOMAIN_CONTEXT_BINDING = 6n;
+const DOMAIN_CONTEXT_BINDING = 6n; // retired by C_BIND (2026-11-15); kept for the tag-separation tests
+const DOMAIN_TRANSFER_NULLIFIER = 2n; // transfer.circom C10 — re-used by C_BIND on purpose
+
+/** The transfer circuit's nullifier: Poseidon(2, userSecret, epochId, randomnessOld). */
+function transferNullifierOf(poseidon, userSecret, epochId, randomnessOld) {
+  return toBI(poseidon([DOMAIN_TRANSFER_NULLIFIER, userSecret, epochId, randomnessOld]));
+}
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -101,7 +108,8 @@ function buildValidWitness(poseidon, {
   issuerId = 42n,
   currentEpoch = 500n,
   requiredKycLevel = 1n,
-  transferNullifier = 111222333n,
+  transferEpochId = 500n,
+  transferRandomnessOld = 111222333n,
 } = {}) {
   // C1: credential leaf = Poseidon(4, userSecret, kycLevel, expiryEpoch, issuerId)
   const credentialLeaf = toBI(poseidon([DOMAIN_CREDENTIAL_LEAF, userSecret, kycLevel, expiryEpoch, issuerId]));
@@ -109,8 +117,8 @@ function buildValidWitness(poseidon, {
   // C2: Merkle proof
   const { root: merkleRoot, pathElements, pathIndices } = buildMerkleTree(poseidon, credentialLeaf, MERKLE_DEPTH);
 
-  // C_BIND: contextId = Poseidon(6, transferNullifier, userSecret)
-  const contextId = toBI(poseidon([DOMAIN_CONTEXT_BINDING, transferNullifier, userSecret]));
+  // C_BIND: contextId = transfer nullifier = Poseidon(2, userSecret, transferEpochId, transferRandomnessOld)
+  const contextId = transferNullifierOf(poseidon, userSecret, transferEpochId, transferRandomnessOld);
 
   // C3: nullifier = Poseidon(5, userSecret, contextId)
   const nullifier = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, userSecret, contextId]));
@@ -135,7 +143,8 @@ function buildValidWitness(poseidon, {
     issuerId,
     pathElements,
     pathIndices,
-    transferNullifier,
+    transferEpochId,
+    transferRandomnessOld,
   };
 }
 
@@ -179,7 +188,7 @@ function simulateCompliance(poseidon, inputs) {
     merkleRoot, currentEpoch, contextId, requiredKycLevel,
     nullifier, validCredential,
     userSecret, kycLevel, expiryEpoch, issuerId,
-    pathElements, pathIndices, transferNullifier,
+    pathElements, pathIndices, transferEpochId, transferRandomnessOld,
   } = inputs;
 
   const errors = [];
@@ -208,8 +217,8 @@ function simulateCompliance(poseidon, inputs) {
     errors.push(`C3: nullifier mismatch (expected ${expectedNullifier}, got ${nullifier})`);
   }
 
-  // C_BIND: contextId = Poseidon(6, transferNullifier, userSecret)
-  const expectedContextId = toBI(poseidon([DOMAIN_CONTEXT_BINDING, transferNullifier, userSecret]));
+  // C_BIND: contextId = Poseidon(2, userSecret, transferEpochId, transferRandomnessOld)
+  const expectedContextId = transferNullifierOf(poseidon, userSecret, transferEpochId, transferRandomnessOld);
   if (contextId !== expectedContextId) {
     errors.push(`C_BIND: contextId mismatch (expected ${expectedContextId}, got ${contextId})`);
   }
@@ -339,7 +348,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 5555n,
+      transferRandomnessOld: 5555n,
     });
     assertEqual(w.validCredential, 1n, "validCredential should be 1");
     await assertAccepted(groth16, vk, poseidon, w, "CC1");
@@ -354,7 +363,7 @@ async function main() {
       issuerId: 10n,
       currentEpoch: 1000n,
       requiredKycLevel: 3n,
-      transferNullifier: 777n,
+      transferRandomnessOld: 777n,
     });
     assertEqual(w.validCredential, 1n, "validCredential should be 1 when kycLevel == required");
     await assertAccepted(groth16, vk, poseidon, w, "CC2");
@@ -369,7 +378,7 @@ async function main() {
       issuerId: 5n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 888n,
+      transferRandomnessOld: 888n,
     });
     assertEqual(w.validCredential, 1n, "validCredential should be 1 when expiryEpoch == currentEpoch");
     await assertAccepted(groth16, vk, poseidon, w, "CC3");
@@ -384,7 +393,7 @@ async function main() {
       issuerId: MAX_U64 - 1n,
       currentEpoch: MAX_U64 - 2n,
       requiredKycLevel: 255n,
-      transferNullifier: 999n,
+      transferRandomnessOld: 999n,
     });
     assertEqual(w.validCredential, 1n, "validCredential should be 1");
     await assertAccepted(groth16, vk, poseidon, w, "CC4");
@@ -404,7 +413,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 1111n,
+      transferRandomnessOld: 1111n,
     });
     assertEqual(w.validCredential, 0n, "validCredential should be 0 when expired");
     await assertAccepted(groth16, vk, poseidon, w, "CC5");
@@ -419,7 +428,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 1112n,
+      transferRandomnessOld: 1112n,
     });
     // Override validCredential to 1 (should be 0)
     const tampered = { ...w, validCredential: 1n };
@@ -440,7 +449,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 2n,
-      transferNullifier: 2222n,
+      transferRandomnessOld: 2222n,
     });
     assertEqual(w.validCredential, 0n, "validCredential should be 0 when kycLevel too low");
     await assertAccepted(groth16, vk, poseidon, w, "CC7");
@@ -455,7 +464,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 2n,
-      transferNullifier: 2223n,
+      transferRandomnessOld: 2223n,
     });
     const tampered = { ...w, validCredential: 1n };
     await assertRejected(groth16, vk, poseidon, tampered, "C6:", "CC8");
@@ -470,7 +479,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 3n,
-      transferNullifier: 3333n,
+      transferRandomnessOld: 3333n,
     });
     assertEqual(w.validCredential, 0n, "validCredential should be 0");
     await assertAccepted(groth16, vk, poseidon, w, "CC9");
@@ -490,7 +499,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 4444n,
+      transferRandomnessOld: 4444n,
     });
     const tampered = { ...w, merkleRoot: w.merkleRoot + 1n };
     await assertRejected(groth16, vk, poseidon, tampered, "C2:", "CC10");
@@ -505,7 +514,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 5555n,
+      transferRandomnessOld: 5555n,
     });
     const tamperedPath = [...w.pathElements];
     tamperedPath[0] = tamperedPath[0] + 1n;
@@ -522,7 +531,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 6666n,
+      transferRandomnessOld: 6666n,
     });
     // Change kycLevel in witness but keep original Merkle root (computed with kycLevel=2)
     const tampered = { ...w, kycLevel: 3n };
@@ -534,11 +543,11 @@ async function main() {
   // ===========================================================================
   console.log("\n--- Context binding ---");
 
-  // CC13: contextId = Poseidon(6, transferNullifier, userSecret)
-  await test("CC13: contextId correctly derived from transferNullifier and userSecret", async () => {
+  // CC13: contextId = transfer nullifier Poseidon(2, userSecret, epochId, randomnessOld)
+  await test("CC13: contextId equals the paired transfer's nullifier", async () => {
     const userSecret = 1313n;
-    const transferNullifier = 7777n;
-    const expectedContextId = toBI(poseidon([DOMAIN_CONTEXT_BINDING, transferNullifier, userSecret]));
+    const transferRandomnessOld = 7777n;
+    const expectedContextId = transferNullifierOf(poseidon, userSecret, 500n, transferRandomnessOld);
 
     const w = buildValidWitness(poseidon, {
       userSecret,
@@ -547,15 +556,15 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier,
+      transferRandomnessOld,
     });
 
     assertEqual(w.contextId, expectedContextId, "contextId derivation");
     await assertAccepted(groth16, vk, poseidon, w, "CC13");
   });
 
-  // CC14: Wrong transferNullifier => contextId mismatch
-  await test("CC14: Wrong transferNullifier => fails C_BIND", async () => {
+  // CC14: Wrong transferRandomnessOld => contextId mismatch
+  await test("CC14: Wrong transferRandomnessOld => fails C_BIND", async () => {
     const w = buildValidWitness(poseidon, {
       userSecret: 1414n,
       kycLevel: 2n,
@@ -563,10 +572,10 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 8888n,
+      transferRandomnessOld: 8888n,
     });
-    // Change transferNullifier in witness but keep original contextId
-    const tampered = { ...w, transferNullifier: 9999n };
+    // Change transferRandomnessOld in witness but keep original contextId
+    const tampered = { ...w, transferRandomnessOld: 9999n };
     await assertRejected(groth16, vk, poseidon, tampered, "C_BIND:", "CC14");
   });
 
@@ -579,7 +588,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 101010n,
+      transferRandomnessOld: 101010n,
     });
     const tampered = { ...w, contextId: w.contextId + 1n };
     // This will fail both C3 (nullifier recomputed with wrong contextId) and C_BIND
@@ -596,8 +605,8 @@ async function main() {
   await test("CC16: Different contextId => different nullifiers", async () => {
     const userSecret = 1616n;
 
-    const ctx1 = toBI(poseidon([DOMAIN_CONTEXT_BINDING, 1000n, userSecret]));
-    const ctx2 = toBI(poseidon([DOMAIN_CONTEXT_BINDING, 2000n, userSecret]));
+    const ctx1 = transferNullifierOf(poseidon, userSecret, 500n, 1000n);
+    const ctx2 = transferNullifierOf(poseidon, userSecret, 500n, 2000n);
 
     const nf1 = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, userSecret, ctx1]));
     const nf2 = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, userSecret, ctx2]));
@@ -607,10 +616,11 @@ async function main() {
 
   // CC17: Same transfer, different users produce different nullifiers
   await test("CC17: Different users, same transfer => different nullifiers", async () => {
-    const transferNullifier = 123456n;
-
-    const ctx1 = toBI(poseidon([DOMAIN_CONTEXT_BINDING, transferNullifier, 1n]));
-    const ctx2 = toBI(poseidon([DOMAIN_CONTEXT_BINDING, transferNullifier, 2n]));
+    // Under C_BIND two users can never share a contextId (it is each one's own transfer
+    // nullifier), but the compliance nullifier must still separate them for a shared value.
+    const ctx = 123456n;
+    const ctx1 = ctx;
+    const ctx2 = ctx;
 
     const nf1 = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, 1n, ctx1]));
     const nf2 = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, 2n, ctx2]));
@@ -622,8 +632,8 @@ async function main() {
   await test("CC18: Same user, different transfers => different nullifiers", async () => {
     const userSecret = 1818n;
 
-    const ctx1 = toBI(poseidon([DOMAIN_CONTEXT_BINDING, 100n, userSecret]));
-    const ctx2 = toBI(poseidon([DOMAIN_CONTEXT_BINDING, 200n, userSecret]));
+    const ctx1 = transferNullifierOf(poseidon, userSecret, 500n, 100n);
+    const ctx2 = transferNullifierOf(poseidon, userSecret, 501n, 100n);
 
     const nf1 = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, userSecret, ctx1]));
     const nf2 = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, userSecret, ctx2]));
@@ -640,10 +650,10 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 111111n,
+      transferRandomnessOld: 111111n,
     });
     // Compute a wrong nullifier with different secret but keep userSecret in witness
-    const wrongCtx = toBI(poseidon([DOMAIN_CONTEXT_BINDING, w.transferNullifier, 9999n]));
+    const wrongCtx = transferNullifierOf(poseidon, 9999n, w.transferEpochId, w.transferRandomnessOld);
     const wrongNullifier = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, 9999n, wrongCtx]));
     const tampered = { ...w, nullifier: wrongNullifier };
     await assertRejected(groth16, vk, poseidon, tampered, "C3:", "CC19");
@@ -702,7 +712,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 222222n,
+      transferRandomnessOld: 222222n,
     });
     await assertRejected(groth16, vk, poseidon, w, "C9:", "CC22");
   });
@@ -716,7 +726,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 256n,
-      transferNullifier: 333333n,
+      transferRandomnessOld: 333333n,
     });
     await assertRejected(groth16, vk, poseidon, w, "C10:", "CC23");
   });
@@ -730,7 +740,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: MAX_U64,
       requiredKycLevel: 1n,
-      transferNullifier: 444444n,
+      transferRandomnessOld: 444444n,
     });
     await assertRejected(groth16, vk, poseidon, w, "C7:", "CC24");
   });
@@ -744,7 +754,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 555555n,
+      transferRandomnessOld: 555555n,
     });
     await assertRejected(groth16, vk, poseidon, w, "C8:", "CC25");
   });
@@ -758,7 +768,7 @@ async function main() {
       issuerId: MAX_U64,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 666666n,
+      transferRandomnessOld: 666666n,
     });
     await assertRejected(groth16, vk, poseidon, w, "C11:", "CC26");
   });
@@ -777,7 +787,7 @@ async function main() {
       issuerId: 0n,
       currentEpoch: 0n,
       requiredKycLevel: 0n,
-      transferNullifier: 0n,
+      transferRandomnessOld: 0n,
     });
     assertEqual(w.validCredential, 1n, "validCredential should be 1 with all-zero valid inputs");
     await assertAccepted(groth16, vk, poseidon, w, "CC27");
@@ -791,7 +801,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 777777n,
+      transferRandomnessOld: 777777n,
     };
     const w1 = buildValidWitness(poseidon, { ...base, userSecret: 1n });
     const w2 = buildValidWitness(poseidon, { ...base, userSecret: 2n });
@@ -810,7 +820,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 888888n,
+      transferRandomnessOld: 888888n,
     });
 
     const errors1 = simulateCompliance(poseidon, w);
@@ -828,7 +838,7 @@ async function main() {
       issuerId: 1n,
       currentEpoch: 1000n,
       requiredKycLevel: 1n,
-      transferNullifier: 999999n,
+      transferRandomnessOld: 999999n,
     });
 
     const baseErrors = simulateCompliance(poseidon, w);
@@ -840,7 +850,8 @@ async function main() {
       { field: "kycLevel", value: 3n },
       { field: "expiryEpoch", value: 5001n },
       { field: "issuerId", value: 2n },
-      { field: "transferNullifier", value: 1000000n },
+      { field: "transferRandomnessOld", value: 1000000n },
+      { field: "transferEpochId", value: 501n },
     ];
 
     for (const { field, value } of mutations) {
@@ -851,6 +862,71 @@ async function main() {
         `Mutating ${field} to ${value} must cause constraint violations`,
       );
     }
+  });
+
+  // ===========================================================================
+  // OWNER BINDING TO THE PAIRED TRANSFER (2026-11-15, compliance-transfer-binding)
+  // ===========================================================================
+  console.log("\n--- Owner binding (credential holder == transfer owner) ---");
+
+  // Alice holds a KYC credential; Bob does not. Bob's transfer nullifier is public on-chain.
+  const ALICE = 0xA11CEn;
+  const BOB = 0xB0Bn;
+  const BOB_EPOCH = 500n;
+  const BOB_R_OLD = 424242n;
+  const bobNullifier = transferNullifierOf(poseidon, BOB, BOB_EPOCH, BOB_R_OLD);
+
+  // CC31 — THE ATTACK (negative): Alice vouches for Bob's transfer. compliance.move now
+  // requires contextId == the transfer proof's nullifier, so Alice must put Bob's nullifier
+  // in contextId. With her own userSecret she cannot satisfy C_BIND.
+  await test("CC31: credential holder cannot bind to someone else's transfer nullifier (C_BIND)", async () => {
+    const w = buildValidWitness(poseidon, {
+      userSecret: ALICE, kycLevel: 2n, expiryEpoch: 5000n, issuerId: 1n,
+      currentEpoch: 1000n, requiredKycLevel: 1n,
+      transferEpochId: BOB_EPOCH, transferRandomnessOld: BOB_R_OLD, // even knowing Bob's rOld
+    });
+    const nullifier = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, ALICE, bobNullifier]));
+    const attack = { ...w, contextId: bobNullifier, nullifier };
+    await assertRejected(groth16, vk, poseidon, attack, "C_BIND:", "CC31");
+  });
+
+  // CC32 (negative): Alice switches userSecret to Bob's to pass C_BIND — then her credential
+  // leaf no longer opens to the credential root (C2). A compliance proof for Bob's transfer
+  // needs a credential issued to Bob's own secret.
+  await test("CC32: switching to the transfer owner's secret breaks credential membership (C2)", async () => {
+    const w = buildValidWitness(poseidon, {
+      userSecret: ALICE, kycLevel: 2n, expiryEpoch: 5000n, issuerId: 1n,
+      currentEpoch: 1000n, requiredKycLevel: 1n,
+    });
+    const nullifier = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, BOB, bobNullifier]));
+    const attack = {
+      ...w, userSecret: BOB, contextId: bobNullifier, nullifier,
+      transferEpochId: BOB_EPOCH, transferRandomnessOld: BOB_R_OLD,
+    };
+    await assertRejected(groth16, vk, poseidon, attack, "C2:", "CC32");
+  });
+
+  // CC33 (positive): Bob with his own credential binds to his own transfer, and the
+  // resulting public contextId is byte-for-byte the transfer circuit's nullifier.
+  await test("CC33: owner's compliance proof exposes contextId == transfer nullifier", async () => {
+    const w = buildValidWitness(poseidon, {
+      userSecret: BOB, kycLevel: 2n, expiryEpoch: 5000n, issuerId: 1n,
+      currentEpoch: 1000n, requiredKycLevel: 1n,
+      transferEpochId: BOB_EPOCH, transferRandomnessOld: BOB_R_OLD,
+    });
+    assertEqual(w.contextId, bobNullifier, "contextId vs transfer nullifier");
+    await assertAccepted(groth16, vk, poseidon, w, "CC33");
+  });
+
+  // CC34 (negative): the grace-period epoch can't be used to shift the binding — a
+  // different transferEpochId yields a different value than the transfer's nullifier.
+  await test("CC34: wrong transferEpochId cannot reproduce the transfer nullifier", async () => {
+    const w = buildValidWitness(poseidon, {
+      userSecret: BOB, kycLevel: 2n, expiryEpoch: 5000n, issuerId: 1n,
+      currentEpoch: 1000n, requiredKycLevel: 1n,
+      transferEpochId: BOB_EPOCH, transferRandomnessOld: BOB_R_OLD,
+    });
+    await assertRejected(groth16, vk, poseidon, { ...w, transferEpochId: BOB_EPOCH - 1n }, "C_BIND:", "CC34");
   });
 
   // -- Summary ----------------------------------------------------------------

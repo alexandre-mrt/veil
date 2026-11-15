@@ -11,7 +11,6 @@ const DOMAIN_NULLIFIER = 2n;
 const DOMAIN_TX_AMOUNT = 3n;
 const DOMAIN_CREDENTIAL_LEAF = 4n;
 const DOMAIN_COMPLIANCE_NULLIFIER = 5n;
-const DOMAIN_CONTEXT_BINDING = 6n;
 const DOMAIN_WITHDRAW_NULLIFIER = 7n;
 const DOMAIN_RECIPIENT_HASH = 8n;
 const MERKLE_DEPTH = 20;
@@ -71,7 +70,9 @@ export function buildWithdrawWitness(poseidon) {
 
 export function buildComplianceWitness(poseidon) {
   const userSecret = 987654321n, kycLevel = 2n, expiryEpoch = 1000n, issuerId = 42n;
-  const currentEpoch = 500n, requiredKycLevel = 1n, transferNullifier = 111222333n;
+  const currentEpoch = 500n, requiredKycLevel = 1n;
+  // Paired transfer = buildTransferWitness (same userSecret, epochId 1, randomnessOld 0).
+  const transferEpochId = 1n, transferRandomnessOld = 0n;
   const credentialLeaf = toBI(poseidon([DOMAIN_CREDENTIAL_LEAF, userSecret, kycLevel, expiryEpoch, issuerId]));
   const pathElements = [];
   const pathIndices = [];
@@ -82,14 +83,15 @@ export function buildComplianceWitness(poseidon) {
     current = toBI(poseidon([current, 0n]));
   }
   const merkleRoot = current;
-  const contextId = toBI(poseidon([DOMAIN_CONTEXT_BINDING, transferNullifier, userSecret]));
+  // C_BIND (2026-11-15): contextId = the paired transfer's nullifier
+  const contextId = toBI(poseidon([DOMAIN_NULLIFIER, userSecret, transferEpochId, transferRandomnessOld]));
   const nullifier = toBI(poseidon([DOMAIN_COMPLIANCE_NULLIFIER, userSecret, contextId]));
   const expiryValid = expiryEpoch >= currentEpoch ? 1n : 0n;
   const kycValid = kycLevel >= requiredKycLevel ? 1n : 0n;
   const validCredential = expiryValid * kycValid;
   return {
     merkleRoot, currentEpoch, contextId, requiredKycLevel, nullifier, validCredential,
-    userSecret, kycLevel, expiryEpoch, issuerId, pathElements, pathIndices, transferNullifier,
+    userSecret, kycLevel, expiryEpoch, issuerId, pathElements, pathIndices, transferEpochId, transferRandomnessOld,
   };
 }
 

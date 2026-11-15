@@ -30,7 +30,9 @@ use veil::verifier;
 // 113  E_KYC_LEVEL_UPDATE_PENDING     -- cannot propose KYC level update while one is pending
 // 114  E_COMPLIANCE_VK_UPDATE_PENDING -- cannot propose compliance VK update while one is pending
 // 115  E_POOL_NOT_FROZEN               -- pool must be frozen for compliance config replacement
-// 116-119 (reserved for future compliance error codes)
+// 116  E_COMPLIANCE_TRANSFER_MISMATCH -- compliance contextId != transfer proof nullifier
+//                                       (credential holder is not the transfer's owner)
+// 117-119 (reserved for future compliance error codes)
 // ---------------------------------------------------------------------------
 const E_COMPLIANCE_PROOF_INVALID: u64 = 100;
 const E_CREDENTIAL_NULLIFIER_SPENT: u64 = 101;
@@ -38,6 +40,7 @@ const E_CREDENTIAL_ROOT_MISMATCH: u64 = 102;
 const E_INVALID_COMPLIANCE_INPUTS: u64 = 103;
 const E_CREDENTIAL_INVALID: u64 = 105;
 const E_CONFIG_POOL_MISMATCH: u64 = 106;
+const E_COMPLIANCE_TRANSFER_MISMATCH: u64 = 116;
 const E_EPOCH_MISMATCH: u64 = 8;
 const E_CREDENTIAL_ROOT_UPDATE_PENDING: u64 = 108;
 const E_INVALID_ENCRYPTED_AMOUNT: u64 = 109;
@@ -292,6 +295,17 @@ public fun compliant_transfer(
 
     // [M3] All compliance validations BEFORE any pool state mutation
     assert!(compliance_inputs_bytes.length() == 192, E_INVALID_COMPLIANCE_INPUTS);
+
+    // Owner binding (2026-11-15). The compliance circuit's C_BIND proves
+    // contextId = Poseidon(2, userSecret, transferEpochId, transferRandomnessOld), i.e. the
+    // transfer nullifier recomputed from the SAME userSecret that opens the KYC credential.
+    // Requiring it to equal the transfer proof's public nullifier (bytes 128..160) forces the
+    // credential holder and the owner of the spent commitment to be the same secret.
+    // Without this check any one credential holder could vouch for anyone's transfer.
+    assert!(transfer_inputs_bytes.length() == 224, E_COMPLIANCE_TRANSFER_MISMATCH);
+    let context_id = verifier::extract_bytes(&compliance_inputs_bytes, 64, 96);
+    let transfer_nullifier = verifier::extract_bytes(&transfer_inputs_bytes, 128, 160);
+    assert!(context_id == transfer_nullifier, E_COMPLIANCE_TRANSFER_MISMATCH);
 
     let proof_root = verifier::extract_bytes(&compliance_inputs_bytes, 0, 32);
     assert!(proof_root == config.credential_root, E_CREDENTIAL_ROOT_MISMATCH);

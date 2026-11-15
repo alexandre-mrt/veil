@@ -110,11 +110,14 @@ export function useCompliantTransfer(): UseCompliantTransferReturn {
       setProgress(10);
 
       try {
-        // Step 1: Generate transfer proof (reuse existing hook)
+        // Step 1: Generate transfer proof (reuse existing hook). The epoch is captured once:
+        // the compliance proof must recompute the transfer nullifier with the same value.
+        const transferEpochId = getCurrentEpochId();
+        const transferRandomnessOld = privateState.randomness;
         const transferResult = await transferProofGen.generateTransferProof(
           privateState,
           txAmount,
-          getCurrentEpochId(),
+          transferEpochId,
           THRESHOLD,
         );
 
@@ -160,6 +163,8 @@ export function useCompliantTransfer(): UseCompliantTransferReturn {
             (_, i) => (credential.merkleIndex >> i) & 1,
           ),
           currentEpoch: getCurrentEpochId(),
+          transferEpochId,
+          transferRandomnessOld,
           transferNullifier,
           requiredKycLevel: BigInt(complianceConfig.requiredKycLevel),
         };
