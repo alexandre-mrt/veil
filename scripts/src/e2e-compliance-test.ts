@@ -197,7 +197,11 @@ async function main(): Promise<void> {
     console.log("  Continuing with compliance tests only...\n");
   }
 
-  let transferNullifier = randomField();
+  // C_BIND (2026-11-15): the compliance proof's contextId IS the transfer nullifier
+  // Poseidon(2, userSecret, epochId, randomnessOld); compliance.move asserts equality.
+  const transferEpochId = currentEpoch;
+  const transferRandomnessOld = 0n; // genesis commitment
+  let transferNullifier = hash(2n, userSecret, transferEpochId, transferRandomnessOld);
   let transferProofVerified = false;
 
   if (hasTransferArtifacts) {
@@ -269,7 +273,7 @@ async function main(): Promise<void> {
   const complianceVk = await ensureComplianceVK();
 
   // Compute derived values
-  const contextId = hash(6n, transferNullifier, userSecret);
+  const contextId = transferNullifier;
   const credNullifier = hash(5n, userSecret, contextId);
   const expiryValid = expiryEpoch >= currentEpoch ? 1n : 0n;
   const kycValid = kycLevel >= 1n ? 1n : 0n;
@@ -290,7 +294,8 @@ async function main(): Promise<void> {
     issuerId: issuerId.toString(),
     pathElements: pathElements.map((e) => e.toString()),
     pathIndices: pathIndices.map((i) => i.toString()),
-    transferNullifier: transferNullifier.toString(),
+    transferEpochId: transferEpochId.toString(),
+    transferRandomnessOld: transferRandomnessOld.toString(),
   };
 
   try {
@@ -333,7 +338,7 @@ async function main(): Promise<void> {
   const { root: expRoot, layers: expLayers } = buildMerkleTree(poseidon, F, [expiredLeaf], 20);
   const { pathElements: expPath, pathIndices: expIdx } = getMerkleProof(expLayers, 0, 20);
 
-  const expContextId = hash(6n, transferNullifier, userSecret);
+  const expContextId = transferNullifier;
   const expNullifier = hash(5n, userSecret, expContextId);
 
   const expiredInput = {
@@ -349,7 +354,8 @@ async function main(): Promise<void> {
     issuerId: issuerId.toString(),
     pathElements: expPath.map((e) => e.toString()),
     pathIndices: expIdx.map((i) => i.toString()),
-    transferNullifier: transferNullifier.toString(),
+    transferEpochId: transferEpochId.toString(),
+    transferRandomnessOld: transferRandomnessOld.toString(),
   };
 
   try {
@@ -376,7 +382,7 @@ async function main(): Promise<void> {
   const { root: lowRoot, layers: lowLayers } = buildMerkleTree(poseidon, F, [lowKycLeaf], 20);
   const { pathElements: lowPath, pathIndices: lowIdx } = getMerkleProof(lowLayers, 0, 20);
 
-  const lowContextId = hash(6n, transferNullifier, userSecret);
+  const lowContextId = transferNullifier;
   const lowNullifier = hash(5n, userSecret, lowContextId);
 
   const lowKycInput = {
@@ -392,7 +398,8 @@ async function main(): Promise<void> {
     issuerId: issuerId.toString(),
     pathElements: lowPath.map((e) => e.toString()),
     pathIndices: lowIdx.map((i) => i.toString()),
-    transferNullifier: transferNullifier.toString(),
+    transferEpochId: transferEpochId.toString(),
+    transferRandomnessOld: transferRandomnessOld.toString(),
   };
 
   try {
@@ -556,9 +563,8 @@ async function main(): Promise<void> {
   const nf2 = hash(5n, userSecret, contextId);
   assert(nf1 === nf2, "Same inputs produce same credential nullifier");
 
-  // Different transferNullifier produces different contextId and nullifier
-  const otherTransferNf = randomField();
-  const otherContextId = hash(6n, otherTransferNf, userSecret);
+  // Different transfer (other randomnessOld) produces different contextId and nullifier
+  const otherContextId = hash(2n, userSecret, transferEpochId, randomField());
   const nf3 = hash(5n, userSecret, otherContextId);
   assert(nf1 !== nf3, "Different transferNullifier produces different credential nullifier");
 
@@ -566,8 +572,9 @@ async function main(): Promise<void> {
   const utilNullifier = computeCredentialNullifier(poseidon, F, userSecret, contextId);
   assert(utilNullifier === nf1, "computeCredentialNullifier matches manual Poseidon(5, secret, contextId)");
 
-  // Transfer nullifier (tag 2) never collides with credential nullifier (tag 5)
+  // Transfer nullifier (tag 2, == contextId) never collides with credential nullifier (tag 5)
   const transferNf = hash(2n, userSecret, currentEpoch, 0n);
+  assert(transferNf === contextId, "contextId == transfer nullifier (C_BIND)");
   const credNf = hash(5n, userSecret, contextId);
   assert(transferNf !== credNf, "Transfer nullifier (tag 2) != credential nullifier (tag 5)");
 

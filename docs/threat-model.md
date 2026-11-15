@@ -95,7 +95,8 @@ Data flows: User generates Groth16 proofs in-browser, submits proof bytes + publ
 | E4 | Withdraw more than deposited via ZK proof manipulation | Withdraw circuit enforces `withdrawAmount <= cumulativeOld` (constraint C5) with 64-bit range proofs on both values. On-chain checks pool balance sufficiency. | Mitigated |
 | E5 | Bypass compliance requirement via direct `shielded_transfer` | When `compliance_required == true`, `shielded_transfer` aborts with `E_COMPLIANCE_REQUIRED`. Compliance toggle applied lazily before the check. | Mitigated |
 | E6 | Sybil attack: create multiple userSecrets to bypass spending threshold | Known limitation. Each userSecret gets its own cumulative spending counter. Mitigation requires identity-binding at deposit time (future work). | Accepted risk |
-| E7 | Front-run ZK withdrawal to steal funds | Withdrawal circuit binds to recipient via `recipientHash = Poseidon(8, recipient)`. Changing recipient invalidates the Groth16 proof. | Mitigated |
+| E7 | Front-run ZK withdrawal to steal funds | The circuit proves `recipientHash = Poseidon(8, recipient)`, but **`pool::zk_withdraw` never compares the caller-supplied `recipient` with `recipientHash`** (re-verified against `main` on 2026-11-15, `pool.move` zk_withdraw). Anyone holding a pending withdrawal proof can resubmit it with their own address. A contract-only fix (recompute `Poseidon(8, recipient)` via `sui::poseidon`) exists on unmerged branch commit `fdbc193` (research 2026-09-24). | **Not mitigated on `main`** |
+| E8 | Borrow someone else's KYC credential: one credential holder vouches for any transfer | Compliance circuit C_BIND sets `contextId = Poseidon(2, userSecret, transferEpochId, transferRandomnessOld)` (the transfer nullifier, from the credential's own `userSecret`); `compliant_transfer` asserts `contextId == transfer nullifier` (`E_COMPLIANCE_TRANSFER_MISMATCH`, 116). Tests: `compliance.test.mjs` CC31–CC34, `compliance_tests.move` 18–20. Requires the compliance VK rotation to be live. | Mitigated (2026-11-15) |
 
 ## Attack Scenarios (tested in Move tests)
 
@@ -169,6 +170,6 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | Upper bytes zero check | `verifier.move:67-73` | Preventive | Prevents u64 overflow via non-zero upper 24 bytes |
 | Epoch grace period | `pool.move:206-208` | Preventive | Accepts current or previous epoch to handle boundary races |
 | Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive | `recipientHash = Poseidon(8, recipient)` prevents front-running |
-| Context-bound credential nullifiers | `compliance.circom:79-87` | Preventive | `contextId = Poseidon(6, transferNullifier, userSecret)` unique per transfer |
+| Owner-bound compliance proofs | `compliance.circom` C_BIND, `compliance.move` compliant_transfer | Preventive | `contextId` = transfer nullifier recomputed from the credential's `userSecret`; checked on-chain (116). Credential nullifier `Poseidon(5, userSecret, contextId)` is unique per transfer |
 | Domain-separated Poseidon hashes | `transfer.circom`, `compliance.circom`, `withdraw.circom` | Preventive | Tags 1-8 prevent cross-domain hash collisions |
 | Merkle accumulator | `pool.move:77-80`, `transfer.circom:52-61` | Privacy | Anonymity set = all commitments, root verified in circuit |

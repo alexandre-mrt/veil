@@ -17,7 +17,13 @@ contribution (matches `circuits/scripts/compile*.sh` — **not** a production ce
 | Circuit | R1CS constraints | Non-linear | Linear | Wires | Public / private inputs | zkey (bytes) | vk (bytes) | Compressed on-chain proof (bytes) |
 |---|---|---|---|---|---|---|---|---|
 | `transfer.circom` | 13,611 | 6,470 | 7,141 | 13,632 | 7 / 47 | 6,001,431 | 4,025 | 128 |
-| `compliance.circom` | 12,743 | 6,057 | 6,686 | 12,762 | 6 / 45 | 5,682,155 | 3,841 | 128 |
+| `compliance.circom` | 12,874 | 6,093 | 6,781 | 12,894 | 6 / 46 | 5,727,549 | 3,842 | 128 |
+
+`compliance.circom` row updated 2026-11-15 (owner binding, C_BIND → transfer nullifier; was
+12,743 / 6,057 / 6,686 / 12,762 / 6·45 / 5,682,155 / 3,841). Measured with circom 2.2.2
+prebuilt release binary and a locally generated dev pot15 (Hermez URL now 403); the
+transfer/withdraw rows re-measured identically the same night (13,611 / 3,058).
+See [`2026-11-15-compliance-transfer-binding.md`](2026-11-15-compliance-transfer-binding.md).
 | `withdraw.circom` | 3,058 | 1,465 | 1,593 | 3,058 | 5 / 5 | 1,385,335 | 3,656 | 128 |
 
 Groth16 proofs are three fixed-size group elements (2×G1 + 1×G2) regardless of circuit — the
@@ -30,7 +36,7 @@ elements) runs ~721–726 bytes for the same data.
 | Circuit | Node.js (this machine) | Chromium (headless, this machine) | Browser / Node ratio |
 |---|---|---|---|
 | `transfer.circom` | 751.9 ms (σ 17.3) | 1213.3 ms (σ 32.6, 8 runs) | 1.61x |
-| `compliance.circom` | 738.1 ms (σ 20.9) | 1163.4 ms (σ 58.6, 8 runs) | 1.58x |
+| `compliance.circom` | 738.1 ms (σ 20.9) — pre-binding; 2026-11-15 interleaved A/B on a different machine: 800.8 → 820.9 ms (+2.5%, 1.8 SE) | 1163.4 ms (σ 58.6, 8 runs) — pre-binding, not re-measured | 1.58x |
 | `withdraw.circom` | 244.3 ms (σ 7.9) | 382.9 ms (σ 9.9, 8 runs) | 1.57x |
 
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
@@ -41,7 +47,7 @@ Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 | Metric | Status | Why |
 |---|---|---|
 | On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| Move contract test suite (`sui move test`) | **127 / 127 pass** (2026-11-15, prebuilt `sui` 1.72.1-94ad8ccd0ed6 = pinned framework rev) | Was NOT RUN at baseline time. 124 pre-existing + 3 owner-binding tests. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 

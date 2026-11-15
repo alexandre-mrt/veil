@@ -26,6 +26,11 @@ export interface ComplianceProofInput {
   readonly pathElements: readonly bigint[];
   readonly pathIndices: readonly number[];
   readonly currentEpoch: bigint;
+  /** epochId the paired transfer proof was generated with. */
+  readonly transferEpochId: bigint;
+  /** randomnessOld of the commitment the paired transfer spends. */
+  readonly transferRandomnessOld: bigint;
+  /** The paired transfer proof's public nullifier — contextId must equal it (checked on-chain). */
   readonly transferNullifier: bigint;
   readonly requiredKycLevel: bigint;
 }
@@ -51,7 +56,8 @@ interface UseComplianceProofReturn {
 // ---------------------------------------------------------------------------
 
 const DOMAIN_NULLIFIER = 5n;
-const DOMAIN_CONTEXT_BINDING = 6n;
+// C_BIND: contextId is the transfer nullifier, Poseidon(2, userSecret, epochId, randomnessOld)
+const DOMAIN_TRANSFER_NULLIFIER = 2n;
 const CIRCUIT_WASM_PATH = "/circuits/compliance.wasm";
 const CIRCUIT_ZKEY_PATH = "/circuits/compliance_final.zkey";
 const MOCK_PROOF_BYTES = 128;
@@ -122,10 +128,21 @@ async function generateRealProof(
   const poseidon: PoseidonInstance = await circomlibjs.buildPoseidon();
   const F = poseidon.F;
 
-  // Compute contextId: Poseidon(6, transferNullifier, userSecret)
+  // C_BIND: contextId = Poseidon(2, userSecret, transferEpochId, transferRandomnessOld), which
+  // must equal the paired transfer proof's nullifier (compliance.move aborts 116 otherwise).
   const contextId = F.toObject(
-    poseidon([DOMAIN_CONTEXT_BINDING, input.transferNullifier, input.userSecret]),
+    poseidon([
+      DOMAIN_TRANSFER_NULLIFIER,
+      input.userSecret,
+      input.transferEpochId,
+      input.transferRandomnessOld,
+    ]),
   );
+  if (contextId !== input.transferNullifier) {
+    throw new Error(
+      "Compliance contextId does not match the transfer nullifier: credential secret, epoch or randomness differ from the transfer proof",
+    );
+  }
 
   // Domain tag 5: nullifier = Poseidon(5, userSecret, contextId)
   const nullifier = F.toObject(
@@ -147,7 +164,8 @@ async function generateRealProof(
     issuerId: input.issuerId.toString(),
     pathElements: input.pathElements.map((e) => e.toString()),
     pathIndices: input.pathIndices.map((i) => i.toString()),
-    transferNullifier: input.transferNullifier.toString(),
+    transferEpochId: input.transferEpochId.toString(),
+    transferRandomnessOld: input.transferRandomnessOld.toString(),
   };
 
   const { proof, publicSignals } = await snarkjs.groth16.fullProve(

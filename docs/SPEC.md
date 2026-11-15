@@ -210,20 +210,34 @@ Toolchain: sui 1.72.1, Move edition 2024
 ```
 signal input merkleRoot;         // Root of the KYC credential Merkle tree
 signal input currentEpoch;       // Current epoch from Clock
-signal input contextId;          // Pool ID binding (prevents cross-pool replay)
+signal input contextId;          // = the paired transfer proof's nullifier (owner binding, see below)
 signal input requiredKycLevel;   // Minimum KYC tier required by pool config
-signal input nullifier;          // Poseidon(5, credentialSecret, currentEpoch, contextId)
+signal input nullifier;          // Poseidon(5, userSecret, contextId)
 signal input validCredential;    // 1 if credential is valid and unexpired, 0 otherwise
 ```
 
 ### Domain Separation Tags
 ```
-Tag 4 → Credential leaf:      Poseidon(4, kycLevel, expiry, credentialSecret, contextId)
-Tag 5 → Credential nullifier: Poseidon(5, credentialSecret, currentEpoch, contextId)
+Tag 4 → Credential leaf:      Poseidon(4, userSecret, kycLevel, expiryEpoch, issuerId)
+Tag 5 → Credential nullifier: Poseidon(5, userSecret, contextId)
+Tag 2 → contextId (C_BIND):   Poseidon(2, userSecret, transferEpochId, transferRandomnessOld)
+                              — deliberately the transfer circuit's nullifier formula
+Tag 6 → retired (former contextId = Poseidon(6, transferNullifier, userSecret)); do not reuse
 ```
 
+### Owner binding (2026-11-15)
+`compliant_transfer` asserts `compliance_inputs[64..96] == transfer_inputs[128..160]`
+(`E_COMPLIANCE_TRANSFER_MISMATCH = 116`). Because the compliance circuit derives `contextId`
+from the same `userSecret` that opens the credential leaf, and the transfer circuit derives its
+nullifier from the `userSecret` that opens the spent commitment, equality forces the KYC
+credential holder and the commitment owner to be the same secret (Poseidon collision
+resistance). Before this, `contextId` was never checked and any single credential holder could
+produce compliance proofs for anyone's transfer. Writeup:
+`docs/research/2026-11-15-compliance-transfer-binding.md`.
+
 ### Constraint Count
-12,743 R1CS constraints (6,057 non-linear), measured with `snarkjs r1cs info` on the compiled circuit:
+12,874 R1CS constraints (6,093 non-linear), measured with `snarkjs r1cs info` on the compiled circuit
+(12,743 / 6,057 before the 2026-11-15 owner binding):
 - Poseidon(5) leaf hash
 - 20-level Merkle membership proof
 - Nullifier preimage check
@@ -257,7 +271,7 @@ E_AUDITOR_CIPHERTEXT_INVALID = 26  Auditor ciphertext length or format mismatch
 Offset     Field              Extraction
 0..32      merkleRoot         extract_bytes(0, 32) — matched against pool credential_root
 32..64     currentEpoch       le_bytes_to_u64(32), assert_upper_bytes_zero(40, 64)
-64..96     contextId          extract_bytes(64, 96) — matched against pool.id
+64..96     contextId          extract_bytes(64, 96) — must equal transfer nullifier (transfer_inputs[128..160])
 96..128    requiredKycLevel   le_bytes_to_u64(96), assert_upper_bytes_zero(97, 128)
 128..160   nullifier          extract_bytes(128, 160) — stored as CredentialNullifierKey
 160..192   validCredential    le_bytes_to_u64(160), must equal 1

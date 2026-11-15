@@ -14,13 +14,16 @@ include "templates/merkle_proof.circom";
 // Domain separation tags (first Poseidon input):
 //   4 -> credential leaf hash  H(4, userSecret, kycLevel, expiryEpoch, issuerId)
 //   5 -> compliance nullifier  H(5, userSecret, contextId)
-//   6 -> context binding hash  H(6, transferNullifier, userSecret)
+//   2 -> (re-used ON PURPOSE) contextId = transfer nullifier
+//        H(2, userSecret, transferEpochId, transferRandomnessOld) — see C_BIND
 //
-// Tags 1-3 are reserved by the transfer circuit (transfer.circom).
+// Tags 1-3 are owned by the transfer circuit (transfer.circom). Tag 2 is recomputed here
+// deliberately: it is what ties this proof to the transfer proof in the same transaction.
+// Tag 6 (the former context-binding hash) is retired — never reuse it for anything else.
 //
 // Constraints (11):
 //   C1  credential leaf hash       C2  Merkle membership
-//   C3  nullifier derivation       C_BIND context binding
+//   C3  nullifier derivation       C_BIND owner binding (contextId = transfer nullifier)
 //   C4  expiry check               C5  KYC level check
 //   C6  validCredential output     C7-C8 epoch range proofs
 //   C9  kycLevel range proof       C10 requiredKycLevel range proof (M-01 fix)
@@ -48,7 +51,8 @@ template Compliance(merkleDepth) {
     signal input issuerId;
     signal input pathElements[merkleDepth];
     signal input pathIndices[merkleDepth];
-    signal input transferNullifier;  // Transfer nullifier (private — not revealed)
+    signal input transferEpochId;        // epochId used by the paired transfer proof
+    signal input transferRandomnessOld;  // randomnessOld of the commitment the transfer spends
 
     // --- C1: Credential leaf is well-formed ---
     // leaf = Poseidon(4, userSecret, kycLevel, expiryEpoch, issuerId)
@@ -76,14 +80,19 @@ template Compliance(merkleDepth) {
     nfHash.inputs[2] <== contextId;
     nullifier === nfHash.out;
 
-    // --- C_BIND: Context binding (transfer nullifier hidden) ---
-    // contextId = Poseidon(6, transferNullifier, userSecret)
-    // Proves compliance proof is bound to a specific transfer without
-    // revealing transferNullifier as a public input (fixes C4 linkability).
-    component ctxHash = Poseidon(3);
-    ctxHash.inputs[0] <== 6;
-    ctxHash.inputs[1] <== transferNullifier;
-    ctxHash.inputs[2] <== userSecret;
+    // --- C_BIND: Owner binding to the paired transfer proof (2026-11-15) ---
+    // contextId = Poseidon(2, userSecret, transferEpochId, transferRandomnessOld)
+    //           = exactly the transfer circuit's C10 nullifier.
+    // compliance.move asserts contextId == the transfer proof's public nullifier, so the
+    // credential's userSecret (C1) must be the same userSecret that owns the commitment the
+    // transfer spends (collision resistance of Poseidon). The previous binding,
+    // contextId = Poseidon(6, transferNullifier, userSecret) with transferNullifier private,
+    // was never checked on-chain and let any credential holder vouch for anyone's transfer.
+    component ctxHash = Poseidon(4);
+    ctxHash.inputs[0] <== 2;
+    ctxHash.inputs[1] <== userSecret;
+    ctxHash.inputs[2] <== transferEpochId;
+    ctxHash.inputs[3] <== transferRandomnessOld;
     contextId === ctxHash.out;
 
     // --- C4: Credential has not expired ---

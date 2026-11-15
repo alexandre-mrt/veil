@@ -1225,3 +1225,117 @@ fun test_stale_config_after_replacement() {
     scenario.end();
 }
 
+
+// ---------------------------------------------------------------------------
+// Owner binding: compliance proof must belong to the transfer's owner (2026-11-15)
+// ---------------------------------------------------------------------------
+
+/// Shared setup: pool + compliance config registered, then call compliant_transfer with
+/// a transfer nullifier (transfer_inputs[128..160]) and a compliance contextId
+/// (compliance_inputs[64..96]) chosen by the caller. Proof bytes are dummies: the binding
+/// check runs before any Groth16 verification.
+fun run_compliant_transfer_with(nullifier_byte: u8, context_byte: u8) {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap,
+            &mut pool,
+            test_helpers::dummy_vk(),
+            test_helpers::dummy_root(),
+            REQUIRED_KYC_LEVEL,
+            test_helpers::dummy_auditor_key(),
+            scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ATTACKER);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        let mut transfer_inputs = test_helpers::make_n_zero_bytes(224);
+        let mut compliance_inputs = test_helpers::make_n_zero_bytes(192);
+        let mut i = 0;
+        while (i < 32) {
+            *vector::borrow_mut(&mut transfer_inputs, 128 + i) = nullifier_byte;
+            *vector::borrow_mut(&mut compliance_inputs, 64 + i) = context_byte;
+            i = i + 1;
+        };
+        compliance::compliant_transfer(
+            &mut pool,
+            &mut config,
+            test_helpers::make_n_zero_bytes(128),
+            transfer_inputs,
+            test_helpers::make_n_zero_bytes(128),
+            compliance_inputs,
+            test_helpers::make_n_zero_bytes(93),
+            &test_clock,
+            scenario.ctx(),
+        );
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(pool);
+        test_scenario::return_shared(config);
+    };
+    scenario.end();
+}
+
+// 18. ATTACK: compliance proof bound to a different transfer nullifier (another user's
+// credential vouching for this transfer) is rejected with E_COMPLIANCE_TRANSFER_MISMATCH.
+#[test]
+#[expected_failure(abort_code = 116, location = veil::compliance)]
+fun test_compliance_proof_for_other_transfer_rejected() {
+    run_compliant_transfer_with(0x11, 0x22);
+}
+
+// 19. Control: when contextId == transfer nullifier the binding check passes and execution
+// reaches the next check (credential root, 102) — proves test 18 aborts on the binding,
+// not on something earlier.
+#[test]
+#[expected_failure(abort_code = 102, location = veil::compliance)]
+fun test_compliance_proof_bound_to_transfer_passes_binding() {
+    run_compliant_transfer_with(0x11, 0x11);
+}
+
+// 20. Malformed transfer inputs are rejected by the binding check before extraction.
+#[test]
+#[expected_failure(abort_code = 116, location = veil::compliance)]
+fun test_compliance_binding_rejects_short_transfer_inputs() {
+    let mut scenario = test_scenario::begin(ADMIN);
+    {
+        pool::create_pool(test_helpers::dummy_vk(), POOL_THRESHOLD, EPOCH_DURATION_MS, scenario.ctx());
+    };
+    scenario.next_tx(ADMIN);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let cap = scenario.take_from_sender<AdminCap>();
+        compliance::create_compliance_config(
+            &cap, &mut pool, test_helpers::dummy_vk(), test_helpers::dummy_root(),
+            REQUIRED_KYC_LEVEL, test_helpers::dummy_auditor_key(), scenario.ctx(),
+        );
+        test_scenario::return_shared(pool);
+        scenario.return_to_sender(cap);
+    };
+    scenario.next_tx(ATTACKER);
+    {
+        let mut pool = scenario.take_shared<Pool>();
+        let mut config = scenario.take_shared<ComplianceConfig>();
+        let test_clock = clock::create_for_testing(scenario.ctx());
+        compliance::compliant_transfer(
+            &mut pool, &mut config,
+            test_helpers::make_n_zero_bytes(128), test_helpers::make_n_zero_bytes(100),
+            test_helpers::make_n_zero_bytes(128), test_helpers::make_n_zero_bytes(192),
+            test_helpers::make_n_zero_bytes(93), &test_clock, scenario.ctx(),
+        );
+        clock::destroy_for_testing(test_clock);
+        test_scenario::return_shared(pool);
+        test_scenario::return_shared(config);
+    };
+    scenario.end();
+}
