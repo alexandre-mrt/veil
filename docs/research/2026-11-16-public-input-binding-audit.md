@@ -193,7 +193,42 @@ How the numbers are asserted:
 - `vuln_transfer_inflates_withdrawable_balance`: the same three assertions, plus the pool balance
   staying unchanged across the `shielded_transfer`.
 
-FULL_SUITE_PLACEHOLDER
+Full suite (the CI commands from `.github/workflows/ci.yml`; circuits in FULL PROOF mode against the dev zkeys built tonight):
+
+```
+== move
+Test result: OK. Total tests: 133; passed: 133; failed: 0
+== circuits
+Mode: FULL PROOF (snarkjs Groth16)
+=== Results: 43 passed, 0 failed ===
+Mode: FULL PROOF (snarkjs Groth16)
+=== Results: 30 passed, 0 failed ===
+Mode: FULL PROOF (snarkjs Groth16)
+=== Results: 35 passed, 0 failed ===
+== converter
+Results: 109 passed, 0 failed
+
+All tests passed.
+== compliance-utils
+Results: 67 passed, 0 failed
+
+All tests passed.
+== fuzz
+
+============================================================
+ALL 6 PROPERTIES PASSED
+============================================================
+== tsc
+tsc exit 0
+== biome
+== vitest
+ Test Files  3 passed (3)
+      Tests  19 passed (19)
+== biome (re-run alone: `bunx biome check .`)
+biome exit 0
+```
+
+**All layers green:** Move 133/133, circuits 43 + 30 + 35, converter 109, compliance-utils 67, fuzz 6/6 properties, frontend tsc, biome and vitest 19/19.
 
 ## Verdict
 
