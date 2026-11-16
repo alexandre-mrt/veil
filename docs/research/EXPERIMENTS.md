@@ -5,26 +5,41 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
-   (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
-   permission to make direct JSON-RPC reads against the already-deployed testnet package
-   (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
-   fullnode could recover real historical gas without the CLI at all, if that network call is
-   permitted). Blocked twice now for different reasons (see LEDGER 2026-07-22) — worth spending an
-   early part of the next run purely on unblocking the toolchain before attempting the measurement.
+> **Loop-state note (re-ranked 2026-11-16).** `main` reflects only the 2026-07-22 night. About 115
+> later nightly PRs are still open, which is why `main`'s old items #1 (gas) and #2 (Poseidon2)
+> kept getting re-run. They are settled on unmerged branches:
+> - on-chain gas = **KEEP** (2026-11-13, PR #119)
+> - Poseidon2 swap = **REJECT** (≥15 nights, e.g. #114, #117, #118, #120)
+> - mobile WASM latency = **KEEP** (2026-09-28)
+>
+> Don't re-run them. Before picking an item, read the newest open PR's queue as well as this one.
+>
+> Toolchain notes:
+> - The prebuilt `sui` testnet-v1.72.1 tarball and the circom 2.2.2 binary download from github.com releases.
+> - The Hermez ptau URL is 403, so generate a local pot15 (`scripts/bench/build-circuit.sh` header, about 7.5 min).
+> - `scripts/bench/binding-audit.mjs` shows how to get real proofs into `sui move test` without a localnet.
 
-2. **Poseidon2 vs current Poseidon (arity, domain-tag collisions).** Four Poseidon instances
-   dominate `transfer.circom`'s and `compliance.circom`'s non-linear constraints (2026-07-22
-   baseline: 6,470 and 6,057 non-linear constraints respectively, vs. 1,465 for the
-   Poseidon-light `withdraw.circom`). A measured constraint-count and proving-time delta from
-   swapping to Poseidon2 (or re-deriving the exact non-linear-constraint contribution per Poseidon
-   instance from the current baseline) is the highest-leverage next number — it moves prover time
-   directly, for every circuit, on every transfer.
+0. **Value-conservation redesign (Critical, from the 2026-11-16 audit).** On `main`, `zk_withdraw` pays
+   1000 TOKEN against a 100 TOKEN deposit, in two ways: a forged deposit commitment (V1), or the
+   frontend's genesis commitment plus one valid transfer (V2). Honest depositors cannot withdraw.
+   - **Design:** a commitment with a deposit-bound `balance` kept separate from the per-epoch
+     spending counter. Bind it at deposit with a small deposit proof or an on-chain `sui::poseidon`.
+     Transfer must conserve `balance` and needs a recipient output.
+   - **Measure:** constraints, proving time and gas against `BASELINE.md`.
+   - **Done when:** the three `binding_audit_tests::vuln_*` tests are inverted to `#[expected_failure]`.
 
-3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** Reduces the
-   per-transfer gas cost of `sui::groth16` verification, which today is paid once per transfer.
-   Depends on item 1 existing first (need a real per-verify gas number to know how much this would
-   actually save).
+1. **Land E7 recipient binding (`fdbc193`, 2026-09-24) and E8 compliance owner binding (#121).**
+   Both are already written and tested, and both are still open on `main` (E7 was reproduced again
+   on 2026-11-16 with a real proof). This needs the owner to merge. A night may rebase and
+   re-verify them, but must not re-derive them.
+
+2. **Bind or remove `txAmountHash`.** It is the transfer's public input #6 and no on-chain code
+   reads it (2026-11-16 table). Either tie it to `encrypted_amount` so the auditor ciphertext is
+   proven (the old 2c), or drop it and save one public input in every verification.
+
+3. **Batched/aggregated proof verification (N transfers → 1 on-chain verify).** The 2026-11-13 gas
+   run (unmerged) found verification is about 32% of `shielded_transfer` cost and storage about 68%,
+   so the upside is smaller than assumed. Do this after item 0, because the circuits will change.
 
 4. **Merkle accumulator at scale (10^5–10^7 commitments).** Batch insertion cost, depth-20 vs a
    deeper tree (anonymity-set size vs proving-time trade-off directly, since Merkle depth is a
