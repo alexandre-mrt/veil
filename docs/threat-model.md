@@ -92,10 +92,10 @@ Data flows: User generates Groth16 proofs in-browser, submits proof bytes + publ
 | E1 | Non-admin calls admin function | `assert_pool_admin(cap, pool)` checks `cap.pool_id == pool.id.to_inner()` on every admin operation. 19 admin functions gated. | Mitigated |
 | E2 | Cross-pool admin attack (use cap from pool A on pool B) | `cap.pool_id` is set at creation and immutable. Mismatch aborts with `E_NOT_POOL_ADMIN`. Tested in 7 cross-pool access-control tests. | Mitigated |
 | E3 | Package upgrade backdoor via UpgradeCap | Pre-mainnet blocker. UpgradeCap currently in EOA. Must be burned (`sui::package::make_immutable`) or transferred to multisig before mainnet. Management script exists (`manage-upgrade-cap.ts`). | Accepted risk (pre-mainnet) |
-| E4 | Withdraw more than deposited via ZK proof manipulation | Withdraw circuit enforces `withdrawAmount <= cumulativeOld` (constraint C5) with 64-bit range proofs on both values. On-chain checks pool balance sufficiency. | Mitigated |
+| E4 | Withdraw more than deposited | **Not mitigated (Critical, 2026-11-16).** `withdraw.circom` C5 enforces `withdrawAmount <= cumulativeOld`, but nothing binds `cumulativeOld` to deposited value: `deposit_and_register` never relates `coin.value()` to the commitment, and `transfer.circom` *increases* the same field (it is a spending counter there). Reproduced with real Groth16 proofs: 100 TOKEN in → 1000 TOKEN out, via a forged commitment *or* via the frontend's own genesis commitment + one `shielded_transfer` (`binding_audit_tests::vuln_*`). See `docs/research/2026-11-16-public-input-binding-audit.md`. | **Not mitigated** |
 | E5 | Bypass compliance requirement via direct `shielded_transfer` | When `compliance_required == true`, `shielded_transfer` aborts with `E_COMPLIANCE_REQUIRED`. Compliance toggle applied lazily before the check. | Mitigated |
 | E6 | Sybil attack: create multiple userSecrets to bypass spending threshold | Known limitation. Each userSecret gets its own cumulative spending counter. Mitigation requires identity-binding at deposit time (future work). | Accepted risk |
-| E7 | Front-run ZK withdrawal to steal funds | Withdrawal circuit binds to recipient via `recipientHash = Poseidon(8, recipient)`. Changing recipient invalidates the Groth16 proof. | Mitigated |
+| E7 | Front-run ZK withdrawal to steal funds | The circuit binds `recipientHash = Poseidon(8, recipient)`, but `zk_withdraw` never compares public input bytes 96..128 with the `recipient` argument, so the binding is not enforced. Reproduced 2026-11-16 with a real proof (`binding_audit_tests::vuln_withdraw_recipient_not_bound`). Fix (on-chain `sui::poseidon` recomputation) exists on an unmerged branch (`fdbc193`, 2026-09-24). | **Not mitigated on `main`** |
 
 ## Attack Scenarios (tested in Move tests)
 
@@ -137,6 +137,7 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | RR7 | Relayer centralization | Low | Single relayer can censor. | Multiple independent relayers + direct submission fallback. |
 | RR8 | PBKDF2 fallback key derivation | Low | In incognito mode, encryption key derived from wallet address (public). Weaker than IndexedDB non-extractable keys. | Acceptable for incognito sessions. Primary path uses non-extractable keys. |
 | RR9 | Token faucet in production bytecode | Low | `token_faucet.move` allows free minting (gated by TreasuryCap). | Remove from sources before mainnet deployment. Separate module file for easy exclusion. |
+| RR10 | No value conservation in the pool | Critical | Commitments carry no deposit-bound balance; `zk_withdraw` pays whatever `cumulativeOld` claims, up to the pool balance. Honest genesis commitments (`cumulative = 0`) cannot withdraw at all (C5 rejects the witness). | Open. Needs a balance field separate from the spending counter, bound at deposit (deposit proof or on-chain hash) and conserved by transfer. See 2026-11-16 report. |
 
 ## Security Controls Summary Table
 
