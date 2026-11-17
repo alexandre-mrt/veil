@@ -1,0 +1,795 @@
+[
+  {
+    "op": "publish (package)",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1410000",
+      "storageCost": "156415600",
+      "storageRebate": "19758024",
+      "nonRefundableStorageFee": "1976"
+    },
+    "digest": "7rm7u3YqHvovAkLfb7F9iwd6ytVJT9vtriGmTFfDW8MW"
+  },
+  {
+    "op": "token_faucet::faucet",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "4043200",
+      "storageRebate": "2705329",
+      "nonRefundableStorageFee": "271"
+    },
+    "digest": "CxeuRLz2xgrMqZ4Zxt4tywpyHhiEzd1371qRX6PwNNC6"
+  },
+  {
+    "op": "pool::create_pool",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "8496800",
+      "storageRebate": "987901",
+      "nonRefundableStorageFee": "99"
+    },
+    "digest": "ACcWRxMBdZH147dwGUZxoZiwmgfwrJfoHkVjWSeTnPKB"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "BSiJuvrkLkYX2Qg8GPjnr6gppuNTvJcD2dMW3yrFLRCa"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "9GKLmtPokrtFWTEFNnfbMwWvcE98QiH8LmHwJpZuQzMN"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "CiTtgn9A68AJcbYsD8GcUruDAhX5ngWwvCjZtsunQpci"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "3SNMadeTy9eLsdYWpNFM4jgLkL7eT9gc42dLYQ79MFE3"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "HhUHcE5pYUS7PEydnHQz2qoGSoE4skJYVkn5L42v8GFy"
+  },
+  {
+    "op": "pool::update_commitment_root",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "8740000",
+      "storageRebate": "8495950",
+      "nonRefundableStorageFee": "850"
+    },
+    "digest": "UnXfgK7XUeRmaiQ3rXaNeGwH1eeERwTKsa2HvHWePR5"
+  },
+  {
+    "op": "pool::propose_withdraw_vk",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "8739126",
+      "nonRefundableStorageFee": "874"
+    },
+    "digest": "DMkpw8P2HvH7JmUuUEMJdTEajwQJAvd134sLYaD5gVc7"
+  },
+  {
+    "op": "compliance::create_compliance_config",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "18171600",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "FjLQZL39BKuEt3rNsALbh6TwsvSM6Vgj83yBk56DnR9J"
+  },
+  {
+    "op": "token_faucet::faucet",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "4043200",
+      "storageRebate": "2705329",
+      "nonRefundableStorageFee": "271"
+    },
+    "digest": "42CngTQgofYdNqTd58n4YT5PhbMM3mszhyVhpkouKnsp"
+  },
+  {
+    "op": "pool::create_pool",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "8496800",
+      "storageRebate": "987901",
+      "nonRefundableStorageFee": "99"
+    },
+    "digest": "7fe1gckAVFN6awu89DMCUNLQaviszSvfzHN4LQRebTQ9"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "dzPfGpArQ1j65jhWPAn926Qt6mbVZ77C9kH3GjDTdHk"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "96rJ34JTdv9tfT51nNybNhzdyHMUVv61WLy8hvsqquHE"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "67cH1sePMeQ97hxkjr8qqJ23j7EGq3uJfmbxsw3yajFg"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "Fe4sDs3red1hTwxWBuNRx4dXrnhSvbQkEAojRmnoQRjs"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "6ubQ3x3zSSLrD9iWAc5sTRqXB4otFhV4PCLTKExFjPd8"
+  },
+  {
+    "op": "pool::update_commitment_root",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "8740000",
+      "storageRebate": "8495950",
+      "nonRefundableStorageFee": "850"
+    },
+    "digest": "9mL1o7PMr67xrbPc8x3yoaVvKq2YNstDFZX47WCtu6hR"
+  },
+  {
+    "op": "pool::propose_withdraw_vk",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "8739126",
+      "nonRefundableStorageFee": "874"
+    },
+    "digest": "8V75Y2uFtCgrvdHsxmPtyDAZ7HrDgZMypCXY2Q8ujXzx"
+  },
+  {
+    "op": "compliance::create_compliance_config",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "18171600",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "b1LaWt9zCVeNNX9h8ZZDtsfJYRTagJ1vsz3o6WvvivX"
+  },
+  {
+    "op": "token_faucet::faucet",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "4043200",
+      "storageRebate": "2705329",
+      "nonRefundableStorageFee": "271"
+    },
+    "digest": "5kuzoggZYuGmsdGUVHUEpfPo4ue9uvemS68nmaskAe8w"
+  },
+  {
+    "op": "pool::create_pool",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "8496800",
+      "storageRebate": "987901",
+      "nonRefundableStorageFee": "99"
+    },
+    "digest": "D2eQwN7txjB1BVxpkZt64KMjMNESJGPizGX51z6nbSGS"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "2d5Q6zPc7Bj7WcK9T3CmJZRE99xqQfq3FGj2Bzc1Za84"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "Ai6oULZECtCi6iQML6j6voGPoZn3UtNtCrNkWMBmE3LH"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "HR5cCnXyPwRjgzGq5Jr7fNN2CJbdPRdGLjUrZ2TiVtx2"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "F7LiT9ep7k9wkeZGcQr9McgHBECo1KcFHvLNfcY7JoRV"
+  },
+  {
+    "op": "pool::deposit_and_register",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10358800",
+      "storageRebate": "8305969",
+      "nonRefundableStorageFee": "831"
+    },
+    "digest": "CZhfJi2mUWbB3g4Rq9tgdrsYJWRqXJcs1bxezqVMVFqB"
+  },
+  {
+    "op": "pool::update_commitment_root",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "8740000",
+      "storageRebate": "8495950",
+      "nonRefundableStorageFee": "850"
+    },
+    "digest": "2yehxXS7q4u4zCerVtgge4DJP2YCSiHynZCrkq39h8x7"
+  },
+  {
+    "op": "pool::propose_withdraw_vk",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "8739126",
+      "nonRefundableStorageFee": "874"
+    },
+    "digest": "HC76dwtJF1ThQTnW3EcR9DDdLqrcULgvU25zmcBAZeQj"
+  },
+  {
+    "op": "compliance::create_compliance_config",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "18171600",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "27iQ4kSA34oe5XYdFNtkcDKBPiFGVjoCrBhYjJUMzJSn"
+  },
+  {
+    "op": "pool::shielded_transfer",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "14485600",
+      "storageRebate": "12736326",
+      "nonRefundableStorageFee": "1274"
+    },
+    "digest": "FspVFP1P5p6HzCn36PgRjhbBRQcUmB2mqCT4s9Sg2UZJ"
+  },
+  {
+    "op": "REJECTED replay shielded_transfer",
+    "round": 0,
+    "status": "failure: MoveAbort in 1st command, abort code: 9, in '0xd714bb8247d8f6eba52fb28fca48508048c214d623ec4ed56bb2db2869a05055::pool::execute_transfer' (instruction 134)",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10442400",
+      "storageRebate": "10441356",
+      "nonRefundableStorageFee": "1044"
+    },
+    "digest": "HUKEny43dJR75GoytRbAiS5ZWJyWA3s2oTKWqp1kox2j"
+  },
+  {
+    "op": "compliance::compliant_transfer",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "22556800",
+      "storageRebate": "18450955",
+      "nonRefundableStorageFee": "1845"
+    },
+    "digest": "EU1DWWgvsS9Hcw33UKNWR7nq1V6CbYYM1v9xJmcHXngt"
+  },
+  {
+    "op": "PROBE compliant_transfer (foreign compliance proof)",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "22556800",
+      "storageRebate": "18450955",
+      "nonRefundableStorageFee": "1845"
+    },
+    "digest": "595dartfLKFyMu4pduGjTB8S344oZnzw8XGYWLxbMJyv"
+  },
+  {
+    "op": "pool::zk_withdraw",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "15823200",
+      "storageRebate": "12493151",
+      "nonRefundableStorageFee": "1249"
+    },
+    "digest": "C5nhDiMGZ922skXqFZmxEbUSDhAiMfXWZsTtiChdy1JC"
+  },
+  {
+    "op": "REJECTED zk_withdraw (proof/inputs mismatch)",
+    "round": 0,
+    "status": "failure: MoveAbort in 1st command, abort code: 28, in '0xd714bb8247d8f6eba52fb28fca48508048c214d623ec4ed56bb2db2869a05055::pool::zk_withdraw' (instruction 60)",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10442400",
+      "storageRebate": "10441356",
+      "nonRefundableStorageFee": "1044"
+    },
+    "digest": "5Qo85JyZkr3K2wCDkMY257yLxKh3z99M8MBJTJX64427"
+  },
+  {
+    "op": "PROBE zk_withdraw (recipient swapped)",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "15823200",
+      "storageRebate": "12493151",
+      "nonRefundableStorageFee": "1249"
+    },
+    "digest": "pVahwse355bNuKQfUvCTDEtfhZH7dWoWtegS3RKvnYe"
+  },
+  {
+    "op": "pool::freeze_pool",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "B71dGq19k4YxUdMni9SmaeJMPja6ibPX3JK5tE61c56"
+  },
+  {
+    "op": "pool::unfreeze_pool",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "F14x974Rst7ZNB3hfmxNA1gay87dCQnz4QFpcAAvguvL"
+  },
+  {
+    "op": "pool::propose_vk_update",
+    "round": 0,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "15686400",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "4QqVzfkrnqbSvi4rvGEUaHC6JzeHGruX1z9EeKvT2gmq"
+  },
+  {
+    "op": "pool::shielded_transfer",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "14485600",
+      "storageRebate": "12736326",
+      "nonRefundableStorageFee": "1274"
+    },
+    "digest": "48gMFbBEUgu6MDuHokQH3p8JYwq44Xc2kxaxmAp2id4c"
+  },
+  {
+    "op": "REJECTED replay shielded_transfer",
+    "round": 1,
+    "status": "failure: MoveAbort in 1st command, abort code: 9, in '0xd714bb8247d8f6eba52fb28fca48508048c214d623ec4ed56bb2db2869a05055::pool::execute_transfer' (instruction 134)",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10442400",
+      "storageRebate": "10441356",
+      "nonRefundableStorageFee": "1044"
+    },
+    "digest": "8WRyurPF2YSAwnYKVR5CxCFKM8jBgmUFLFwdGeGgyUwc"
+  },
+  {
+    "op": "compliance::compliant_transfer",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "22556800",
+      "storageRebate": "18450955",
+      "nonRefundableStorageFee": "1845"
+    },
+    "digest": "EDqjUTMoaU6dMbdwd4VnBA1EMJJRLRGXnoeNZZeVJWMT"
+  },
+  {
+    "op": "PROBE compliant_transfer (foreign compliance proof)",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "22556800",
+      "storageRebate": "18450955",
+      "nonRefundableStorageFee": "1845"
+    },
+    "digest": "GfgNRbjbaPpAy82r112ro9mTWX3LW8JrHX4jnx3q3sWA"
+  },
+  {
+    "op": "pool::zk_withdraw",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "15823200",
+      "storageRebate": "12493151",
+      "nonRefundableStorageFee": "1249"
+    },
+    "digest": "3GGbaac6Ua9dA4PEwiVK2W9Jnbmg6Tb9D2UKqP9Yoaah"
+  },
+  {
+    "op": "REJECTED zk_withdraw (proof/inputs mismatch)",
+    "round": 1,
+    "status": "failure: MoveAbort in 1st command, abort code: 28, in '0xd714bb8247d8f6eba52fb28fca48508048c214d623ec4ed56bb2db2869a05055::pool::zk_withdraw' (instruction 60)",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10442400",
+      "storageRebate": "10441356",
+      "nonRefundableStorageFee": "1044"
+    },
+    "digest": "ncrMMkqbaXHDMVLsGvah8FRgt1qzp7mXvBVQScpJ14c"
+  },
+  {
+    "op": "PROBE zk_withdraw (recipient swapped)",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "15823200",
+      "storageRebate": "12493151",
+      "nonRefundableStorageFee": "1249"
+    },
+    "digest": "9EDLCs3VBrmPb5hGPYQZt2b61DZXxRdA6VNhYRTL8zLz"
+  },
+  {
+    "op": "pool::freeze_pool",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "2Jpsd2KxbrRYkcLEvQwprzHGXLj87SSfgbBUismd9VzQ"
+  },
+  {
+    "op": "pool::unfreeze_pool",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "24oY4NmtibZPvfeRn8Unjps8ywM8bLrra6Q7UBJSHZQD"
+  },
+  {
+    "op": "pool::propose_vk_update",
+    "round": 1,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "15686400",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "9DyqkZSwLzqP8Ry57fYAok4rCzS3DfLavgBoLWqREtJv"
+  },
+  {
+    "op": "pool::shielded_transfer",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "14485600",
+      "storageRebate": "12736326",
+      "nonRefundableStorageFee": "1274"
+    },
+    "digest": "jwmCxvF7rjrktD2FUtmAnGX8Zsu9a8KpNo1qDNH3N5G"
+  },
+  {
+    "op": "REJECTED replay shielded_transfer",
+    "round": 2,
+    "status": "failure: MoveAbort in 1st command, abort code: 9, in '0xd714bb8247d8f6eba52fb28fca48508048c214d623ec4ed56bb2db2869a05055::pool::execute_transfer' (instruction 134)",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10442400",
+      "storageRebate": "10441356",
+      "nonRefundableStorageFee": "1044"
+    },
+    "digest": "CweXHKZrNcUPd99SoC2bAwQQhg7A8222ucLCuWM36R6t"
+  },
+  {
+    "op": "compliance::compliant_transfer",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "22556800",
+      "storageRebate": "18450955",
+      "nonRefundableStorageFee": "1845"
+    },
+    "digest": "gMZSPyWyb9H8zcTu8PLjvJFg33GLD2MvLP9q1ACvLGt"
+  },
+  {
+    "op": "PROBE compliant_transfer (foreign compliance proof)",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "22556800",
+      "storageRebate": "18450955",
+      "nonRefundableStorageFee": "1845"
+    },
+    "digest": "9tvK9M7ghqY2XXSDsk2jx3RHKNSzucAJsMbiMsuLjCYC"
+  },
+  {
+    "op": "pool::zk_withdraw",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "15823200",
+      "storageRebate": "12493151",
+      "nonRefundableStorageFee": "1249"
+    },
+    "digest": "8QPnX5aFgvuU9n2sMptDZrUkUgTnqd5SzErU3WYBVsGw"
+  },
+  {
+    "op": "REJECTED zk_withdraw (proof/inputs mismatch)",
+    "round": 2,
+    "status": "failure: MoveAbort in 1st command, abort code: 28, in '0xd714bb8247d8f6eba52fb28fca48508048c214d623ec4ed56bb2db2869a05055::pool::zk_withdraw' (instruction 60)",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "10442400",
+      "storageRebate": "10441356",
+      "nonRefundableStorageFee": "1044"
+    },
+    "digest": "HYFdMaqNzQXm6Jyn7M2EUtaBDPfj1LV5HHr3uVX1Lm9o"
+  },
+  {
+    "op": "PROBE zk_withdraw (recipient swapped)",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "15823200",
+      "storageRebate": "12493151",
+      "nonRefundableStorageFee": "1249"
+    },
+    "digest": "Bt5ik5LtrCkJjJGrRcnn9guRuYKSWLMvtrfVXcGihbXw"
+  },
+  {
+    "op": "pool::freeze_pool",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "7u158Azv42YMB2eJ3L8hqZJbFtosXXSVYuoifZEaGbTW"
+  },
+  {
+    "op": "pool::unfreeze_pool",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "11970000",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "9isDL9LnbexsjvLWh6zW2zEuWfpwqGbRyZAhqwzcq8uC"
+  },
+  {
+    "op": "pool::propose_vk_update",
+    "round": 2,
+    "status": "success",
+    "gasPrice": 1000,
+    "gas": {
+      "computationCost": "1000000",
+      "storageCost": "15686400",
+      "storageRebate": "11968803",
+      "nonRefundableStorageFee": "1197"
+    },
+    "digest": "EytQitNCA8P9HJBA5Rvn2bfhFdSijpB35WGxTeWDfG7P"
+  }
+]
