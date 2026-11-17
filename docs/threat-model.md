@@ -95,7 +95,8 @@ Data flows: User generates Groth16 proofs in-browser, submits proof bytes + publ
 | E4 | Withdraw more than deposited via ZK proof manipulation | Withdraw circuit enforces `withdrawAmount <= cumulativeOld` (constraint C5) with 64-bit range proofs on both values. On-chain checks pool balance sufficiency. | Mitigated |
 | E5 | Bypass compliance requirement via direct `shielded_transfer` | When `compliance_required == true`, `shielded_transfer` aborts with `E_COMPLIANCE_REQUIRED`. Compliance toggle applied lazily before the check. | Mitigated |
 | E6 | Sybil attack: create multiple userSecrets to bypass spending threshold | Known limitation. Each userSecret gets its own cumulative spending counter. Mitigation requires identity-binding at deposit time (future work). | Accepted risk |
-| E7 | Front-run ZK withdrawal to steal funds | Withdrawal circuit binds to recipient via `recipientHash = Poseidon(8, recipient)`. Changing recipient invalidates the Groth16 proof. | Mitigated |
+| E7 | Front-run ZK withdrawal to steal funds | **Not enforced on-chain.** The circuit proves `recipientHash = Poseidon(8, recipient)` for *some* recipient, but `pool::zk_withdraw` never checks that the `recipient: address` argument hashes to the public `recipientHash` — it pays whatever address the caller passes. Demonstrated on localnet 2026-11-17 (`scripts/bench/gas-localnet.ts`, "PROBE zk_withdraw (recipient swapped)": 3/3 accepted, funds paid to a fresh address). Fix: recompute `sui::poseidon::poseidon_bn254([8, recipient mod p])` on-chain and compare to bytes 96..128 (see `docs/research/2026-11-17-onchain-gas-baseline.md`). | **Open (vulnerable)** |
+| E8 | Use another user's KYC credential for a compliant transfer ("credential lending") | **Not enforced.** `compliance.circom` takes `transferNullifier` as a *private* input and nothing on-chain or in-circuit ties the compliance proof to the transfer proof it is submitted with (different `userSecret`s are allowed). One credential holder can mint unlimited compliance proofs for arbitrary contexts. Demonstrated on localnet 2026-11-17 ("PROBE compliant_transfer (foreign compliance proof)": 3/3 accepted). | **Open (vulnerable)** |
 
 ## Attack Scenarios (tested in Move tests)
 
@@ -137,6 +138,8 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | RR7 | Relayer centralization | Low | Single relayer can censor. | Multiple independent relayers + direct submission fallback. |
 | RR8 | PBKDF2 fallback key derivation | Low | In incognito mode, encryption key derived from wallet address (public). Weaker than IndexedDB non-extractable keys. | Acceptable for incognito sessions. Primary path uses non-extractable keys. |
 | RR9 | Token faucet in production bytecode | Low | `token_faucet.move` allows free minting (gated by TreasuryCap). | Remove from sources before mainnet deployment. Separate module file for easy exclusion. |
+| RR10 | Withdrawal recipient not bound on-chain | Critical | Anyone who sees a `zk_withdraw` proof (mempool observer, relayer) can resubmit it with their own address and take the funds. | Open. One-line on-chain Poseidon check; queued as EXPERIMENTS #1. |
+| RR11 | Compliance proof not bound to transfer | High | The dual-proof compliance gate checks that *someone* holds a valid credential, not that the transfer's owner does. | Open. Needs a shared public binding between the two proofs; queued as EXPERIMENTS #2. |
 
 ## Security Controls Summary Table
 
@@ -168,7 +171,7 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | Commitment uniqueness | `pool.move:244-249` | Preventive | `E_COMMITMENT_EXISTS` prevents duplicate commitments |
 | Upper bytes zero check | `verifier.move:67-73` | Preventive | Prevents u64 overflow via non-zero upper 24 bytes |
 | Epoch grace period | `pool.move:206-208` | Preventive | Accepts current or previous epoch to handle boundary races |
-| Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive | `recipientHash = Poseidon(8, recipient)` prevents front-running |
-| Context-bound credential nullifiers | `compliance.circom:79-87` | Preventive | `contextId = Poseidon(6, transferNullifier, userSecret)` unique per transfer |
+| Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive (**incomplete**) | Circuit computes `recipientHash = Poseidon(8, recipient)`, but `zk_withdraw` does not check the `recipient` argument against it — see E7 |
+| Context-bound credential nullifiers | `compliance.circom:79-87` | Preventive (**incomplete**) | `contextId = Poseidon(6, transferNullifier, userSecret)` makes credential nullifiers unique per context, but the context is a private input not bound to the accompanying transfer proof — see E8 |
 | Domain-separated Poseidon hashes | `transfer.circom`, `compliance.circom`, `withdraw.circom` | Preventive | Tags 1-8 prevent cross-domain hash collisions |
 | Merkle accumulator | `pool.move:77-80`, `transfer.circom:52-61` | Privacy | Anonymity set = all commitments, root verified in circuit |

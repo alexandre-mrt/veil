@@ -29,7 +29,7 @@ import { fileURLToPath } from "url";
 
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
-import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { requestSuiFromFaucetV2 } from "@mysten/sui/faucet";
 import { buildPoseidon } from "circomlibjs";
 // @ts-expect-error snarkjs ships no types
@@ -104,9 +104,9 @@ const ART = {
 async function prove(kind: keyof typeof ART, input: Record<string, unknown>) {
   const a = ART[kind];
   const str = JSON.parse(JSON.stringify(input, (_, v) => (typeof v === "bigint" ? v.toString() : v)));
-  const { proof, publicSignals } = await snarkjs.groth16.fullProve(str, join(CIRCUITS, a.wasm), join(CIRCUITS, a.zkey));
-  const vk = JSON.parse(readFileSync(join(CIRCUITS, a.vk), "utf-8"));
-  if (!(await snarkjs.groth16.verify(vk, publicSignals, proof))) throw new Error(`${kind}: local verify failed`);
+  const { proof, publicSignals } = await snarkjs.groth16.fullProve(str, join(CIRCUITS, a.wasm), join(CIRCUITS, a.zkey), undefined, undefined, { singleThread: true });
+  // No local snarkjs verify: under bun its multi-threaded curve never resolves. The on-chain
+  // sui::groth16 verifier is the authoritative check — any happy-path abort throws in exec().
   return { proof: proofToSuiBytes(proof), inputs: publicInputsToSuiBytes(publicSignals), signals: publicSignals as string[] };
 }
 const vkBytes = (k: keyof typeof ART) => vkToSuiBytes(JSON.parse(readFileSync(join(CIRCUITS, ART[k].vk), "utf-8")));
@@ -142,31 +142,54 @@ type Gas = { computationCost: string; storageCost: string; storageRebate: string
 interface Row { op: string; round: number; status: string; gasPrice: number; gas: Gas; digest: string }
 const rows: Row[] = [];
 
-let client: SuiJsonRpcClient;
+let client: SuiGrpcClient;
+let GAS_PRICE = 0;
 let kp: Ed25519Keypair;
 
 async function exec(op: string, round: number, build: (tx: Transaction) => void, expectFail = false) {
   const tx = new Transaction();
   tx.setGasBudget(GAS_BUDGET);
   build(tx);
-  const res = await client.signAndExecuteTransaction({
-    transaction: tx, signer: kp,
-    options: { showEffects: true, showObjectChanges: true, showInput: true },
+  tx.setGasPrice(GAS_PRICE);
+  let submit = tx;
+  if (expectFail) {
+    // The SDK's gRPC resolver dry-runs the full transaction and throws on abort before anything
+    // reaches the chain. To measure what a rejected transaction really costs its sender, resolve
+    // only the transaction kind, then attach gas data explicitly so no simulation runs.
+    tx.setSender(kp.toSuiAddress());
+    const kind = await tx.build({ client, onlyTransactionKind: true });
+    submit = Transaction.fromKind(kind);
+    submit.setSender(kp.toSuiAddress());
+    submit.setGasBudget(GAS_BUDGET);
+    submit.setGasPrice(GAS_PRICE);
+    const coins: any = await client.listCoins({ owner: kp.toSuiAddress(), coinType: "0x2::sui::SUI" });
+    const gasCoin = coins.objects.reduce((m: any, c: any) => (BigInt(c.balance) > BigInt(m.balance) ? c : m));
+    submit.setGasPayment([{ objectId: gasCoin.objectId, version: gasCoin.version, digest: gasCoin.digest }]);
+  }
+  const out = await client.signAndExecuteTransaction({
+    transaction: submit, signer: kp, include: { effects: true, objectTypes: true },
   });
+  const res: any = out.Transaction ?? out.FailedTransaction;
   await client.waitForTransaction({ digest: res.digest });
-  const status = res.effects!.status.status;
-  const gasPrice = Number((res.transaction as any)?.data?.gasData?.price ?? NaN);
-  rows.push({ op, round, status: status === "success" ? "success" : `failure: ${res.effects!.status.error}`, gasPrice, gas: res.effects!.gasUsed as Gas, digest: res.digest });
-  if (status !== "success" && !expectFail) throw new Error(`${op} failed: ${res.effects!.status.error}`);
-  if (status === "success" && expectFail) console.log(`  !! ${op}: expected failure but SUCCEEDED`);
-  return res;
+  const ok = res.status.success === true;
+  const err = ok ? "" : (res.status.error?.message ?? JSON.stringify(res.status.error));
+  rows.push({ op, round, status: ok ? "success" : `failure: ${err}`, gasPrice: GAS_PRICE, gas: res.effects.gasUsed as Gas, digest: res.digest });
+  if (!ok && !expectFail) throw new Error(`${op} failed: ${err}`);
+  if (ok && expectFail) console.log(`  !! ${op}: expected failure but SUCCEEDED`);
+  return { ...res, ok, err };
 }
-const created = (res: any, typeFrag: string) =>
-  res.objectChanges.find((c: any) => c.type === "created" && c.objectType.includes(typeFrag)).objectId as string;
+const created = (res: any, typeFrag: string) => {
+  const c = res.effects.changedObjects.find((o: any) => o.idOperation === "Created" && (res.objectTypes[o.objectId] ?? "").includes(typeFrag));
+  if (!c) throw new Error(`no created object matching ${typeFrag}`);
+  return c.objectId as string;
+};
 
 async function chainEpoch(): Promise<bigint> {
-  const o: any = await client.getObject({ id: CLOCK, options: { showContent: true } });
-  return BigInt(o.data.content.fields.timestamp_ms) / BigInt(EPOCH_MS);
+  const o: any = await client.getObject({ objectId: CLOCK, include: { content: true } });
+  const b: Uint8Array = o.object.content; // Clock { id: UID (32 bytes), timestamp_ms: u64 LE }
+  let ms = 0n;
+  for (let i = 7; i >= 0; i--) ms = (ms << 8n) | BigInt(b[32 + i]);
+  return ms / BigInt(EPOCH_MS);
 }
 async function waitForEpoch(target: bigint) {
   for (;;) {
@@ -180,21 +203,22 @@ async function waitForEpoch(target: bigint) {
 async function main() {
   const poseidon = await buildPoseidon();
   H = (xs) => poseidon.F.toObject(poseidon(xs)) as bigint;
-  client = new SuiJsonRpcClient({ url: RPC, network: "localnet" });
+  client = new SuiGrpcClient({ baseUrl: RPC, network: "localnet" });
+  GAS_PRICE = Number((await client.getReferenceGasPrice()).referenceGasPrice);
   kp = new Ed25519Keypair();
   const me = kp.toSuiAddress();
   for (let i = 0; i < 4; i++) await requestSuiFromFaucetV2({ host: FAUCET, recipient: me });
   await new Promise((r) => setTimeout(r, 2000));
-  console.log(`sender ${me}, balance ${(await client.getBalance({ owner: me })).totalBalance} MIST`);
+  console.log(`sender ${me}, reference gas price ${GAS_PRICE} MIST/unit`);
 
   // --- publish ---------------------------------------------------------------------------
-  const dump = JSON.parse(execFileSync("sui", ["move", "build", "--dump-bytecode-as-base64", "--path", join(ROOT, "contracts")],
-    { encoding: "utf-8", stdio: ["ignore", "pipe", "inherit"] }));
+  const dump = JSON.parse(execFileSync("sui", ["move", "build", "--dump-bytecode-as-base64", "--no-tree-shaking", "--path", join(ROOT, "contracts")],
+    { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] }));
   const pub = await exec("publish (package)", 0, (tx) => {
     const cap = tx.publish({ modules: dump.modules, dependencies: dump.dependencies });
     tx.transferObjects([cap], me);
   });
-  const pkg = (pub.objectChanges as any[]).find((c) => c.type === "published").packageId as string;
+  const pkg = pub.effects.changedObjects.find((o: any) => o.outputState === "PackageWrite").objectId as string;
   const treasury = created(pub, "TreasuryCap");
   const T = (f: string) => `${pkg}::${f}` as `${string}::${string}::${string}`;
   const auditorKey = new Uint8Array(33).fill(2);
@@ -280,7 +304,7 @@ async function main() {
     const probe = await exec("PROBE compliant_transfer (foreign compliance proof)", r, (tx) => tx.moveCall({ target: T("compliance::compliant_transfer"),
       arguments: [tx.object(s.pool), tx.object(s.cfg), tx.pure.vector("u8", Array.from(t2.proof)), tx.pure.vector("u8", Array.from(t2.inputs)),
         tx.pure.vector("u8", Array.from(c2.proof)), tx.pure.vector("u8", Array.from(c2.inputs)), tx.pure.vector("u8", Array.from(enc)), tx.object(CLOCK)] }), true);
-    console.log(`  round ${r} binding probe: ${probe.effects!.status.status === "success" ? "ACCEPTED (compliance proof not bound to transfer)" : "REJECTED " + probe.effects!.status.error}`);
+    console.log(`  round ${r} binding probe: ${probe.ok ? "ACCEPTED (compliance proof not bound to transfer)" : "REJECTED " + probe.err}`);
 
     // 5. zk_withdraw (partial: 100 out of 500, change note back to the pool)
     const P = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
@@ -303,7 +327,7 @@ async function main() {
     const thief = new Ed25519Keypair().toSuiAddress();
     const wprobe = await exec("PROBE zk_withdraw (recipient swapped)", r, (tx) => tx.moveCall({ target: T("pool::zk_withdraw"),
       arguments: [tx.object(s.pool), tx.pure.vector("u8", Array.from(wp2.proof)), tx.pure.vector("u8", Array.from(wp2.inputs)), tx.pure.address(thief), tx.object(CLOCK)] }), true);
-    console.log(`  round ${r} recipient probe: ${wprobe.effects!.status.status === "success" ? `ACCEPTED (100 units paid to ${thief}, not to the proven recipient)` : "REJECTED " + wprobe.effects!.status.error}`);
+    console.log(`  round ${r} recipient probe: ${wprobe.ok ? `ACCEPTED (100 units paid to ${thief}, not to the proven recipient)` : "REJECTED " + wprobe.err}`);
 
     // 7. admin ops
     await exec("pool::freeze_pool", r, (tx) => tx.moveCall({ target: T("pool::freeze_pool"), arguments: [tx.object(s.pool), tx.object(s.cap), tx.object(CLOCK)] }));
