@@ -1,0 +1,388 @@
+{
+  "rgp": 1000,
+  "protocolVersion": "124",
+  "rows": [
+    {
+      "label": "publish (package)",
+      "status": "success",
+      "computationCost": 1380000,
+      "storageCost": 156415600,
+      "storageRebate": 4890600,
+      "nonRefundableStorageFee": 49400,
+      "net": 152905000,
+      "digest": "7JcHssirx1y2q7M2BHVLzYtwqcNHG2TnAHHTsqkdAohF"
+    },
+    {
+      "label": "create_pool",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 8496800,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 8518680,
+      "digest": "3kUbANrfttCUmd2393HArXPKfvJ2igJ3dva7wbi4r4hX"
+    },
+    {
+      "label": "token_faucet::faucet (test-only)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 4043200,
+      "storageRebate": 2678544,
+      "nonRefundableStorageFee": 27056,
+      "net": 2364656,
+      "digest": "3YkRFh5xsw293pGHJ67TUAVqW7GNUCN7LHsh2zDPgDFF"
+    },
+    {
+      "label": "deposit_and_register (C_t)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 10358800,
+      "storageRebate": 8223732,
+      "nonRefundableStorageFee": 83068,
+      "net": 3135068,
+      "digest": "AhnHTc5b6QiQt3AUBG38bwyVsD8e1ZWJcmPW55N3AVrV"
+    },
+    {
+      "label": "deposit_and_register (C_c)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 10358800,
+      "storageRebate": 8223732,
+      "nonRefundableStorageFee": 83068,
+      "net": 3135068,
+      "digest": "9SkTzxQTMYEQfGuXBYfPDcrjN9cWUA5JjTJPnwkkP1US"
+    },
+    {
+      "label": "deposit_and_register (C_w1)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 10358800,
+      "storageRebate": 8223732,
+      "nonRefundableStorageFee": 83068,
+      "net": 3135068,
+      "digest": "6uypMo4f9w8PAxFRcmRFSDz7tUrkrsksWBdWoEAWhhQF"
+    },
+    {
+      "label": "deposit_and_register (C_w2)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 10358800,
+      "storageRebate": 8223732,
+      "nonRefundableStorageFee": 83068,
+      "net": 3135068,
+      "digest": "ACC1Zf3mvz9xzR5BFde8VAs6KdP8vHiJ3aBuNt7yTahB"
+    },
+    {
+      "label": "deposit_and_register (C_inf (probe))",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 10358800,
+      "storageRebate": 8223732,
+      "nonRefundableStorageFee": 83068,
+      "net": 3135068,
+      "digest": "DKST2ie7TYPQg11cCGZXU1vPmJEziZy8o52cg9Acqj5w"
+    },
+    {
+      "label": "update_commitment_root (admin, timelocked)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 8740000,
+      "storageRebate": 8411832,
+      "nonRefundableStorageFee": 84968,
+      "net": 1328168,
+      "digest": "GhgTYRTVNpGzsXBx95rpVvU2F4FjJkCq5uymtF9Xewoj"
+    },
+    {
+      "label": "propose_withdraw_vk (admin, timelocked)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 11970000,
+      "storageRebate": 8652600,
+      "nonRefundableStorageFee": 87400,
+      "net": 4317400,
+      "digest": "6bcnCNY76QyFedv4cTbsywnZmNgw9ytdwCPv2hfG1CJJ"
+    },
+    {
+      "label": "create_compliance_config",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 18171600,
+      "storageRebate": 11850300,
+      "nonRefundableStorageFee": 119700,
+      "net": 7321300,
+      "digest": "377EpqvpUSC5AP9X5QriHmowcZuLQckJem55LePe4bGN"
+    },
+    {
+      "label": "propose_vk_update (admin)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 15929600,
+      "storageRebate": 12091068,
+      "nonRefundableStorageFee": 122132,
+      "net": 4838532,
+      "digest": "JDBkPSCyBPf7BxgVkGLAB2vQLrQ1Hw29hozj4Fghiq83"
+    },
+    {
+      "label": "cancel_vk_update (admin)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 12213200,
+      "storageRebate": 15770304,
+      "nonRefundableStorageFee": 159296,
+      "net": -2557104,
+      "digest": "Cq2ximni8PdtcJM7hSazbHaVkfPXEjUNHhTCUX9Uzeqp"
+    },
+    {
+      "label": "freeze_pool (admin)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 12213200,
+      "storageRebate": 12091068,
+      "nonRefundableStorageFee": 122132,
+      "net": 1122132,
+      "digest": "9k6NPLGZP7YXcaiqxYAiVFfifYsFgeKk7yrDTWUvZwDf"
+    },
+    {
+      "label": "unfreeze_pool (admin)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 12213200,
+      "storageRebate": 12091068,
+      "nonRefundableStorageFee": 122132,
+      "net": 1122132,
+      "digest": "H6SrtLTSkn9DPAG5RCJgRdPN6GKHskLvHoHRAFx27itU"
+    },
+    {
+      "label": "micro: groth16::prepare_verifying_key (transfer vk, 488 B)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 1009880,
+      "digest": "ByQCC1HCo3xiFbJvG4SouCKESbpnzYZstNGJDAmru1on"
+    },
+    {
+      "label": "micro: groth16::prepare_verifying_key (withdraw vk, 424 B)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 1009880,
+      "digest": "FEQ7YAiM4h9xMJKoHFj3jSpYpvPRKSoGMYxQXCEmTj8z"
+    },
+    {
+      "label": "micro: groth16::prepare_verifying_key (compliance vk, 456 B)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 1009880,
+      "digest": "94Gf9bivqXzrw7iTKq9JnJe7MRsZSynABFyDJoVs3DkZ"
+    },
+    {
+      "label": "micro: empty PTB (groth16::bn254 only) — fixed overhead",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 1009880,
+      "digest": "HoqxXfZ4wV3Qzf52Xsg7uPZnA9bEhvtVvp4WeTThS51H"
+    },
+    {
+      "label": "micro: prepare_verifying_key + verify_groth16_proof (transfer, 7 inputs)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 1009880,
+      "digest": "6HBXZ68joddaSyJ5bzrcxZJtsVvMK519jefYte8VNTgw"
+    },
+    {
+      "label": "scale: base k=25",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 1009880,
+      "digest": "8xwD6TjSVzvJokE7xNEg76md4jG71Ky1oscxpcNnJ8dy"
+    },
+    {
+      "label": "scale: prep k=25",
+      "status": "success",
+      "computationCost": 2090000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 2099880,
+      "digest": "ANKXZgmtPvudcHSHg7rPgNaLxfxCswdb1owkaciFLiWj"
+    },
+    {
+      "label": "scale: full k=25",
+      "status": "success",
+      "computationCost": 6710000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 6719880,
+      "digest": "t9aecW1pjSQiEb9rs1oGcqvjj3eyVgdsyQxxWsRdSNM"
+    },
+    {
+      "label": "scale: cached k=25",
+      "status": "success",
+      "computationCost": 4690000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 4699880,
+      "digest": "2xx2Vy5VQfBNAUwcVJK1gJ8pBfvzkFoodCuh36Srmi5Y"
+    },
+    {
+      "label": "scale: base k=50",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 1009880,
+      "digest": "9oNMS5eg1w1nQ5kx7RfmTniNEGbvZwdf5ej5cphYMEdk"
+    },
+    {
+      "label": "scale: prep k=50",
+      "status": "success",
+      "computationCost": 4170000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 4179880,
+      "digest": "5EjjKj4Y6HNKczNGmZcrZPbaW2K843eBWVkA8jbKAoAu"
+    },
+    {
+      "label": "scale: full k=50",
+      "status": "success",
+      "computationCost": 13500000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 13509880,
+      "digest": "6h1JhnDsvQBjgjyeWrBzcJsZsmirg3zH5Qj2bsJEQszX"
+    },
+    {
+      "label": "scale: cached k=50",
+      "status": "success",
+      "computationCost": 9330000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 9339880,
+      "digest": "EhWAPDqLg73eWdqppDaTkKCmh72gpzkbbe4AnK3433JW"
+    },
+    {
+      "label": "scale: base k=100",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 1009880,
+      "digest": "4MrECGD14PgtLdzqYBNpJs3K7DTNZaszy9ZmRVoLEkGT"
+    },
+    {
+      "label": "scale: prep k=100",
+      "status": "success",
+      "computationCost": 8380000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 8389880,
+      "digest": "At7iuEQDLgHWJ53iukvAPd1LwfgAjL3jpFJ1jRU4wKmL"
+    },
+    {
+      "label": "scale: full k=100",
+      "status": "success",
+      "computationCost": 27400000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 27409880,
+      "digest": "ErdKE9X6dQJRx93FHuSsL3BVF5UoXE6GAMCoZ6eejkjo"
+    },
+    {
+      "label": "scale: cached k=100",
+      "status": "success",
+      "computationCost": 18800000,
+      "storageCost": 988000,
+      "storageRebate": 978120,
+      "nonRefundableStorageFee": 9880,
+      "net": 18809880,
+      "digest": "G8kVs8Zjh1nZuxqn55cgXvn1S2WczvvLbYnknfD2xFf6"
+    },
+    {
+      "label": "shielded_transfer",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 14485600,
+      "storageRebate": 12610224,
+      "nonRefundableStorageFee": 127376,
+      "net": 2875376,
+      "digest": "9MpWsycVBQyJ4Q6hbSE8sWxeaAGvSRDmCCP5HFS1XthE"
+    },
+    {
+      "label": "shielded_transfer replay (expected abort: commitment consumed)",
+      "status": "failure: MoveAbort(MoveLocation { module: ModuleId { address: 9854cd8290d746ff2968babe7cfcd07df9c52643e6486818b57a6cf532696128, name: Identifier(\"pool\") }, function: 4, instruction: 134, function_name: Some(\"execute_transfer\") }, 9) in command 0",
+      "computationCost": 1000000,
+      "storageCost": 10442400,
+      "storageRebate": 10337976,
+      "nonRefundableStorageFee": 104424,
+      "net": 1104424,
+      "digest": "DpTXbtabaqwcwM11uL89SECxNKnTnRZMJmKptc9vxt61"
+    },
+    {
+      "label": "zk_withdraw (first call — applies pending withdraw VK)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 15823200,
+      "storageRebate": 12369456,
+      "nonRefundableStorageFee": 124944,
+      "net": 4453744,
+      "digest": "6PudHQFuo3hgoQx4RvhSWs8bzXaSXyErqMLhF3975yyK"
+    },
+    {
+      "label": "zk_withdraw FRONT-RUN PROBE (proof bound to Alice, recipient arg = Mallory)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 15823200,
+      "storageRebate": 16281936,
+      "nonRefundableStorageFee": 164464,
+      "net": 541264,
+      "digest": "9pbD11GRDFpACjTMpfwGG2omwrquGVLN5cGJ2UYNu6oT"
+    },
+    {
+      "label": "zk_withdraw INFLATION PROBE (deposited 100 TOKEN, withdraws 250 TOKEN)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 15823200,
+      "storageRebate": 12369456,
+      "nonRefundableStorageFee": 124944,
+      "net": 4453744,
+      "digest": "Ch9NbunGYBHejag9HfSHz7XbECNpkC2eCWkUk5NhZUZb"
+    },
+    {
+      "label": "compliant_transfer (transfer + compliance proof)",
+      "status": "success",
+      "computationCost": 1000000,
+      "storageCost": 22556800,
+      "storageRebate": 18268272,
+      "nonRefundableStorageFee": 184528,
+      "net": 5288528,
+      "digest": "DHqRDTFYZe22sHKdWiGa1oPYF8BDFz4kYwytAvKXH54T"
+    }
+  ],
+  "frontRunSucceeded": true,
+  "inflationSucceeded": true
+}

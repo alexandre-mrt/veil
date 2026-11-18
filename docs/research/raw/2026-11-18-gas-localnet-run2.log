@@ -1,0 +1,91 @@
+[info] VK bytes: transfer=488 withdraw=424 compliance=456
+[info] reference gas price: 1000 MIST/unit
+[info] protocol version: 124
+[gas] publish (package): {"computationCost":"1380000","storageCost":"156415600","storageRebate":"4890600","nonRefundableStorageFee":"49400","status":"success"}
+[gas] create_pool: {"computationCost":"1000000","storageCost":"8496800","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] token_faucet::faucet (test-only): {"computationCost":"1000000","storageCost":"4043200","storageRebate":"2678544","nonRefundableStorageFee":"27056","status":"success"}
+[gas] deposit_and_register (C_t): {"computationCost":"1000000","storageCost":"10358800","storageRebate":"8223732","nonRefundableStorageFee":"83068","status":"success"}
+[gas] deposit_and_register (C_c): {"computationCost":"1000000","storageCost":"10358800","storageRebate":"8223732","nonRefundableStorageFee":"83068","status":"success"}
+[gas] deposit_and_register (C_w1): {"computationCost":"1000000","storageCost":"10358800","storageRebate":"8223732","nonRefundableStorageFee":"83068","status":"success"}
+[gas] deposit_and_register (C_w2): {"computationCost":"1000000","storageCost":"10358800","storageRebate":"8223732","nonRefundableStorageFee":"83068","status":"success"}
+[gas] deposit_and_register (C_inf (probe)): {"computationCost":"1000000","storageCost":"10358800","storageRebate":"8223732","nonRefundableStorageFee":"83068","status":"success"}
+[gas] update_commitment_root (admin, timelocked): {"computationCost":"1000000","storageCost":"8740000","storageRebate":"8411832","nonRefundableStorageFee":"84968","status":"success"}
+[gas] propose_withdraw_vk (admin, timelocked): {"computationCost":"1000000","storageCost":"11970000","storageRebate":"8652600","nonRefundableStorageFee":"87400","status":"success"}
+[gas] create_compliance_config: {"computationCost":"1000000","storageCost":"18171600","storageRebate":"11850300","nonRefundableStorageFee":"119700","status":"success"}
+[gas] propose_vk_update (admin): {"computationCost":"1000000","storageCost":"15929600","storageRebate":"12091068","nonRefundableStorageFee":"122132","status":"success"}
+[gas] cancel_vk_update (admin): {"computationCost":"1000000","storageCost":"12213200","storageRebate":"15770304","nonRefundableStorageFee":"159296","status":"success"}
+[gas] freeze_pool (admin): {"computationCost":"1000000","storageCost":"12213200","storageRebate":"12091068","nonRefundableStorageFee":"122132","status":"success"}
+[gas] unfreeze_pool (admin): {"computationCost":"1000000","storageCost":"12213200","storageRebate":"12091068","nonRefundableStorageFee":"122132","status":"success"}
+[gas] micro: groth16::prepare_verifying_key (transfer vk, 488 B): {"computationCost":"1000000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] micro: groth16::prepare_verifying_key (withdraw vk, 424 B): {"computationCost":"1000000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] micro: groth16::prepare_verifying_key (compliance vk, 456 B): {"computationCost":"1000000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] micro: empty PTB (groth16::bn254 only) — fixed overhead: {"computationCost":"1000000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[info] pool epoch E0=29916461; waiting for E0+1 so timelocks + commitment maturity resolve...
+[info] now in pool epoch 29916462
+[gas] micro: prepare_verifying_key + verify_groth16_proof (transfer, 7 inputs): {"computationCost":"1000000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: base k=25: {"computationCost":"1000000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: prep k=25: {"computationCost":"2090000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: full k=25: {"computationCost":"6710000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: cached k=25: {"computationCost":"4690000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: base k=50: {"computationCost":"1000000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: prep k=50: {"computationCost":"4170000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: full k=50: {"computationCost":"13500000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: cached k=50: {"computationCost":"9330000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: base k=100: {"computationCost":"1000000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: prep k=100: {"computationCost":"8380000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: full k=100: {"computationCost":"27400000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] scale: cached k=100: {"computationCost":"18800000","storageCost":"988000","storageRebate":"978120","nonRefundableStorageFee":"9880","status":"success"}
+[gas] shielded_transfer: {"computationCost":"1000000","storageCost":"14485600","storageRebate":"12610224","nonRefundableStorageFee":"127376","status":"success"}
+[gas] shielded_transfer replay (expected abort: commitment consumed): {"computationCost":"1000000","storageCost":"10442400","storageRebate":"10337976","nonRefundableStorageFee":"104424","status":"failure: MoveAbort(MoveLocation { module: ModuleId { address: 9854cd8290d746ff2968babe7cfcd07df9c52643e6486818b57a6cf532696128, name: Identifier(\"pool\") }, function: 4, instruction: 134, function_name: Some(\"execute_transfer\") }, 9) in command 0"}
+[gas] zk_withdraw (first call — applies pending withdraw VK): {"computationCost":"1000000","storageCost":"15823200","storageRebate":"12369456","nonRefundableStorageFee":"124944","status":"success"}
+[gas] zk_withdraw FRONT-RUN PROBE (proof bound to Alice, recipient arg = Mallory): {"computationCost":"1000000","storageCost":"15823200","storageRebate":"16281936","nonRefundableStorageFee":"164464","status":"success"}
+[probe] front-run tx status=success; Mallory TOKEN balance after = 100
+[gas] zk_withdraw INFLATION PROBE (deposited 100 TOKEN, withdraws 250 TOKEN): {"computationCost":"1000000","storageCost":"15823200","storageRebate":"12369456","nonRefundableStorageFee":"124944","status":"success"}
+[probe] inflation tx status=success; Mallory TOKEN 100 -> 250000100 (deposit was 100000000)
+[gas] compliant_transfer (transfer + compliance proof): {"computationCost":"1000000","storageCost":"22556800","storageRebate":"18268272","nonRefundableStorageFee":"184528","status":"success"}
+
+## Gas (MIST at RGP=1000; computation units = computationCost / RGP)
+
+| Entry point | Status | Computation (MIST) | Units | Storage cost | Storage rebate | Net (MIST) |
+|---|---|---|---|---|---|---|
+| publish (package) | ok | 1380000 | 1380 | 156415600 | 4890600 | 152905000 |
+| create_pool | ok | 1000000 | 1000 | 8496800 | 978120 | 8518680 |
+| token_faucet::faucet (test-only) | ok | 1000000 | 1000 | 4043200 | 2678544 | 2364656 |
+| deposit_and_register (C_t) | ok | 1000000 | 1000 | 10358800 | 8223732 | 3135068 |
+| deposit_and_register (C_c) | ok | 1000000 | 1000 | 10358800 | 8223732 | 3135068 |
+| deposit_and_register (C_w1) | ok | 1000000 | 1000 | 10358800 | 8223732 | 3135068 |
+| deposit_and_register (C_w2) | ok | 1000000 | 1000 | 10358800 | 8223732 | 3135068 |
+| deposit_and_register (C_inf (probe)) | ok | 1000000 | 1000 | 10358800 | 8223732 | 3135068 |
+| update_commitment_root (admin, timelocked) | ok | 1000000 | 1000 | 8740000 | 8411832 | 1328168 |
+| propose_withdraw_vk (admin, timelocked) | ok | 1000000 | 1000 | 11970000 | 8652600 | 4317400 |
+| create_compliance_config | ok | 1000000 | 1000 | 18171600 | 11850300 | 7321300 |
+| propose_vk_update (admin) | ok | 1000000 | 1000 | 15929600 | 12091068 | 4838532 |
+| cancel_vk_update (admin) | ok | 1000000 | 1000 | 12213200 | 15770304 | -2557104 |
+| freeze_pool (admin) | ok | 1000000 | 1000 | 12213200 | 12091068 | 1122132 |
+| unfreeze_pool (admin) | ok | 1000000 | 1000 | 12213200 | 12091068 | 1122132 |
+| micro: groth16::prepare_verifying_key (transfer vk, 488 B) | ok | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| micro: groth16::prepare_verifying_key (withdraw vk, 424 B) | ok | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| micro: groth16::prepare_verifying_key (compliance vk, 456 B) | ok | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| micro: empty PTB (groth16::bn254 only) — fixed overhead | ok | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| micro: prepare_verifying_key + verify_groth16_proof (transfer, 7 inputs) | ok | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| scale: base k=25 | ok | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| scale: prep k=25 | ok | 2090000 | 2090 | 988000 | 978120 | 2099880 |
+| scale: full k=25 | ok | 6710000 | 6710 | 988000 | 978120 | 6719880 |
+| scale: cached k=25 | ok | 4690000 | 4690 | 988000 | 978120 | 4699880 |
+| scale: base k=50 | ok | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| scale: prep k=50 | ok | 4170000 | 4170 | 988000 | 978120 | 4179880 |
+| scale: full k=50 | ok | 13500000 | 13500 | 988000 | 978120 | 13509880 |
+| scale: cached k=50 | ok | 9330000 | 9330 | 988000 | 978120 | 9339880 |
+| scale: base k=100 | ok | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| scale: prep k=100 | ok | 8380000 | 8380 | 988000 | 978120 | 8389880 |
+| scale: full k=100 | ok | 27400000 | 27400 | 988000 | 978120 | 27409880 |
+| scale: cached k=100 | ok | 18800000 | 18800 | 988000 | 978120 | 18809880 |
+| shielded_transfer | ok | 1000000 | 1000 | 14485600 | 12610224 | 2875376 |
+| shielded_transfer replay (expected abort: commitment consumed) | failure: MoveAbort(MoveLocation { module: ModuleId { address | 1000000 | 1000 | 10442400 | 10337976 | 1104424 |
+| zk_withdraw (first call — applies pending withdraw VK) | ok | 1000000 | 1000 | 15823200 | 12369456 | 4453744 |
+| zk_withdraw FRONT-RUN PROBE (proof bound to Alice, recipient arg = Mallory) | ok | 1000000 | 1000 | 15823200 | 16281936 | 541264 |
+| zk_withdraw INFLATION PROBE (deposited 100 TOKEN, withdraws 250 TOKEN) | ok | 1000000 | 1000 | 15823200 | 12369456 | 4453744 |
+| compliant_transfer (transfer + compliance proof) | ok | 1000000 | 1000 | 22556800 | 18268272 | 5288528 |
+
+[probe] FRONT_RUN_SUCCEEDED=true
+[probe] INFLATION_SUCCEEDED=true

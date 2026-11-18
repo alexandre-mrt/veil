@@ -92,10 +92,10 @@ Data flows: User generates Groth16 proofs in-browser, submits proof bytes + publ
 | E1 | Non-admin calls admin function | `assert_pool_admin(cap, pool)` checks `cap.pool_id == pool.id.to_inner()` on every admin operation. 19 admin functions gated. | Mitigated |
 | E2 | Cross-pool admin attack (use cap from pool A on pool B) | `cap.pool_id` is set at creation and immutable. Mismatch aborts with `E_NOT_POOL_ADMIN`. Tested in 7 cross-pool access-control tests. | Mitigated |
 | E3 | Package upgrade backdoor via UpgradeCap | Pre-mainnet blocker. UpgradeCap currently in EOA. Must be burned (`sui::package::make_immutable`) or transferred to multisig before mainnet. Management script exists (`manage-upgrade-cap.ts`). | Accepted risk (pre-mainnet) |
-| E4 | Withdraw more than deposited via ZK proof manipulation | Withdraw circuit enforces `withdrawAmount <= cumulativeOld` (constraint C5) with 64-bit range proofs on both values. On-chain checks pool balance sufficiency. | Mitigated |
+| E4 | Withdraw more than deposited via ZK proof manipulation | Withdraw circuit enforces `withdrawAmount <= cumulativeOld` (constraint C5) with 64-bit range proofs on both values. On-chain checks pool balance sufficiency. **Not enforced on-chain — VULNERABLE (2026-11-18).** C5 only bounds `withdrawAmount` by the balance the commitment *claims*; `deposit_and_register` never binds the deposited coin's value to that claimed balance. A 100-TOKEN deposit registered with a commitment claiming 300 TOKEN withdrew 250 TOKEN of other users' funds on a localnet run — see `docs/research/2026-11-18-onchain-gas-baseline.md`, finding F1. | **Open** |
 | E5 | Bypass compliance requirement via direct `shielded_transfer` | When `compliance_required == true`, `shielded_transfer` aborts with `E_COMPLIANCE_REQUIRED`. Compliance toggle applied lazily before the check. | Mitigated |
 | E6 | Sybil attack: create multiple userSecrets to bypass spending threshold | Known limitation. Each userSecret gets its own cumulative spending counter. Mitigation requires identity-binding at deposit time (future work). | Accepted risk |
-| E7 | Front-run ZK withdrawal to steal funds | Withdrawal circuit binds to recipient via `recipientHash = Poseidon(8, recipient)`. Changing recipient invalidates the Groth16 proof. | Mitigated |
+| E7 | Front-run ZK withdrawal to steal funds | Withdrawal circuit binds to recipient via `recipientHash = Poseidon(8, recipient)`. Changing recipient invalidates the Groth16 proof. **Not enforced on-chain — VULNERABLE (2026-11-18).** The proof binds `recipientHash`, but `zk_withdraw` never checks `recipientHash == Poseidon(8, recipient)` against its `recipient` argument, so whoever submits the transaction (relayer, mempool observer) picks the payee. Reproduced on localnet — finding F2 in `docs/research/2026-11-18-onchain-gas-baseline.md`. | **Open** |
 
 ## Attack Scenarios (tested in Move tests)
 
@@ -128,6 +128,8 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 
 | ID | Risk | Severity | Description | Mitigation Status |
 |----|------|----------|-------------|-------------------|
+| RR0a | Deposit amount not bound to commitment balance (E4) | Critical | Any depositor can register a commitment claiming more than they deposited and `zk_withdraw` the difference from other users' funds. Reproduced 2026-11-18 on localnet. | **Open.** Fix direction: bind the deposited value into the registered commitment (e.g. deposit-side proof that `commitment = Poseidon(1, amount, r, s)` for the coin's `amount`, or store `amount` alongside the commitment and have withdraw/transfer circuits consume it). Queue item #1. |
+| RR0b | Withdrawal recipient not bound on-chain (E7) | Critical | Submitter chooses the payee of any `zk_withdraw` proof; a relayer can redirect every withdrawal it relays. Reproduced 2026-11-18 on localnet. | **Open.** Fix direction: `zk_withdraw` recomputes `sui::poseidon::poseidon_bn254([8, recipient_field])` and asserts it equals public-input bytes 96..128. Queue item #1. |
 | RR1 | UpgradeCap in EOA | Critical | Package upgrade can inject arbitrary code. | Pre-mainnet blocker. Burn or transfer to multisig. |
 | RR2 | Trusted setup single contributor | High | Dev-only ceremony. Forged proofs possible if toxic waste retained. | MPC ceremony script exists. Must run with 3+ contributors + random beacon before mainnet. |
 | RR3 | Sybil on spending limits | Medium | Multiple userSecrets bypass per-identity threshold. | Requires identity-binding at deposit (future work). No on-chain fix without breaking privacy model. |
@@ -168,7 +170,7 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | Commitment uniqueness | `pool.move:244-249` | Preventive | `E_COMMITMENT_EXISTS` prevents duplicate commitments |
 | Upper bytes zero check | `verifier.move:67-73` | Preventive | Prevents u64 overflow via non-zero upper 24 bytes |
 | Epoch grace period | `pool.move:206-208` | Preventive | Accepts current or previous epoch to handle boundary races |
-| Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive | `recipientHash = Poseidon(8, recipient)` prevents front-running |
+| Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive | `recipientHash = Poseidon(8, recipient)` — circuit-side only; **not checked by `zk_withdraw`** (see E7, open as of 2026-11-18) |
 | Context-bound credential nullifiers | `compliance.circom:79-87` | Preventive | `contextId = Poseidon(6, transferNullifier, userSecret)` unique per transfer |
 | Domain-separated Poseidon hashes | `transfer.circom`, `compliance.circom`, `withdraw.circom` | Preventive | Tags 1-8 prevent cross-domain hash collisions |
 | Merkle accumulator | `pool.move:77-80`, `transfer.circom:52-61` | Privacy | Anonymity set = all commitments, root verified in circuit |
