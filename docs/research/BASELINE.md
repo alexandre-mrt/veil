@@ -36,14 +36,51 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
-## Not yet measured
+## On-chain gas per entry point (localnet, real transactions, real proofs)
+
+Measured 2026-11-18 ([`2026-11-18-onchain-gas-baseline.md`](2026-11-18-onchain-gas-baseline.md)).
+`sui` 1.72.1 built from source at the exact framework rev `contracts/Move.lock` pins
+(`94ad8ccd`), `sui start --with-faucet --force-regenesis`, protocol version 124, reference gas
+price 1,000 MIST/unit, storage price 76 (→ 7,600 MIST per stored byte), 99% storage rebate.
+Every row is `effects.gasUsed` from an executed transaction; three full runs produced
+byte-identical gas for every row. Reproduce: `scripts/bench/gas-localnet.ts` (header has the
+exact commands).
+
+| Entry point | Computation (MIST) | Storage cost | Storage rebate | **Net paid (MIST)** |
+|---|---|---|---|---|
+| `deposit_and_register` | 1,000,000 | 10,358,800 | 8,223,732 | **3,135,068** |
+| `shielded_transfer` (1 Groth16 verify) | 1,000,000 | 14,485,600 | 12,610,224 | **2,875,376** |
+| `zk_withdraw` (1 Groth16 verify) | 1,000,000 | 15,823,200 | 12,369,456 | **4,453,744** |
+| `compliance::compliant_transfer` (2 Groth16 verifies) | 1,000,000 | 22,556,800 | 18,268,272 | **5,288,528** |
+| replayed `shielded_transfer` (aborts, code 9, *after* verify) | 1,000,000 | 10,442,400 | 10,337,976 | 1,104,424 |
+| `create_pool` | 1,000,000 | 8,496,800 | 978,120 | 8,518,680 |
+| `compliance::create_compliance_config` | 1,000,000 | 18,171,600 | 11,850,300 | 7,321,300 |
+| `update_commitment_root` | 1,000,000 | 8,740,000 | 8,411,832 | 1,328,168 |
+| `propose_withdraw_vk` | 1,000,000 | 11,970,000 | 8,652,600 | 4,317,400 |
+| `propose_vk_update` / `cancel_vk_update` | 1,000,000 / 1,000,000 | 15,929,600 / 12,213,200 | 12,091,068 / 15,770,304 | 4,838,532 / −2,557,104 |
+| `freeze_pool` / `unfreeze_pool` | 1,000,000 | 12,213,200 | 12,091,068 | 1,122,132 |
+| package publish | 1,380,000 | 156,415,600 | 4,890,600 | 152,905,000 |
+
+**Every user-facing entry point sits on the 1,000-unit computation floor** (`base_tx_cost_fixed`
+= 1,000). The Groth16 work is real but smaller than the floor:
+
+| `0x2::groth16` op (transfer VK, 7 public inputs) | Per-op computation, units (slope k=50→100 in one PTB) | Protocol-config internal gas |
+|---|---|---|
+| `prepare_verifying_key` | 84.2 | 82,010 |
+| parse proof + inputs + `verify_groth16_proof` (PVK reused) | 189.4 | 115,502 + 7 × 9,484 = 181,890 |
+| full prepare + verify (what `verifier.move` does today) | 278.0 | — |
+
+Storage, not computation, is what a transfer pays for: the ~1,477-byte shared `Pool` object ((12,213,200 − 988,000 gas-coin rewrite) / 7,600 MIST per byte)
+(both VKs stored inline) is rewritten on every call (12.2M MIST gross, 99% rebated), and each
+transfer adds nullifier/commitment dynamic fields that are never deleted.
+
+## Other axes — status
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| Move contract test suite | **PASS 124/124** (2026-11-18) | `sui move test` with the from-source `sui` 1.72.1 — first time this loop has run it. |
+| Gas on testnet/mainnet protocol versions | **NOT MEASURED** | The numbers above are protocol 124 (localnet from the pinned rev). Live networks may run a different protocol version with different native costs; the public fullnode was unreachable from this sandbox (egress denied). |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Superseded rows above should be replaced in place, not appended as a separate table.
