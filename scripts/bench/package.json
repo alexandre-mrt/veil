@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Reusable benchmark scripts for Veil's nightly research loop (proving time, R1CS, browser latency).",
+  "description": "Reusable benchmark scripts for Veil's nightly research loop (proving time, R1CS, browser latency, on-chain gas).",
   "scripts": {
-    "prove-latency": "node prove-latency.mjs --runs 10"
+    "prove-latency": "node prove-latency.mjs --runs 10",
+    "gas-localnet": "node gas-localnet.mjs --contracts ../../contracts"
   },
   "dependencies": {
     "@mysten/sui": "^2.39.1",

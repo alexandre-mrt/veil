@@ -20,7 +20,11 @@
  *   node scripts/bench/gas-localnet.mjs --contracts contracts --label after [--json out.json]
  *
  * Prerequisites:
- *   - `sui` on PATH (used for `sui move build --dump-bytecode-as-base64`).
+ *   - `sui` on PATH (used for `sui move build --dump-bytecode-as-base64 --build-env testnet`;
+ *     framework addresses 0x1/0x2 are identical on localnet). Measured 2026-11-19 with
+ *     `sui 1.72.1-94ad8ccd0ed6`, built from source at the exact rev pinned in contracts/Move.toml:
+ *       cargo +1.92 build -p sui --bin sui   (CARGO_PROFILE_DEV_OPT_LEVEL=1, DEBUG=0)
+ *     Gas is deterministic per protocol version — build profile does not affect it.
  *   - circuits/build{,-withdraw,-compliance}/ artifacts (see prove-latency.mjs header), plus
  *     circuits/build/transfer_alt_final.zkey + transfer_alt_vk.json: a second, independent
  *     contribution on transfer_0000.zkey, used as the rotated VK:
@@ -190,7 +194,7 @@ async function main() {
     writeFileSync(join(work, "Move.toml"), toml);
     rmSync(join(work, "Move.lock"), { force: true });
   }
-  const dump = JSON.parse(execFileSync("sui", ["move", "build", "--dump-bytecode-as-base64", "--path", work], { encoding: "utf-8", stdio: ["ignore", "pipe", "inherit"] }));
+  const dump = JSON.parse(execFileSync("sui", ["move", "build", "--dump-bytecode-as-base64", "--build-env", "testnet", "--path", work], { encoding: "utf-8", stdio: ["ignore", "pipe", "inherit"] }));
   const pub = await exec("publish", (tx) => {
     const [cap] = tx.publish({ modules: dump.modules, dependencies: dump.dependencies });
     tx.transferObjects([cap], me);
