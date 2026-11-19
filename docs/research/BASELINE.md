@@ -36,14 +36,41 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point (measured 2026-11-19)
+
+Real transactions with real Groth16 proofs on a local Sui network: `sui 1.72.1-94ad8ccd0ed6`, built
+at the framework rev pinned in `contracts/Move.toml`, protocol version 124, RGP 1000 MIST. MIST
+values are exact `effects.gasUsed`; "net" = computation + storage − rebate (what the sender pays).
+Testnet/mainnet scale with their RGP and storage price. Source:
+[`2026-11-19-onchain-gas.md`](2026-11-19-onchain-gas.md).
+
+| Entry point | Computation (units) | Storage charged | Rebate | **Net (MIST)** |
+|---|---|---|---|---|
+| `publish` (whole package) | 1,390 | 156,415,600 | 9,781,200 | **148,024,400** |
+| `pool::create_pool` | 1,000 | 8,496,800 | 978,120 | **8,518,680** |
+| `pool::deposit_and_register` | 1,000 | 13,588,800 | 11,421,432 | **3,167,368** |
+| `pool::shielded_transfer` (steady state) | 1,000 | 14,485,600 | 12,369,456 | **3,116,144** |
+| `pool::zk_withdraw` | 1,000 | 15,823,200 | 12,369,456 | **4,453,744** |
+| `compliance::compliant_transfer` (2 Groth16 verifies) | 1,000 | 22,556,800 | 18,268,272 | **5,288,528** |
+| `compliance::create_compliance_config` | 1,000 | 17,928,400 | 11,609,532 | **7,318,868** |
+| `pool::propose_withdraw_vk` | 1,000 | 11,726,800 | 8,411,832 | **4,314,968** |
+| `pool::propose_vk_update` | 1,000 | 15,686,400 | 11,850,300 | **4,836,100** |
+| `pool::update_commitment_root` | 1,000 | 12,213,200 | 11,850,300 | **1,362,900** |
+| `pool::freeze_pool` / `unfreeze_pool` | 1,000 | 11,970,000 | 11,850,300 | **1,119,700** |
+
+Every non-publish transaction sits at the 1,000-unit computation floor — Groth16 verification is not
+what Veil pays for on Sui; storage churn on the shared `Pool` object is. Reproduce:
+`sui start --with-faucet --force-regenesis &` then
+`node scripts/bench/gas-localnet.mjs --contracts contracts --label baseline`.
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Move contract suite: `sui move test --build-env testnet` → 124/124 passing (2026-11-19, same
+`sui` build). Note: the 2026-11-19 circuit setup used a locally generated pot15 ptau (Hermez
+download blocked); constraint counts are ptau-independent and the proving-time rows above are from
+2026-07-22.
