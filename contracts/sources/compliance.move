@@ -258,6 +258,7 @@ fun apply_pending_kyc_level(config: &mut ComplianceConfig, clock: &sui::clock::C
 fun apply_pending_compliance_vk(config: &mut ComplianceConfig, clock: &sui::clock::Clock, epoch_duration_ms: u64) {
     if (config.pending_compliance_vk.is_some() && pool::current_epoch(clock, epoch_duration_ms) >= config.pending_compliance_vk_epoch) {
         config.compliance_vk = config.pending_compliance_vk.extract();
+        verifier::invalidate_pvk(&mut config.id, verifier::slot_compliance());
         config.pending_compliance_vk_epoch = 0;
         event::emit(ComplianceVkAppliedEvent { config_id: config.id.to_inner() });
     };
@@ -319,7 +320,9 @@ public fun compliant_transfer(
     verifier::assert_upper_bytes_zero(&compliance_inputs_bytes, 168, 192, E_INVALID_COMPLIANCE_INPUTS);
     assert!(valid_flag == 1, E_CREDENTIAL_INVALID);
 
-    let valid = verifier::verify_compliance_proof(
+    let valid = verifier::verify_cached(
+        &mut config.id,
+        verifier::slot_compliance(),
         &config.compliance_vk,
         compliance_proof_bytes,
         compliance_inputs_bytes,

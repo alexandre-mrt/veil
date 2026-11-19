@@ -208,7 +208,9 @@ fun execute_transfer(
         E_EPOCH_MISMATCH,
     );
 
-    let valid = verifier::verify_transfer_proof(
+    let valid = verifier::verify_cached(
+        &mut pool.id,
+        verifier::slot_transfer(),
         &pool.transfer_vk,
         proof_bytes,
         public_inputs_bytes,
@@ -375,6 +377,7 @@ public fun cancel_vk_update(pool: &mut Pool, cap: &AdminCap) {
 fun apply_pending_vk(pool: &mut Pool, clock: &sui::clock::Clock) {
     if (pool.pending_vk.length() > 0 && pool_epoch(pool, clock) >= pool.vk_update_epoch) {
         pool.transfer_vk = pool.pending_vk;
+        verifier::invalidate_pvk(&mut pool.id, verifier::slot_transfer());
         pool.pending_vk = vector[];
         pool.vk_update_epoch = 0;
     };
@@ -555,6 +558,7 @@ public fun cancel_withdraw_vk(pool: &mut Pool, cap: &AdminCap) {
 fun apply_pending_withdraw_vk(pool: &mut Pool, clock: &sui::clock::Clock) {
     if (pool.pending_withdraw_vk.length() > 0 && pool_epoch(pool, clock) >= pool.withdraw_vk_update_epoch) {
         pool.withdraw_vk = pool.pending_withdraw_vk;
+        verifier::invalidate_pvk(&mut pool.id, verifier::slot_withdraw());
         pool.pending_withdraw_vk = vector[];
         pool.withdraw_vk_update_epoch = 0;
     };
@@ -581,7 +585,9 @@ public fun zk_withdraw(
     assert!(pool.withdraw_vk.length() >= MIN_VK_LENGTH, E_NO_WITHDRAW_VK);
     assert!(public_inputs_bytes.length() == 160, E_INVALID_INPUTS_LENGTH);
 
-    let valid = verifier::verify_withdraw_proof(
+    let valid = verifier::verify_cached(
+        &mut pool.id,
+        verifier::slot_withdraw(),
         &pool.withdraw_vk,
         proof_bytes,
         public_inputs_bytes,
@@ -630,6 +636,9 @@ public fun zk_withdraw(
 
     event::emit(WithdrawEvent { pool_id: pool.id.to_inner() });
 }
+
+public fun has_cached_transfer_pvk(pool: &Pool): bool { verifier::has_cached_pvk(&pool.id, verifier::slot_transfer()) }
+public fun has_cached_withdraw_pvk(pool: &Pool): bool { verifier::has_cached_pvk(&pool.id, verifier::slot_withdraw()) }
 
 public fun withdraw_vk_set(pool: &Pool): bool { pool.withdraw_vk.length() >= MIN_VK_LENGTH }
 
