@@ -1,0 +1,144 @@
+[env] rpc=http://127.0.0.1:9000 sender=0x72cdefd39f6d1027cfb74e4aa35908d40e1863014245e4b8b77bd36fb116e706 reference_gas_price=1000 runs=3
+[env] sui: sui 1.72.1-94ad8ccd0ed6
+[gas] publish                          run=0 status=success computation=1390000 storage=156415600 rebate=9781200 net=148024400
+[env] vk bytes: transfer=488 withdraw=424 compliance=456
+[gas] create_pool                      run=0 status=success computation=1000000 storage=8496800 rebate=978120 net=8518680
+[gas] token_faucet::faucet             run=0 status=success computation=1000000 storage=4043200 rebate=2678544 net=2364656
+[gas] token_faucet::faucet             run=1 status=success computation=1000000 storage=4043200 rebate=2678544 net=2364656
+[gas] deposit_and_register             run=0 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=1 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=2 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=3 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=4 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=5 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=6 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=7 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=8 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=9 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=10 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] deposit_and_register             run=11 status=success computation=1000000 storage=10358800 rebate=8223732 net=3135068
+[gas] update_commitment_root           run=0 status=success computation=1000000 storage=8740000 rebate=8411832 net=1328168
+[gas] propose_withdraw_vk              run=0 status=success computation=1000000 storage=11970000 rebate=8652600 net=4317400
+[gas] create_compliance_config         run=0 status=success computation=1000000 storage=18171600 rebate=11850300 net=7321300
+[gas] propose_vk_update                run=0 status=success computation=1000000 storage=15929600 rebate=12091068 net=4838532
+[gas] cancel_vk_update                 run=0 status=success computation=1000000 storage=12213200 rebate=15770304 net=-2557104
+[env] executing proofs in pool epoch 29919346
+[gas] shielded_transfer                run=0 status=success computation=1000000 storage=14485600 rebate=12610224 net=2875376
+[gas] compliant_transfer               run=0 status=success computation=1000000 storage=22556800 rebate=18268272 net=5288528
+[gas] zk_withdraw                      run=0 status=success computation=1000000 storage=15823200 rebate=12369456 net=4453744
+[gas] zk_withdraw[recipient≠proof]     run=0 status=success computation=1000000 storage=15823200 rebate=12369456 net=4453744
+[E7] VIOLATED — redirected withdrawal ACCEPTED ; proof recipientHash=Poseidon(8, 0x72cdefd3…) ; tx recipient=0xe9b61da5… ; status=success ; TOKEN balance changes=[{"owner":{"AddressOwner":"0xe9b61da53fe2bc0b1366ee1e2c83cce24b9cb6583b5e567263b1a705e5301fa6"},"amount":"40000000"}]
+[gas] shielded_transfer                run=1 status=success computation=1000000 storage=14485600 rebate=12369456 net=3116144
+[gas] compliant_transfer               run=1 status=success computation=1000000 storage=22556800 rebate=18268272 net=5288528
+[gas] zk_withdraw                      run=1 status=success computation=1000000 storage=15823200 rebate=12369456 net=4453744
+[gas] zk_withdraw[recipient≠proof]     run=1 status=success computation=1000000 storage=15823200 rebate=12369456 net=4453744
+[E7] VIOLATED — redirected withdrawal ACCEPTED ; proof recipientHash=Poseidon(8, 0x72cdefd3…) ; tx recipient=0xe9b61da5… ; status=success ; TOKEN balance changes=[{"owner":{"AddressOwner":"0xe9b61da53fe2bc0b1366ee1e2c83cce24b9cb6583b5e567263b1a705e5301fa6"},"amount":"40000000"}]
+[gas] shielded_transfer                run=2 status=success computation=1000000 storage=14485600 rebate=12369456 net=3116144
+[gas] compliant_transfer               run=2 status=success computation=1000000 storage=22556800 rebate=18268272 net=5288528
+[gas] zk_withdraw                      run=2 status=success computation=1000000 storage=15823200 rebate=12369456 net=4453744
+[gas] zk_withdraw[recipient≠proof]     run=2 status=success computation=1000000 storage=15823200 rebate=12369456 net=4453744
+[E7] VIOLATED — redirected withdrawal ACCEPTED ; proof recipientHash=Poseidon(8, 0x72cdefd3…) ; tx recipient=0xe9b61da5… ; status=success ; TOKEN balance changes=[{"owner":{"AddressOwner":"0xe9b61da53fe2bc0b1366ee1e2c83cce24b9cb6583b5e567263b1a705e5301fa6"},"amount":"40000000"}]
+[gas] groth16-gas: publish             run=0 status=success computation=1000000 storage=13459600 rebate=978120 net=13481480
+[gas] groth16-gas: store_prepared      run=0 status=success computation=1000000 storage=8162400 rebate=978120 net=8184280
+[gas] groth16-gas: noop                run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: prepare_only        run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: prepare_and_verify  run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: noop_shared         run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: verify_prepared     run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: noop                run=1 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: prepare_only        run=1 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: prepare_and_verify  run=1 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: noop_shared         run=1 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: verify_prepared     run=1 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: noop                run=2 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: prepare_only        run=2 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: prepare_and_verify  run=2 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: noop_shared         run=2 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] groth16-gas: verify_prepared     run=2 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: noop_n(n=1)               run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_only_n(n=1)       run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_and_verify_n(n=1) run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: verify_prepared_n(n=1)    run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: noop_n(n=2)               run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_only_n(n=2)       run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_and_verify_n(n=2) run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: verify_prepared_n(n=2)    run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: noop_n(n=4)               run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_only_n(n=4)       run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_and_verify_n(n=4) run=0 status=success computation=1090000 storage=988000 rebate=978120 net=1099880
+[gas] sweep: verify_prepared_n(n=4)    run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: noop_n(n=8)               run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_only_n(n=8)       run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_and_verify_n(n=8) run=0 status=success computation=2160000 storage=988000 rebate=978120 net=2169880
+[gas] sweep: verify_prepared_n(n=8)    run=0 status=success computation=1510000 storage=988000 rebate=978120 net=1519880
+[gas] sweep: noop_n(n=16)              run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_only_n(n=16)      run=0 status=success computation=1370000 storage=988000 rebate=978120 net=1379880
+[gas] sweep: prepare_and_verify_n(n=16) run=0 status=success computation=4290000 storage=988000 rebate=978120 net=4299880
+[gas] sweep: verify_prepared_n(n=16)   run=0 status=success computation=2970000 storage=988000 rebate=978120 net=2979880
+[gas] sweep: noop_n(n=32)              run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_only_n(n=32)      run=0 status=success computation=2710000 storage=988000 rebate=978120 net=2719880
+[gas] sweep: prepare_and_verify_n(n=32) run=0 status=success computation=8560000 storage=988000 rebate=978120 net=8569880
+[gas] sweep: verify_prepared_n(n=32)   run=0 status=success computation=5900000 storage=988000 rebate=978120 net=5909880
+[gas] sweep: noop_n(n=64)              run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_only_n(n=64)      run=0 status=success computation=5400000 storage=988000 rebate=978120 net=5409880
+[gas] sweep: prepare_and_verify_n(n=64) run=0 status=success computation=17200000 storage=988000 rebate=978120 net=17209880
+[gas] sweep: verify_prepared_n(n=64)   run=0 status=success computation=11800000 storage=988000 rebate=978120 net=11809880
+[gas] sweep: noop_n(n=128)             run=0 status=success computation=1000000 storage=988000 rebate=978120 net=1009880
+[gas] sweep: prepare_only_n(n=128)     run=0 status=success computation=10900000 storage=988000 rebate=978120 net=10909880
+[gas] sweep: prepare_and_verify_n(n=128) run=0 status=success computation=34300000 storage=988000 rebate=978120 net=34309880
+[gas] sweep: verify_prepared_n(n=128)  run=0 status=success computation=23500000 storage=988000 rebate=978120 net=23509880
+[summary] reference gas price = 1000 MIST/unit; costs below in MIST (1 SUI = 1e9 MIST)
+| entry point | n | computation (MIST) | computation units | storage cost | storage rebate | net (MIST) |
+|---|---|---|---|---|---|---|
+| publish | 1 | 1390000 | 1390 | 156415600 | 9781200 | 148024400 |
+| create_pool | 1 | 1000000 | 1000 | 8496800 | 978120 | 8518680 |
+| token_faucet::faucet | 2 | 1000000 | 1000 | 4043200 | 2678544 | 2364656 |
+| deposit_and_register | 12 | 1000000 | 1000 | 10358800 | 8223732 | 3135068 |
+| update_commitment_root | 1 | 1000000 | 1000 | 8740000 | 8411832 | 1328168 |
+| propose_withdraw_vk | 1 | 1000000 | 1000 | 11970000 | 8652600 | 4317400 |
+| create_compliance_config | 1 | 1000000 | 1000 | 18171600 | 11850300 | 7321300 |
+| propose_vk_update | 1 | 1000000 | 1000 | 15929600 | 12091068 | 4838532 |
+| cancel_vk_update | 1 | 1000000 | 1000 | 12213200 | 15770304 | -2557104 |
+| shielded_transfer | 3 | 1000000 | 1000 | 14485600 | 12610224 / 12369456 | 2875376 / 3116144 |
+| compliant_transfer | 3 | 1000000 | 1000 | 22556800 | 18268272 | 5288528 |
+| zk_withdraw | 3 | 1000000 | 1000 | 15823200 | 12369456 | 4453744 |
+| zk_withdraw[recipient≠proof] | 3 | 1000000 | 1000 | 15823200 | 12369456 | 4453744 |
+| groth16-gas: publish | 1 | 1000000 | 1000 | 13459600 | 978120 | 13481480 |
+| groth16-gas: store_prepared | 1 | 1000000 | 1000 | 8162400 | 978120 | 8184280 |
+| groth16-gas: noop | 3 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| groth16-gas: prepare_only | 3 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| groth16-gas: prepare_and_verify | 3 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| groth16-gas: noop_shared | 3 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| groth16-gas: verify_prepared | 3 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: noop_n(n=1) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_only_n(n=1) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_and_verify_n(n=1) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: verify_prepared_n(n=1) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: noop_n(n=2) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_only_n(n=2) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_and_verify_n(n=2) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: verify_prepared_n(n=2) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: noop_n(n=4) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_only_n(n=4) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_and_verify_n(n=4) | 1 | 1090000 | 1090 | 988000 | 978120 | 1099880 |
+| sweep: verify_prepared_n(n=4) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: noop_n(n=8) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_only_n(n=8) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_and_verify_n(n=8) | 1 | 2160000 | 2160 | 988000 | 978120 | 2169880 |
+| sweep: verify_prepared_n(n=8) | 1 | 1510000 | 1510 | 988000 | 978120 | 1519880 |
+| sweep: noop_n(n=16) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_only_n(n=16) | 1 | 1370000 | 1370 | 988000 | 978120 | 1379880 |
+| sweep: prepare_and_verify_n(n=16) | 1 | 4290000 | 4290 | 988000 | 978120 | 4299880 |
+| sweep: verify_prepared_n(n=16) | 1 | 2970000 | 2970 | 988000 | 978120 | 2979880 |
+| sweep: noop_n(n=32) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_only_n(n=32) | 1 | 2710000 | 2710 | 988000 | 978120 | 2719880 |
+| sweep: prepare_and_verify_n(n=32) | 1 | 8560000 | 8560 | 988000 | 978120 | 8569880 |
+| sweep: verify_prepared_n(n=32) | 1 | 5900000 | 5900 | 988000 | 978120 | 5909880 |
+| sweep: noop_n(n=64) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_only_n(n=64) | 1 | 5400000 | 5400 | 988000 | 978120 | 5409880 |
+| sweep: prepare_and_verify_n(n=64) | 1 | 17200000 | 17200 | 988000 | 978120 | 17209880 |
+| sweep: verify_prepared_n(n=64) | 1 | 11800000 | 11800 | 988000 | 978120 | 11809880 |
+| sweep: noop_n(n=128) | 1 | 1000000 | 1000 | 988000 | 978120 | 1009880 |
+| sweep: prepare_only_n(n=128) | 1 | 10900000 | 10900 | 988000 | 978120 | 10909880 |
+| sweep: prepare_and_verify_n(n=128) | 1 | 34300000 | 34300 | 988000 | 978120 | 34309880 |
+| sweep: verify_prepared_n(n=128) | 1 | 23500000 | 23500 | 988000 | 978120 | 23509880 |

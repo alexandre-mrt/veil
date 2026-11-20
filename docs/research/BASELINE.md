@@ -10,7 +10,9 @@ Toolchain: circom 2.2.2 (built from source, `iden3/circom` tag `v2.2.2`), snarkj
 v22.22.2, Chromium 141 (headless, via Playwright), pot15 Powers of Tau (Hermez, `2^15` — reused
 for all three circuits per the existing `compile*.sh` scripts), single dev-only Groth16
 contribution (matches `circuits/scripts/compile*.sh` — **not** a production ceremony; see
-`ceremony.sh` and `docs/threat-model.md` RR2).
+`ceremony.sh` and `docs/threat-model.md` RR2). From 2026-11-20 the Hermez ptau download is refused
+by this environment, so nightly runs generate a local 2^15 ptau with snarkjs (also dev-only).
+Constraint counts are unchanged, and VK/proof sizes don't depend on the ptau.
 
 ## Constraint counts, artifact sizes
 
@@ -36,14 +38,51 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point
+
+Measured 2026-11-20 by executing real transactions with real Groth16 proofs on a local Sui network:
+`sui 1.72.1-94ad8ccd0ed6` (the framework rev pinned in `contracts/Move.toml`), protocol v124,
+reference gas price 1,000 MIST/unit. See
+[`2026-11-20-onchain-gas-baseline.md`](2026-11-20-onchain-gas-baseline.md). Deterministic:
+two full runs gave identical tables. Net = computation + storage − rebate (what the sender pays).
+
+| Entry point | Computation units | Storage cost (MIST) | Rebate (MIST) | **Net (MIST)** |
+|---|---|---|---|---|
+| `shielded_transfer` | 1,000 (floor) | 14,485,600 | 12,369,456 – 12,610,224 | **2,875,376 – 3,116,144** |
+| `compliance::compliant_transfer` | 1,000 (floor) | 22,556,800 | 18,268,272 | **5,288,528** |
+| `zk_withdraw` | 1,000 (floor) | 15,823,200 | 12,369,456 | **4,453,744** |
+| `deposit_and_register` (incl. coin split) | 1,000 | 10,358,800 | 8,223,732 | 3,135,068 |
+| `create_pool` | 1,000 | 8,496,800 | 978,120 | 8,518,680 |
+| `compliance::create_compliance_config` | 1,000 | 18,171,600 | 11,850,300 | 7,321,300 |
+| `update_commitment_root` | 1,000 | 8,740,000 | 8,411,832 | 1,328,168 |
+| `propose_withdraw_vk` | 1,000 | 11,970,000 | 8,652,600 | 4,317,400 |
+| `propose_vk_update` | 1,000 | 15,929,600 | 12,091,068 | 4,838,532 |
+| `cancel_vk_update` | 1,000 | 12,213,200 | 15,770,304 | −2,557,104 |
+| package `publish` | 1,390 | 156,415,600 | 9,781,200 | 148,024,400 |
+
+Groth16 cost per call (slope of an n = 64 → 128 in-transaction sweep,
+`scripts/bench/groth16-gas`): `prepare_verifying_key` ≈ 86 units, verify with a prepared key
+≈ 183 units, prepare + verify (Veil today) ≈ 267 units. That is well under the 1,000-unit
+per-transaction floor, so verification is currently invisible in what users pay. Storage
+dominates.
+
+Reproduce: `sui start --with-faucet --force-regenesis`, then `cd scripts && node bench/gas.ts --runs 3`
+(prerequisites in the script header).
+
+## Test suites
+
+| Suite | Result (2026-11-20) |
+|---|---|
+| `contracts`: `sui move test` | 124 / 124 passed |
+| `circuits`: `npm test` | 43 + 30 + 35 passed |
+| `scripts`: converter / compliance-utils / fuzz | all passed |
+| `frontend`: tsc, biome, vitest | clean, 19 / 19 passed |
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
-| Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
-| Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
-
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+| Gas on testnet/mainnet protocol versions | **NOT MEASURED** | Public fullnode RPC is refused by this environment's egress proxy; the numbers above are pinned to localnet protocol v124. |
+| Shared-object contention on `Pool` under concurrent senders | **NOT MEASURED** | `gas.ts` is single-sender; queued. |
+| Mobile WASM proving latency | **NOT MEASURED** | Extend `browser-latency.mjs` with a device-emulation profile; queued. |
+| Relayer throughput / leakage under load | **NOT MEASURED** | Queued. |
