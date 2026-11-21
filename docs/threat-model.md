@@ -92,10 +92,10 @@ Data flows: User generates Groth16 proofs in-browser, submits proof bytes + publ
 | E1 | Non-admin calls admin function | `assert_pool_admin(cap, pool)` checks `cap.pool_id == pool.id.to_inner()` on every admin operation. 19 admin functions gated. | Mitigated |
 | E2 | Cross-pool admin attack (use cap from pool A on pool B) | `cap.pool_id` is set at creation and immutable. Mismatch aborts with `E_NOT_POOL_ADMIN`. Tested in 7 cross-pool access-control tests. | Mitigated |
 | E3 | Package upgrade backdoor via UpgradeCap | Pre-mainnet blocker. UpgradeCap currently in EOA. Must be burned (`sui::package::make_immutable`) or transferred to multisig before mainnet. Management script exists (`manage-upgrade-cap.ts`). | Accepted risk (pre-mainnet) |
-| E4 | Withdraw more than deposited via ZK proof manipulation | Withdraw circuit enforces `withdrawAmount <= cumulativeOld` (constraint C5) with 64-bit range proofs on both values. On-chain checks pool balance sufficiency. | Mitigated |
+| E4 | Withdraw more than deposited via ZK proof manipulation | Withdraw circuit enforces `withdrawAmount <= cumulativeOld` (constraint C5) with 64-bit range proofs on both values. On-chain checks pool balance sufficiency. **But `deposit_and_register` never binds the commitment's `cumulativeOld` field to the deposited coin value, and `transfer.circom` treats the same field as cumulative *spending* (it increases).** A 100 TOKEN deposit with a commitment claiming 1000 TOKEN withdrew 1000 TOKEN on localnet (2026-11-21, `scripts/bench/gas-localnet.mjs` probe F1). | **BROKEN** (see `docs/research/2026-11-21-onchain-gas-baseline.md` F1) |
 | E5 | Bypass compliance requirement via direct `shielded_transfer` | When `compliance_required == true`, `shielded_transfer` aborts with `E_COMPLIANCE_REQUIRED`. Compliance toggle applied lazily before the check. | Mitigated |
 | E6 | Sybil attack: create multiple userSecrets to bypass spending threshold | Known limitation. Each userSecret gets its own cumulative spending counter. Mitigation requires identity-binding at deposit time (future work). | Accepted risk |
-| E7 | Front-run ZK withdrawal to steal funds | Withdrawal circuit binds to recipient via `recipientHash = Poseidon(8, recipient)`. Changing recipient invalidates the Groth16 proof. | Mitigated |
+| E7 | Front-run ZK withdrawal to steal funds | Withdrawal circuit computes `recipientHash = Poseidon(8, recipient)`, but `recipient` is a **private** input and `zk_withdraw` never checks its `recipient: address` argument against `recipientHash`. Changing the recipient does **not** invalidate the proof. A proof made for A was redeemed to B on localnet (2026-11-21, probe F2). | **BROKEN** (see `docs/research/2026-11-21-onchain-gas-baseline.md` F2) |
 
 ## Attack Scenarios (tested in Move tests)
 
@@ -137,6 +137,8 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | RR7 | Relayer centralization | Low | Single relayer can censor. | Multiple independent relayers + direct submission fallback. |
 | RR8 | PBKDF2 fallback key derivation | Low | In incognito mode, encryption key derived from wallet address (public). Weaker than IndexedDB non-extractable keys. | Acceptable for incognito sessions. Primary path uses non-extractable keys. |
 | RR9 | Token faucet in production bytecode | Low | `token_faucet.move` allows free minting (gated by TreasuryCap). | Remove from sources before mainnet deployment. Separate module file for easy exclusion. |
+| RR10 | Deposit-amount inflation (E4) | Critical | Any depositor can commit to an arbitrary balance and `zk_withdraw` it. Exploited on localnet 2026-11-21. | **Unmitigated.** Mainnet blocker. Fix queued (`docs/research/EXPERIMENTS.md` #1). |
+| RR11 | Withdrawal front-running / relayer theft (E7) | Critical | `zk_withdraw` does not bind `recipient` to the proof. Anyone holding the proof bytes can redirect the payout. Exploited on localnet 2026-11-21. | **Unmitigated.** Mainnet blocker. Fix queued (`docs/research/EXPERIMENTS.md` #2). |
 
 ## Security Controls Summary Table
 
@@ -168,7 +170,7 @@ The following 19 attacker threat scenarios are tested in `scenario_tests.move`:
 | Commitment uniqueness | `pool.move:244-249` | Preventive | `E_COMMITMENT_EXISTS` prevents duplicate commitments |
 | Upper bytes zero check | `verifier.move:67-73` | Preventive | Prevents u64 overflow via non-zero upper 24 bytes |
 | Epoch grace period | `pool.move:206-208` | Preventive | Accepts current or previous epoch to handle boundary races |
-| Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive | `recipientHash = Poseidon(8, recipient)` prevents front-running |
+| Recipient binding (withdrawal) | `withdraw.circom:108-113` | Preventive (**ineffective**) | `recipientHash = Poseidon(8, recipient)` is computed in-circuit but never checked against `zk_withdraw`'s `recipient` argument. It does not prevent front-running (E7, 2026-11-21) |
 | Context-bound credential nullifiers | `compliance.circom:79-87` | Preventive | `contextId = Poseidon(6, transferNullifier, userSecret)` unique per transfer |
 | Domain-separated Poseidon hashes | `transfer.circom`, `compliance.circom`, `withdraw.circom` | Preventive | Tags 1-8 prevent cross-domain hash collisions |
 | Merkle accumulator | `pool.move:77-80`, `transfer.circom:52-61` | Privacy | Anonymity set = all commitments, root verified in circuit |
