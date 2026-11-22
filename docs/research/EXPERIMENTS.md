@@ -5,7 +5,20 @@ anonymity-set size) or closes a threat currently unmitigated (see `docs/threat-m
 top item not already settled KEEP/REJECT in `LEDGER.md`. Re-rank whenever a night's result changes
 what matters most — say why in the commit, don't just reorder silently.
 
-1. **On-chain gas per entry point.** `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
+> **2026-11-22: this queue is stale on `main`.** Items 1 (on-chain gas) and 2 (Poseidon2) were
+> settled in unmerged PRs (#119/#127 KEEP; #113/#114/#117 REJECT). The real top item is the
+> E4/E7 fund-theft fix (#122, #127): see `2026-11-22-onchain-gas-reproduction.md`. Merge the open
+> research PRs, or start nights from the latest research branch, before reading this list as
+> current.
+
+0. **Fix E4 (deposit-amount inflation) + E7 (withdraw recipient not bound on-chain).** Both
+   reproduced on `main` with real proofs, 2026-11-16 / 11-21 / 11-22. Critical: pool funds can be
+   stolen. Needs a commitment shape that binds the deposited amount, and an on-chain
+   `poseidon_bn254` recompute of `recipientHash` (or `recipient` as a public input). A circuit
+   change, so it needs a soundness argument, a leakage analysis and negative tests (the design is
+   in #122).
+
+1. **On-chain gas per entry point.** *(Settled KEEP in unmerged #119/#127; reproduced 2026-11-22.)* `BASELINE.md`'s one missing axis. Needs a working `sui` CLI
    (prebuilt binary, or a from-source build budgeted across more than one night) or explicit
    permission to make direct JSON-RPC reads against the already-deployed testnet package
    (`README.md` has real package/pool/config IDs — `suix_queryTransactionBlocks` against a public
