@@ -1,0 +1,77 @@
+RPC http://127.0.0.1:9000  chain 3K25ZTrTAeExzP1VNQSdYtMrtarWFQbwfCDYoXifnAdE  RGP 1000 MIST  sui 1.84.1-e83d69069e40
+  ok  publish (6 modules)                          comp=1380000 storage=156415600 rebate=4939506 net=152856094
+  ok  create_pool                                  comp=1000000 storage=8496800 rebate=987901 net=8508899
+  ok  token::mint                                  comp=1000000 storage=4043200 rebate=2705329 net=2337871
+  ok  token_faucet::faucet                         comp=1000000 storage=4043200 rebate=2705329 net=2337871
+  ok  token::mint (to mallory, 100 TOKEN)          comp=1000000 storage=4043200 rebate=2705329 net=2337871
+  ok  deposit_and_register (1st, 500 TOKEN)        comp=1000000 storage=10358800 rebate=9643436 net=1715364
+  ok  deposit_and_register (2nd, 1000 TOKEN)       comp=1000000 storage=10358800 rebate=8305969 net=3052831
+  ok  deposit_and_register (3rd, 100 TOKEN)        comp=1000000 storage=10358800 rebate=8305969 net=3052831
+  ok  deposit_and_register (4th, 1000 TOKEN)       comp=1000000 storage=10358800 rebate=8305969 net=3052831
+  ok  deposit_and_register (mallory, 100 TOKEN)    comp=1000000 storage=10358800 rebate=12257574 net=-898774
+  ok  update_commitment_root (propose)             comp=1000000 storage=8740000 rebate=8495950 net=1244050
+  ok  propose_withdraw_vk                          comp=1000000 storage=11970000 rebate=8739126 net=4230874
+  ok  create_compliance_config                     comp=1000000 storage=18171600 rebate=11968803 net=7202797
+  waiting for pool epoch > 29922195 ..................→ 29922196
+  proved transfer (1075 ms, 7 public signals)
+  rej shielded_transfer (tampered input → E_INVALID_PROOF) rejected at simulation: MoveAbort in 1st command, abort code: 3, in '0x92b2c4f95c4287029c3339ad84b1eaee4b879046cade975ba68cce8dfd601814::pool::execute_transfer' (instruction 100)
+  ok  shielded_transfer (applies pending root)     comp=1000000 storage=14485600 rebate=12736326 net=2749274
+  rej shielded_transfer (replay → E_COMMITMENT_CHAIN_BROKEN) rejected at simulation: MoveAbort in 1st command, abort code: 9, in '0x92b2c4f95c4287029c3339ad84b1eaee4b879046cade975ba68cce8dfd601814::pool::execute_transfer' (instruction 134)
+  proved transfer (731 ms, 7 public signals)
+  proved compliance (744 ms, 6 public signals)
+  ok  compliant_transfer (2 proofs)                comp=1000000 storage=22556800 rebate=18450955 net=5105845
+  proved withdraw (243 ms, 5 public signals)
+  ok  zk_withdraw (applies pending withdraw VK)    comp=1000000 storage=15823200 rebate=16444755 net=378445
+
+PROBE 1 — recipient redirection (E7)
+  proved withdraw (246 ms, 5 public signals)
+  !! PROBE zk_withdraw (alice's proof, recipient=mallory): expected failure but transaction SUCCEEDED
+  ok  PROBE zk_withdraw (alice's proof, recipient=mallory) comp=1000000 storage=15823200 rebate=12493151 net=4330049
+
+PROBE 2 — deposit-amount inflation (E4)
+  proved withdraw (257 ms, 5 public signals)
+  rej PROBE zk_withdraw (100 TOKEN deposit → 3000 out) rejected at simulation: MoveAbort in 1st command, abort code: 6, in '0x92b2c4f95c4287029c3339ad84b1eaee4b879046cade975ba68cce8dfd601814::pool::zk_withdraw' (instruction 160)
+  ok  propose_withdrawal                           comp=1000000 storage=12274000 rebate=11968803 net=1305197
+  ok  freeze_pool                                  comp=1000000 storage=12274000 rebate=12272773 net=1001227
+  ok  unfreeze_pool                                comp=1000000 storage=12274000 rebate=12272773 net=1001227
+  waiting for pool epoch > 29922196 ..........................→ 29922197
+  ok  execute_pending_withdrawal                   comp=1000000 storage=13307600 rebate=12272773 net=2034827
+
+RGP = 1000 MIST/unit
+| Entry point | status | computation (MIST) | units | storage | rebate | net (MIST) |
+|---|---|---|---|---|---|---|
+| publish (6 modules) | success | 1380000 | 1380 | 156415600 | 4939506 | 152856094 |
+| create_pool | success | 1000000 | 1000 | 8496800 | 987901 | 8508899 |
+| token::mint | success | 1000000 | 1000 | 4043200 | 2705329 | 2337871 |
+| token_faucet::faucet | success | 1000000 | 1000 | 4043200 | 2705329 | 2337871 |
+| deposit_and_register (1st, 500 TOKEN) | success | 1000000 | 1000 | 10358800 | 9643436 | 1715364 |
+| deposit_and_register (2nd, 1000 TOKEN) | success | 1000000 | 1000 | 10358800 | 8305969 | 3052831 |
+| deposit_and_register (3rd, 100 TOKEN) | success | 1000000 | 1000 | 10358800 | 8305969 | 3052831 |
+| deposit_and_register (4th, 1000 TOKEN) | success | 1000000 | 1000 | 10358800 | 8305969 | 3052831 |
+| update_commitment_root (propose) | success | 1000000 | 1000 | 8740000 | 8495950 | 1244050 |
+| propose_withdraw_vk | success | 1000000 | 1000 | 11970000 | 8739126 | 4230874 |
+| create_compliance_config | success | 1000000 | 1000 | 18171600 | 11968803 | 7202797 |
+| shielded_transfer (applies pending root) | success | 1000000 | 1000 | 14485600 | 12736326 | 2749274 |
+| compliant_transfer (2 proofs) | success | 1000000 | 1000 | 22556800 | 18450955 | 5105845 |
+| zk_withdraw (applies pending withdraw VK) | success | 1000000 | 1000 | 15823200 | 16444755 | 378445 |
+| propose_withdrawal | success | 1000000 | 1000 | 12274000 | 11968803 | 1305197 |
+| freeze_pool | success | 1000000 | 1000 | 12274000 | 12272773 | 1001227 |
+| unfreeze_pool | success | 1000000 | 1000 | 12274000 | 12272773 | 1001227 |
+| execute_pending_withdrawal | success | 1000000 | 1000 | 13307600 | 12272773 | 2034827 |
+
+Probes: {
+  "E7_recipient_redirection": {
+    "status": "success",
+    "error": null,
+    "digest": "BAhN2TdfhUs2jck5UkJZzSEmYGBkx2BSR1KsEoBAwvpk",
+    "malloryTokenDelta": "400"
+  },
+  "E4_deposit_inflation": {
+    "status": "failure",
+    "error": "MoveAbort in 1st command, abort code: 6, in '0x92b2c4f95c4287029c3339ad84b1eaee4b879046cade975ba68cce8dfd601814::pool::zk_withdraw' (instruction 160)",
+    "digest": null,
+    "malloryDeposited": "100000000",
+    "malloryTokenDelta": "0"
+  }
+}
+wrote /home/user/veil/scripts/bench/results/gas-localnet.json

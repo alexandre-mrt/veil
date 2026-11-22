@@ -1,0 +1,246 @@
+{
+  "measuredAt": "2026-11-22T07:19:01.738Z",
+  "rpc": "http://127.0.0.1:9000",
+  "chainId": "3K25ZTrTAeExzP1VNQSdYtMrtarWFQbwfCDYoXifnAdE",
+  "referenceGasPrice": 1000,
+  "sui": "sui 1.84.1-e83d69069e40",
+  "node": "v22.23.5",
+  "poolEpochs": {
+    "setup": "29922197",
+    "proving": "29922198",
+    "final": "29922199"
+  },
+  "rows": [
+    {
+      "label": "publish (6 modules)",
+      "status": "success",
+      "error": null,
+      "digest": "8UAhqqtuegNLQJkDojyMDpG2GKy3PBVyccQuDWbz95hq",
+      "computationCost": 1380000,
+      "storageCost": 156415600,
+      "storageRebate": 4939506,
+      "nonRefundableStorageFee": 494,
+      "net": 152856094,
+      "computationUnits": 1380
+    },
+    {
+      "label": "create_pool",
+      "status": "success",
+      "error": null,
+      "digest": "9oeqWTRsMpJN1G2PHSekGk734SkhUztJC48TiM68WNEV",
+      "computationCost": 1000000,
+      "storageCost": 8496800,
+      "storageRebate": 987901,
+      "nonRefundableStorageFee": 99,
+      "net": 8508899,
+      "computationUnits": 1000
+    },
+    {
+      "label": "token::mint",
+      "status": "success",
+      "error": null,
+      "digest": "ETqoSvWkqgKEnmgQ1VgFcDKkEj5gSPk43MxbyqmTkVDB",
+      "computationCost": 1000000,
+      "storageCost": 4043200,
+      "storageRebate": 2705329,
+      "nonRefundableStorageFee": 271,
+      "net": 2337871,
+      "computationUnits": 1000
+    },
+    {
+      "label": "token_faucet::faucet",
+      "status": "success",
+      "error": null,
+      "digest": "9qJQgCbDKZgACGGVPmTcvmuKhJnmzaw2eBaQG6HHFwVE",
+      "computationCost": 1000000,
+      "storageCost": 4043200,
+      "storageRebate": 2705329,
+      "nonRefundableStorageFee": 271,
+      "net": 2337871,
+      "computationUnits": 1000
+    },
+    {
+      "label": "deposit_and_register (1st, 500 TOKEN)",
+      "status": "success",
+      "error": null,
+      "digest": "9EHuTKzbUgi1uWnx9kHLJv5FViEmZZ1VQvbJVcMv8pAW",
+      "computationCost": 1000000,
+      "storageCost": 10358800,
+      "storageRebate": 9643436,
+      "nonRefundableStorageFee": 964,
+      "net": 1715364,
+      "computationUnits": 1000
+    },
+    {
+      "label": "deposit_and_register (2nd, 1000 TOKEN)",
+      "status": "success",
+      "error": null,
+      "digest": "AcrEvUJNUz5jTFgT4VEGMa4sFy1PyhJQ1LWMkTDeRFh",
+      "computationCost": 1000000,
+      "storageCost": 10358800,
+      "storageRebate": 8305969,
+      "nonRefundableStorageFee": 831,
+      "net": 3052831,
+      "computationUnits": 1000
+    },
+    {
+      "label": "deposit_and_register (3rd, 100 TOKEN)",
+      "status": "success",
+      "error": null,
+      "digest": "8MAamx2MroTWzyE94Czxo3ZGfN6aKpCWpVHKnjXpidib",
+      "computationCost": 1000000,
+      "storageCost": 10358800,
+      "storageRebate": 8305969,
+      "nonRefundableStorageFee": 831,
+      "net": 3052831,
+      "computationUnits": 1000
+    },
+    {
+      "label": "deposit_and_register (4th, 1000 TOKEN)",
+      "status": "success",
+      "error": null,
+      "digest": "D6d9Y4ebkkSEPHDZHdHkDxDmrS8kf9Vho4o2rFKGozYY",
+      "computationCost": 1000000,
+      "storageCost": 10358800,
+      "storageRebate": 8305969,
+      "nonRefundableStorageFee": 831,
+      "net": 3052831,
+      "computationUnits": 1000
+    },
+    {
+      "label": "update_commitment_root (propose)",
+      "status": "success",
+      "error": null,
+      "digest": "BVrhUPzt4Le6uAfcwVSSzfaT5ajtcTLMwwPLUQZdS3W7",
+      "computationCost": 1000000,
+      "storageCost": 8740000,
+      "storageRebate": 8495950,
+      "nonRefundableStorageFee": 850,
+      "net": 1244050,
+      "computationUnits": 1000
+    },
+    {
+      "label": "propose_withdraw_vk",
+      "status": "success",
+      "error": null,
+      "digest": "3LvHz6t8Cxc7432m3ackGmQkZY1pePBJDSXrBAX8Mmz9",
+      "computationCost": 1000000,
+      "storageCost": 11970000,
+      "storageRebate": 8739126,
+      "nonRefundableStorageFee": 874,
+      "net": 4230874,
+      "computationUnits": 1000
+    },
+    {
+      "label": "create_compliance_config",
+      "status": "success",
+      "error": null,
+      "digest": "Ecf67prFH9LgeyMw9AJRetyPAFYVTf57HEEGbcAqvizF",
+      "computationCost": 1000000,
+      "storageCost": 18171600,
+      "storageRebate": 11968803,
+      "nonRefundableStorageFee": 1197,
+      "net": 7202797,
+      "computationUnits": 1000
+    },
+    {
+      "label": "shielded_transfer (applies pending root)",
+      "status": "success",
+      "error": null,
+      "digest": "GjVaWVEA36TYEeqzN4WjYzd31EZnHkHd2ACnJ1z1ELpP",
+      "computationCost": 1000000,
+      "storageCost": 14485600,
+      "storageRebate": 12736326,
+      "nonRefundableStorageFee": 1274,
+      "net": 2749274,
+      "computationUnits": 1000
+    },
+    {
+      "label": "compliant_transfer (2 proofs)",
+      "status": "success",
+      "error": null,
+      "digest": "5acm4vkXYTAwCuYkhXJMe9kW8j1NXMB5CiRsQDE7H4Z5",
+      "computationCost": 1000000,
+      "storageCost": 22556800,
+      "storageRebate": 18450955,
+      "nonRefundableStorageFee": 1845,
+      "net": 5105845,
+      "computationUnits": 1000
+    },
+    {
+      "label": "zk_withdraw (applies pending withdraw VK)",
+      "status": "success",
+      "error": null,
+      "digest": "GUUAE61bQ3ERtGyC6QZajxwfm3FNUisp3FeL3dtR4QxL",
+      "computationCost": 1000000,
+      "storageCost": 15823200,
+      "storageRebate": 16444755,
+      "nonRefundableStorageFee": 1645,
+      "net": 378445,
+      "computationUnits": 1000
+    },
+    {
+      "label": "propose_withdrawal",
+      "status": "success",
+      "error": null,
+      "digest": "5higtZPiba2z8KHqHe6DTYgYZUxwDoUMNntB3cK67Utp",
+      "computationCost": 1000000,
+      "storageCost": 12274000,
+      "storageRebate": 11968803,
+      "nonRefundableStorageFee": 1197,
+      "net": 1305197,
+      "computationUnits": 1000
+    },
+    {
+      "label": "freeze_pool",
+      "status": "success",
+      "error": null,
+      "digest": "AF43Gr3WRJfBtE35SFWGeJMBCzLrJTeW2qi8fZBPbeUa",
+      "computationCost": 1000000,
+      "storageCost": 12274000,
+      "storageRebate": 12272773,
+      "nonRefundableStorageFee": 1227,
+      "net": 1001227,
+      "computationUnits": 1000
+    },
+    {
+      "label": "unfreeze_pool",
+      "status": "success",
+      "error": null,
+      "digest": "2dwxaZLTqpbFc9SZAEKm3WJsGuREHaqGmp6Shjzzmv34",
+      "computationCost": 1000000,
+      "storageCost": 12274000,
+      "storageRebate": 12272773,
+      "nonRefundableStorageFee": 1227,
+      "net": 1001227,
+      "computationUnits": 1000
+    },
+    {
+      "label": "execute_pending_withdrawal",
+      "status": "success",
+      "error": null,
+      "digest": "HbP66ANaEG3Rqk6G4PeNNAjQtcqPsvzWmLgpXuV2HGJW",
+      "computationCost": 1000000,
+      "storageCost": 13307600,
+      "storageRebate": 12272773,
+      "nonRefundableStorageFee": 1227,
+      "net": 2034827,
+      "computationUnits": 1000
+    }
+  ],
+  "probes": {
+    "E7_recipient_redirection": {
+      "status": "success",
+      "error": null,
+      "digest": "BWJiUMuda3nFJ9rrwAH2nrxyawAVCcXLDzSqGkDvj4uC",
+      "malloryTokenDelta": "400"
+    },
+    "E4_deposit_inflation": {
+      "status": "success",
+      "error": null,
+      "digest": "6AtE9KtUyLytqPkwbKgWh9xKUGtZJZ6JHr4SoXT1zFQf",
+      "malloryDeposited": "100000000",
+      "malloryTokenDelta": "2000000000"
+    }
+  }
+}
