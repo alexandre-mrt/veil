@@ -1,0 +1,752 @@
+{
+  "rpc": "http://127.0.0.1:9000",
+  "package": "0x675821b37d14b47a5b6b350027dc158b4a65372bb873fe740b8c67c0e6ef4ffe",
+  "epochMs": 60000,
+  "referenceGasPrice": {
+    "referenceGasPrice": "1000"
+  },
+  "results": [
+    {
+      "label": "publish (package)",
+      "status": "success",
+      "gasUsed": {
+        "computationCost": "1380000",
+        "storageCost": "156415600",
+        "storageRebate": "4939506",
+        "nonRefundableStorageFee": "494"
+      },
+      "net": "152856094",
+      "digest": "Bf4WYRh91gHtpp9dpHvpL9carrKKJrU4pNKk5BUeyv8u"
+    },
+    {
+      "label": "create_pool",
+      "status": "success",
+      "error": null,
+      "digest": "H7qXzpcj61CMn43rY5DgTqjudwne7vx2jFYwZq6DL4WR",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "8496800",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "8508899"
+    },
+    {
+      "label": "propose_withdraw_vk",
+      "status": "success",
+      "error": null,
+      "digest": "8vndkxBRsdeNt6ntDim1i16jSHeMoTnckUErJkS8ZAwi",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11726800",
+        "storageRebate": "8495950",
+        "nonRefundableStorageFee": "850"
+      },
+      "net": "4230850"
+    },
+    {
+      "label": "token_faucet::faucet (mint 1000 TOKEN)",
+      "status": "success",
+      "error": null,
+      "digest": "D2PrieCurMUHeLK6D8MxrwYkSCwK6ERnBhKKR8T2ad2b",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "4043200",
+        "storageRebate": "2705329",
+        "nonRefundableStorageFee": "271"
+      },
+      "net": "2337871"
+    },
+    {
+      "label": "deposit_and_register (note A)",
+      "status": "success",
+      "error": null,
+      "digest": "6Btz1t6vDZzvopaf1MjycdEddvyZsJk6qxEPQCpHbYGG",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "13588800",
+        "storageRebate": "11535646",
+        "nonRefundableStorageFee": "1154"
+      },
+      "net": "3053154"
+    },
+    {
+      "label": "deposit_and_register (note B)",
+      "status": "success",
+      "error": null,
+      "digest": "vtA4kxnk7QYjN9duC9MNccEBzBk7cZZLgYDmnRXo9SB",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "13588800",
+        "storageRebate": "11535646",
+        "nonRefundableStorageFee": "1154"
+      },
+      "net": "3053154"
+    },
+    {
+      "label": "deposit_and_register (note W)",
+      "status": "success",
+      "error": null,
+      "digest": "EaqxeJLDncjgtkMEuUrvY4ARo6fBcRf5mWvg38oH32yS",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "13588800",
+        "storageRebate": "11535646",
+        "nonRefundableStorageFee": "1154"
+      },
+      "net": "3053154"
+    },
+    {
+      "label": "deposit_and_register (note X)",
+      "status": "success",
+      "error": null,
+      "digest": "3Hpn3NDU5eTzfSzyrjKADuBo7fYaai6Krn1WFi5xqpVJ",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "13588800",
+        "storageRebate": "11535646",
+        "nonRefundableStorageFee": "1154"
+      },
+      "net": "3053154"
+    },
+    {
+      "label": "update_commitment_root",
+      "status": "success",
+      "error": null,
+      "digest": "Fyke5BKt54zmpetESqhChMwXVEhcSsxxhJBUFyLgY19z",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11970000",
+        "storageRebate": "11725627",
+        "nonRefundableStorageFee": "1173"
+      },
+      "net": "1244373"
+    },
+    {
+      "label": "create_compliance_config",
+      "status": "success",
+      "error": null,
+      "digest": "FFMp2GLZmx46xkQQ4AoE3WvFPYvWt1A7dZoHadb6tPoA",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "18171600",
+        "storageRebate": "11968803",
+        "nonRefundableStorageFee": "1197"
+      },
+      "net": "7202797"
+    },
+    {
+      "label": "shielded_transfer",
+      "status": "success",
+      "error": null,
+      "digest": "EbjNhp7CmL1gyETSNWY3LiFTj7Ts93nBE8suk36hzYxL",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "14485600",
+        "storageRebate": "12736326",
+        "nonRefundableStorageFee": "1274"
+      },
+      "net": "2749274"
+    },
+    {
+      "label": "shielded_transfer (replay, aborts)",
+      "status": "rejected-in-simulation",
+      "error": "MoveAbort 9 in pool::execute_transfer",
+      "digest": null,
+      "gasUsed": null,
+      "net": null
+    },
+    {
+      "label": "zk_withdraw",
+      "status": "success",
+      "error": null,
+      "digest": "7yNBZEyXBijYm6VyfF1YbcsL1Xr3kGQqqSu4VNLmoMh",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "15823200",
+        "storageRebate": "12493151",
+        "nonRefundableStorageFee": "1249"
+      },
+      "net": "4330049"
+    },
+    {
+      "label": "zk_withdraw (recipient substituted)",
+      "status": "success",
+      "error": null,
+      "digest": "6Yu8faJ4LGcpuXzDtrfVmdbvCmomSncxJE3AyfHw1kHU",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "15823200",
+        "storageRebate": "12493151",
+        "nonRefundableStorageFee": "1249"
+      },
+      "net": "4330049"
+    },
+    {
+      "label": "E7 probe",
+      "substitutionSucceeded": true,
+      "stolenCoin": "0xf143105a2c5a4bc9fa9ec6c8a4a74e4b11d517add75a8d687a137bae5d034c2f",
+      "attacker": "0xabababababababababababababababababababababababababababababababab",
+      "provenFor": "0x2200a0c5c000bf9ad7ae1b494f20e5156fdc79115263cbd74699275074c00fa1"
+    },
+    {
+      "label": "propose_compliance_toggle",
+      "status": "success",
+      "error": null,
+      "digest": "6wLmah6na1k2212W4jyVRqKBqUhzenm3BjHRBWgv2rdp",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11977600",
+        "storageRebate": "11968803",
+        "nonRefundableStorageFee": "1197"
+      },
+      "net": "1008797"
+    },
+    {
+      "label": "compliant_transfer",
+      "status": "success",
+      "error": null,
+      "digest": "C3b56Z7yzFwHfQe3heByZUmGz12a4D7xAp4HSQdbnUjs",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "22556800",
+        "storageRebate": "18458554",
+        "nonRefundableStorageFee": "1846"
+      },
+      "net": "5098246"
+    },
+    {
+      "label": "pvkbench::create (transfer vk)",
+      "status": "success",
+      "error": null,
+      "digest": "63U1UCq5o9JsAEG6VpvB6xTDBXQVLeRvfv3JhMBJkNHD",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11863600",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "11875699"
+    },
+    {
+      "label": "pvkbench::touch (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "2mjPrCXB6hHefNGPKazrjGodGvUPRqSBmpAawxRSK6Vw",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::prepare_only (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "38cz5xoTN2FcBWbWY8LyYNneBngxP2y22SouKPXQs8Pz",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::verify_raw (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "CrHtoGEniaDSDFtV8attTMY6L7EHPkW2HSWxXVvjk9Ky",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::verify_cached (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "EgNjQwvu1BmCtRkqVW6XTYjB4u7WWF7GFWKT4hrSZsnh",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::touch_n k=20 (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "HxsaYqoxDRRwRrwM3rHqmbSAM8m8UbpvbxT13nbHn75y",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::prepare_only_n k=20 (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "H7Lf8LcpbyhtVAV5q4aK4R275PQHt3MWJ4irUGTtrsy6",
+      "gasUsed": {
+        "computationCost": "1690000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1690099"
+    },
+    {
+      "label": "pvkbench::verify_raw_n k=20 (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "BVKNzAMJwAQo2pbFdKQXDMBK5U9xFE36X1nqmXeUMtCQ",
+      "gasUsed": {
+        "computationCost": "5350000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "5350099"
+    },
+    {
+      "label": "pvkbench::verify_cached_n k=20 (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "GdioszjeKttcWJDQeuHXt979jWuA8EjQkRUvg82bjDr8",
+      "gasUsed": {
+        "computationCost": "3710000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "3710099"
+    },
+    {
+      "label": "pvkbench::touch_n k=40 (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "ApYk6Lk47QrreoQWq8gNqyzx9XYn7QviBRArwN667cLR",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::prepare_only_n k=40 (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "3K2d4iQnPemydiutb8NUV6S11CCombRE61eE4WZDi3T8",
+      "gasUsed": {
+        "computationCost": "3350000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "3350099"
+    },
+    {
+      "label": "pvkbench::verify_raw_n k=40 (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "FKDL7QwVWyGbQyPh72qyWxSrMHBwyvrTAAGFnN18ffQC",
+      "gasUsed": {
+        "computationCost": "10700000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "10700099"
+    },
+    {
+      "label": "pvkbench::verify_cached_n k=40 (transfer)",
+      "status": "success",
+      "error": null,
+      "digest": "4wbEnM1BoM8rkiMzaquWTqc241LF17iqGAEX7UNJpSc8",
+      "gasUsed": {
+        "computationCost": "7390000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "7390099"
+    },
+    {
+      "label": "pvkbench::create (withdraw vk)",
+      "status": "success",
+      "error": null,
+      "digest": "Aqqd5kBsKHwpkV64sdiRpF5fWgHzUmqYFkE79AaZu75m",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "10890800",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "10902899"
+    },
+    {
+      "label": "pvkbench::touch (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "2FsStbPSm6rRM4eEXHC8XVDnBD3ju7CQMzsaF3RJRpco",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::prepare_only (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "6B69SCGvRarHJxBsH4v7nhvPzxeUSS4V6UZVEctUKeLf",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::verify_raw (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "AM8Kw5j2MdDMcg3d2BEsAuKHux3x6MrJJcFfWLshGkcG",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::verify_cached (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "BeiQPHqXYMnY8VkwjFuwXPrVmeKPrYmX4EpP2GSvqt2N",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::touch_n k=20 (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "7Aev9nyTMe6rcAPdUtKF4vxNgxuz2sL5kBkGXBppADwn",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::prepare_only_n k=20 (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "Asgi5enP6CQDPEeRgzzAmxQJHeQp8owsU6rnzrCVHH1E",
+      "gasUsed": {
+        "computationCost": "1680000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1680099"
+    },
+    {
+      "label": "pvkbench::verify_raw_n k=20 (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "GUvvDbW1V3cTiXQ39eAxH5fS5DSCLGfXvoCMtpuKMy5Q",
+      "gasUsed": {
+        "computationCost": "4960000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "4960099"
+    },
+    {
+      "label": "pvkbench::verify_cached_n k=20 (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "7abojnH8VswTuDYiiGRgeygiPDUNcgSvuq4KuHCrgWEA",
+      "gasUsed": {
+        "computationCost": "3320000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "3320099"
+    },
+    {
+      "label": "pvkbench::touch_n k=40 (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "2f5ZjypfSQmKKBmWLqrPeR3ACbhwujWgiwBws39r8ioa",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::prepare_only_n k=40 (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "H3RfRVoaELxP4QPRu8h9caDChM2D9rgh7xoadYoum3qq",
+      "gasUsed": {
+        "computationCost": "3340000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "3340099"
+    },
+    {
+      "label": "pvkbench::verify_raw_n k=40 (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "BFzCQpmkUAphqS9BizM9fWmF6B6rRiQQn9L4MqP19V2F",
+      "gasUsed": {
+        "computationCost": "9900000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "9900099"
+    },
+    {
+      "label": "pvkbench::verify_cached_n k=40 (withdraw)",
+      "status": "success",
+      "error": null,
+      "digest": "88KPgHgtiviC5WzBkPrWiYisAMYPZtwrxgtqVPznjzM6",
+      "gasUsed": {
+        "computationCost": "6620000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "6620099"
+    },
+    {
+      "label": "pvkbench::create (compliance vk)",
+      "status": "success",
+      "error": null,
+      "digest": "DFY3wRwxULmQVryw9LVRDc2qmAeWHma1uBmrr5ASUwx7",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11377200",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "11389299"
+    },
+    {
+      "label": "pvkbench::touch (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "Cx4VMn2xkNR72UtAWWUNRdida2YYnWiBHe2nonk4xCw5",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::prepare_only (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "3TFSvWNsKto7Rbk5Gp5pk1H2BSvP63Kk5xEiwAsASoYM",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::verify_raw (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "EsvkdqWXXCHviDk85Xk27SH1cP5HNSNV1tEg7ejntNud",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::verify_cached (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "9FsGS6doN1TM18XjmmuKgriakXP1URkGaKc5vpmLZVbC",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::touch_n k=20 (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "AMV7wsEWHKbrTS2LQXQZaV82HjDdUpzpoVUEPqqr2JQW",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::prepare_only_n k=20 (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "D24B5FdkwNA4VEgnsEmRe8PbZ8QcBc2mdt9ZurJwMszu",
+      "gasUsed": {
+        "computationCost": "1690000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1690099"
+    },
+    {
+      "label": "pvkbench::verify_raw_n k=20 (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "CNhmndb8fJeJpM2ooG4ZJeweAYjisu3L19eLEqZc2pfM",
+      "gasUsed": {
+        "computationCost": "5160000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "5160099"
+    },
+    {
+      "label": "pvkbench::verify_cached_n k=20 (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "HhDNGkVvFzt5iCWvHXuimWFNAv8raSkR58RcGShLKmxQ",
+      "gasUsed": {
+        "computationCost": "3520000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "3520099"
+    },
+    {
+      "label": "pvkbench::touch_n k=40 (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "89T8yzc513m2C5ZMwKxyy2qLZ2CUyBSPWKiXD4ssLMJC",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "1000099"
+    },
+    {
+      "label": "pvkbench::prepare_only_n k=40 (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "GkCFoW2rSCEPxTUaMUkSHd2mETnpGYTfUb9F4rpVyuCz",
+      "gasUsed": {
+        "computationCost": "3340000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "3340099"
+    },
+    {
+      "label": "pvkbench::verify_raw_n k=40 (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "frZVzkPKrQ2pZzawSWPLvwDeja9WWsaeVSHiQrW8VgU",
+      "gasUsed": {
+        "computationCost": "10300000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "10300099"
+    },
+    {
+      "label": "pvkbench::verify_cached_n k=40 (compliance)",
+      "status": "success",
+      "error": null,
+      "digest": "FAPSfKB2YByaHSx5AMitb3wyNRfxEC1o9mcNcAdMEfps",
+      "gasUsed": {
+        "computationCost": "7010000",
+        "storageCost": "988000",
+        "storageRebate": "987901",
+        "nonRefundableStorageFee": "99"
+      },
+      "net": "7010099"
+    },
+    {
+      "label": "freeze_pool",
+      "status": "success",
+      "error": null,
+      "digest": "9oRx9a5kUKHSR5KBRcamJED2JoRAspx2afTDrT9qXmT",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11970000",
+        "storageRebate": "11968803",
+        "nonRefundableStorageFee": "1197"
+      },
+      "net": "1001197"
+    },
+    {
+      "label": "unfreeze_pool",
+      "status": "success",
+      "error": null,
+      "digest": "A3wYrFjjK2JW95sLWTdXYM9rayNCYumkq8r4ukzVSWT6",
+      "gasUsed": {
+        "computationCost": "1000000",
+        "storageCost": "11970000",
+        "storageRebate": "11968803",
+        "nonRefundableStorageFee": "1197"
+      },
+      "net": "1001197"
+    }
+  ]
+}

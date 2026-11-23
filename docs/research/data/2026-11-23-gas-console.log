@@ -1,0 +1,127 @@
+$ bash scripts/bench/run-gas-local.sh /home/user/suisrc/gasrun   # sui 1.84.1-e83d69069e40, local network
+sui 1.84.1-e83d69069e40
+[info] package 0x675821b37d14b47a5b6b350027dc158b4a65372bb873fe740b8c67c0e6ef4ffe, treasury 0x3e7c5c39237ca86c73dd8adc9eb41ada312b3bce3434aedc4d0912cb9ee43ca8, signer 0x2200a0c5c000bf9ad7ae1b494f20e5156fdc79115263cbd74699275074c00fa1
+[info] reference gas price: {"referenceGasPrice":"1000"}
+[info] vk bytes: transfer=488 withdraw=424 compliance=456
+[gas] create_pool                                  status=success comp=1000000 storage=8496800 rebate=987901 nonRefundable=99 net=8508899
+[gas] propose_withdraw_vk                          status=success comp=1000000 storage=11726800 rebate=8495950 nonRefundable=850 net=4230850
+[gas] token_faucet::faucet (mint 1000 TOKEN)       status=success comp=1000000 storage=4043200 rebate=2705329 nonRefundable=271 net=2337871
+[gas] deposit_and_register (note A)                status=success comp=1000000 storage=13588800 rebate=11535646 nonRefundable=1154 net=3053154
+[gas] deposit_and_register (note B)                status=success comp=1000000 storage=13588800 rebate=11535646 nonRefundable=1154 net=3053154
+[gas] deposit_and_register (note W)                status=success comp=1000000 storage=13588800 rebate=11535646 nonRefundable=1154 net=3053154
+[gas] deposit_and_register (note X)                status=success comp=1000000 storage=13588800 rebate=11535646 nonRefundable=1154 net=3053154
+[gas] update_commitment_root                       status=success comp=1000000 storage=11970000 rebate=11725627 nonRefundable=1173 net=1244373
+[gas] create_compliance_config                     status=success comp=1000000 storage=18171600 rebate=11968803 nonRefundable=1197 net=7202797
+[wait] pool epoch 29923667 -> 29923668 (~45s)
+[wait] pool epoch 29923667 -> 29923668 (~30s)
+[wait] pool epoch 29923667 -> 29923668 (~15s)
+[gas] shielded_transfer                            status=success comp=1000000 storage=14485600 rebate=12736326 nonRefundable=1274 net=2749274
+[gas] shielded_transfer (replay, aborts)           status=rejected-in-simulation (MoveAbort 9 in pool::execute_transfer) — not executed, no gas charged
+[gas] zk_withdraw                                  status=success comp=1000000 storage=15823200 rebate=12493151 nonRefundable=1249 net=4330049
+[gas] zk_withdraw (recipient substituted)          status=success comp=1000000 storage=15823200 rebate=12493151 nonRefundable=1249 net=4330049
+[E7] recipient substitution: status=success  — Coin<TOKEN> 0xf143105a2c5a4bc9fa9ec6c8a4a74e4b11d517add75a8d687a137bae5d034c2f now owned by 0xabababababababababababababababababababababababababababababababab (proof was generated for 0x2200a0c5c000bf9ad7ae1b494f20e5156fdc79115263cbd74699275074c00fa1)
+[gas] propose_compliance_toggle                    status=success comp=1000000 storage=11977600 rebate=11968803 nonRefundable=1197 net=1008797
+[wait] pool epoch 29923668 -> 29923669 (~56s)
+[wait] pool epoch 29923668 -> 29923669 (~41s)
+[wait] pool epoch 29923668 -> 29923669 (~26s)
+[wait] pool epoch 29923668 -> 29923669 (~11s)
+[gas] compliant_transfer                           status=success comp=1000000 storage=22556800 rebate=18458554 nonRefundable=1846 net=5098246
+[gas] pvkbench::create (transfer vk)               status=success comp=1000000 storage=11863600 rebate=987901 nonRefundable=99 net=11875699
+[gas] pvkbench::touch (transfer)                   status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::prepare_only (transfer)            status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::verify_raw (transfer)              status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::verify_cached (transfer)           status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::touch_n k=20 (transfer)            status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::prepare_only_n k=20 (transfer)     status=success comp=1690000 storage=988000 rebate=987901 nonRefundable=99 net=1690099
+[gas] pvkbench::verify_raw_n k=20 (transfer)       status=success comp=5350000 storage=988000 rebate=987901 nonRefundable=99 net=5350099
+[gas] pvkbench::verify_cached_n k=20 (transfer)    status=success comp=3710000 storage=988000 rebate=987901 nonRefundable=99 net=3710099
+[gas] pvkbench::touch_n k=40 (transfer)            status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::prepare_only_n k=40 (transfer)     status=success comp=3350000 storage=988000 rebate=987901 nonRefundable=99 net=3350099
+[gas] pvkbench::verify_raw_n k=40 (transfer)       status=success comp=10700000 storage=988000 rebate=987901 nonRefundable=99 net=10700099
+[gas] pvkbench::verify_cached_n k=40 (transfer)    status=success comp=7390000 storage=988000 rebate=987901 nonRefundable=99 net=7390099
+[gas] pvkbench::create (withdraw vk)               status=success comp=1000000 storage=10890800 rebate=987901 nonRefundable=99 net=10902899
+[gas] pvkbench::touch (withdraw)                   status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::prepare_only (withdraw)            status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::verify_raw (withdraw)              status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::verify_cached (withdraw)           status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::touch_n k=20 (withdraw)            status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::prepare_only_n k=20 (withdraw)     status=success comp=1680000 storage=988000 rebate=987901 nonRefundable=99 net=1680099
+[gas] pvkbench::verify_raw_n k=20 (withdraw)       status=success comp=4960000 storage=988000 rebate=987901 nonRefundable=99 net=4960099
+[gas] pvkbench::verify_cached_n k=20 (withdraw)    status=success comp=3320000 storage=988000 rebate=987901 nonRefundable=99 net=3320099
+[gas] pvkbench::touch_n k=40 (withdraw)            status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::prepare_only_n k=40 (withdraw)     status=success comp=3340000 storage=988000 rebate=987901 nonRefundable=99 net=3340099
+[gas] pvkbench::verify_raw_n k=40 (withdraw)       status=success comp=9900000 storage=988000 rebate=987901 nonRefundable=99 net=9900099
+[gas] pvkbench::verify_cached_n k=40 (withdraw)    status=success comp=6620000 storage=988000 rebate=987901 nonRefundable=99 net=6620099
+[gas] pvkbench::create (compliance vk)             status=success comp=1000000 storage=11377200 rebate=987901 nonRefundable=99 net=11389299
+[gas] pvkbench::touch (compliance)                 status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::prepare_only (compliance)          status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::verify_raw (compliance)            status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::verify_cached (compliance)         status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::touch_n k=20 (compliance)          status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::prepare_only_n k=20 (compliance)   status=success comp=1690000 storage=988000 rebate=987901 nonRefundable=99 net=1690099
+[gas] pvkbench::verify_raw_n k=20 (compliance)     status=success comp=5160000 storage=988000 rebate=987901 nonRefundable=99 net=5160099
+[gas] pvkbench::verify_cached_n k=20 (compliance)  status=success comp=3520000 storage=988000 rebate=987901 nonRefundable=99 net=3520099
+[gas] pvkbench::touch_n k=40 (compliance)          status=success comp=1000000 storage=988000 rebate=987901 nonRefundable=99 net=1000099
+[gas] pvkbench::prepare_only_n k=40 (compliance)   status=success comp=3340000 storage=988000 rebate=987901 nonRefundable=99 net=3340099
+[gas] pvkbench::verify_raw_n k=40 (compliance)     status=success comp=10300000 storage=988000 rebate=987901 nonRefundable=99 net=10300099
+[gas] pvkbench::verify_cached_n k=40 (compliance)  status=success comp=7010000 storage=988000 rebate=987901 nonRefundable=99 net=7010099
+[gas] freeze_pool                                  status=success comp=1000000 storage=11970000 rebate=11968803 nonRefundable=1197 net=1001197
+[gas] unfreeze_pool                                status=success comp=1000000 storage=11970000 rebate=11968803 nonRefundable=1197 net=1001197
+| Entry point | Status | Computation (MIST) | Storage (MIST) | Rebate (MIST) | Net (MIST) |
+|---|---|---:|---:|---:|---:|
+| `publish (package)` | success | 1380000 | 156415600 | 4939506 | 152856094 |
+| `create_pool` | success | 1000000 | 8496800 | 987901 | 8508899 |
+| `propose_withdraw_vk` | success | 1000000 | 11726800 | 8495950 | 4230850 |
+| `token_faucet::faucet (mint 1000 TOKEN)` | success | 1000000 | 4043200 | 2705329 | 2337871 |
+| `deposit_and_register (note A)` | success | 1000000 | 13588800 | 11535646 | 3053154 |
+| `deposit_and_register (note B)` | success | 1000000 | 13588800 | 11535646 | 3053154 |
+| `deposit_and_register (note W)` | success | 1000000 | 13588800 | 11535646 | 3053154 |
+| `deposit_and_register (note X)` | success | 1000000 | 13588800 | 11535646 | 3053154 |
+| `update_commitment_root` | success | 1000000 | 11970000 | 11725627 | 1244373 |
+| `create_compliance_config` | success | 1000000 | 18171600 | 11968803 | 7202797 |
+| `shielded_transfer` | success | 1000000 | 14485600 | 12736326 | 2749274 |
+| `zk_withdraw` | success | 1000000 | 15823200 | 12493151 | 4330049 |
+| `zk_withdraw (recipient substituted)` | success | 1000000 | 15823200 | 12493151 | 4330049 |
+| `propose_compliance_toggle` | success | 1000000 | 11977600 | 11968803 | 1008797 |
+| `compliant_transfer` | success | 1000000 | 22556800 | 18458554 | 5098246 |
+| `pvkbench::create (transfer vk)` | success | 1000000 | 11863600 | 987901 | 11875699 |
+| `pvkbench::touch (transfer)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::prepare_only (transfer)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::verify_raw (transfer)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::verify_cached (transfer)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::touch_n k=20 (transfer)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::prepare_only_n k=20 (transfer)` | success | 1690000 | 988000 | 987901 | 1690099 |
+| `pvkbench::verify_raw_n k=20 (transfer)` | success | 5350000 | 988000 | 987901 | 5350099 |
+| `pvkbench::verify_cached_n k=20 (transfer)` | success | 3710000 | 988000 | 987901 | 3710099 |
+| `pvkbench::touch_n k=40 (transfer)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::prepare_only_n k=40 (transfer)` | success | 3350000 | 988000 | 987901 | 3350099 |
+| `pvkbench::verify_raw_n k=40 (transfer)` | success | 10700000 | 988000 | 987901 | 10700099 |
+| `pvkbench::verify_cached_n k=40 (transfer)` | success | 7390000 | 988000 | 987901 | 7390099 |
+| `pvkbench::create (withdraw vk)` | success | 1000000 | 10890800 | 987901 | 10902899 |
+| `pvkbench::touch (withdraw)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::prepare_only (withdraw)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::verify_raw (withdraw)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::verify_cached (withdraw)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::touch_n k=20 (withdraw)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::prepare_only_n k=20 (withdraw)` | success | 1680000 | 988000 | 987901 | 1680099 |
+| `pvkbench::verify_raw_n k=20 (withdraw)` | success | 4960000 | 988000 | 987901 | 4960099 |
+| `pvkbench::verify_cached_n k=20 (withdraw)` | success | 3320000 | 988000 | 987901 | 3320099 |
+| `pvkbench::touch_n k=40 (withdraw)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::prepare_only_n k=40 (withdraw)` | success | 3340000 | 988000 | 987901 | 3340099 |
+| `pvkbench::verify_raw_n k=40 (withdraw)` | success | 9900000 | 988000 | 987901 | 9900099 |
+| `pvkbench::verify_cached_n k=40 (withdraw)` | success | 6620000 | 988000 | 987901 | 6620099 |
+| `pvkbench::create (compliance vk)` | success | 1000000 | 11377200 | 987901 | 11389299 |
+| `pvkbench::touch (compliance)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::prepare_only (compliance)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::verify_raw (compliance)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::verify_cached (compliance)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::touch_n k=20 (compliance)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::prepare_only_n k=20 (compliance)` | success | 1690000 | 988000 | 987901 | 1690099 |
+| `pvkbench::verify_raw_n k=20 (compliance)` | success | 5160000 | 988000 | 987901 | 5160099 |
+| `pvkbench::verify_cached_n k=20 (compliance)` | success | 3520000 | 988000 | 987901 | 3520099 |
+| `pvkbench::touch_n k=40 (compliance)` | success | 1000000 | 988000 | 987901 | 1000099 |
+| `pvkbench::prepare_only_n k=40 (compliance)` | success | 3340000 | 988000 | 987901 | 3340099 |
+| `pvkbench::verify_raw_n k=40 (compliance)` | success | 10300000 | 988000 | 987901 | 10300099 |
+| `pvkbench::verify_cached_n k=40 (compliance)` | success | 7010000 | 988000 | 987901 | 7010099 |
+| `freeze_pool` | success | 1000000 | 11970000 | 11968803 | 1001197 |
+| `unfreeze_pool` | success | 1000000 | 11970000 | 11968803 | 1001197 |
