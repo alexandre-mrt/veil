@@ -27,8 +27,7 @@ import { parseArgs } from "node:util";
 
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
-import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
-import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { fromBase64 } from "@mysten/sui/utils";
 import * as snarkjs from "snarkjs";
 import { buildPoseidon } from "circomlibjs";
@@ -119,7 +118,8 @@ function loadSigner() {
   }
   throw new Error("no ed25519 key for active address");
 }
-const client = new SuiJsonRpcClient({ url: args.rpc, network: "localnet" });
+// sui >= 1.84 fullnodes serve gRPC only (JSON-RPC returns 404), so this uses the gRPC client.
+const client = new SuiGrpcClient({ baseUrl: args.rpc, network: "localnet" });
 const signer = loadSigner();
 const me = signer.toSuiAddress();
 
@@ -128,15 +128,36 @@ async function exec(label, build, { expectFailure = false, allowEither = false }
   const tx = new Transaction();
   tx.setGasBudget(GAS_BUDGET);
   build(tx);
-  const r = await client.signAndExecuteTransaction({
-    transaction: tx, signer,
-    options: { showEffects: true, showObjectChanges: true, showEvents: true },
-  });
-  await client.waitForTransaction({ digest: r.digest });
-  const st = r.effects.status;
-  if (!allowEither && (st.status === "success") === expectFailure) {
+  let res;
+  try {
+    res = await client.signAndExecuteTransaction({
+      transaction: tx, signer, include: { effects: true, objectTypes: true },
+    });
+  } catch (e) {
+    // The SDK simulates the transaction while resolving it; a Move abort there means the tx never
+    // reaches the chain and no gas is charged. Record the rejection honestly (no gas numbers).
+    if (!(expectFailure || allowEither) || !e?.executionError) throw e;
+    const abort = e.executionError?.MoveAbort;
+    const st = { status: "rejected-in-simulation", error: abort ? `MoveAbort ${abort.abortCode} in ${abort.location?.module}::${abort.location?.functionName}` : String(e.message) };
+    results.push({ label, status: st.status, error: st.error, digest: null, gasUsed: null, net: null });
+    console.log(`[gas] ${label.padEnd(44)} status=${st.status} (${st.error}) — not executed, no gas charged`);
+    return { digest: null, effects: { status: st, gasUsed: null }, objectChanges: [] };
+  }
+  await client.waitForTransaction({ result: res });
+  const t = res.Transaction ?? res.FailedTransaction;
+  const ok = t.effects.status.success;
+  const st = { status: ok ? "success" : "failure", error: ok ? undefined : JSON.stringify(t.effects.status.error) };
+  if (!allowEither && ok === expectFailure) {
     throw new Error(`${label}: unexpected status ${JSON.stringify(st)}`);
   }
+  // Normalise to the shape the rest of this script uses.
+  const r = {
+    digest: t.digest, effects: { status: st, gasUsed: t.effects.gasUsed },
+    objectChanges: t.effects.changedObjects.filter((c) => c.idOperation === "Created").map((c) => ({
+      type: "created", objectId: c.objectId, objectType: t.objectTypes?.[c.objectId] ?? "",
+      owner: c.outputOwner ? { AddressOwner: c.outputOwner.AddressOwner } : null,
+    })),
+  };
   const g = r.effects.gasUsed;
   const net = BigInt(g.computationCost) + BigInt(g.storageCost) - BigInt(g.storageRebate);
   results.push({ label, status: st.status, error: st.error ?? null, digest: r.digest, gasUsed: g, net: net.toString() });
@@ -146,8 +167,9 @@ async function exec(label, build, { expectFailure = false, allowEither = false }
 const created = (r, typeSuffix) => r.objectChanges.find((c) => c.type === "created" && c.objectType.endsWith(typeSuffix))?.objectId;
 
 async function chainTimeMs() {
-  const o = await client.getObject({ id: CLOCK, options: { showContent: true } });
-  return BigInt(o.data.content.fields.timestamp_ms);
+  // Clock { id: UID (32 bytes), timestamp_ms: u64 } — read the BCS content directly.
+  const { object } = await client.getObject({ objectId: CLOCK, include: { content: true } });
+  return new DataView(object.content.buffer, object.content.byteOffset).getBigUint64(32, true);
 }
 async function waitForEpoch(target) {
   for (;;) {
@@ -181,6 +203,8 @@ async function main() {
   results.push({ label: "publish (package)", status: pub.effects.status.status, gasUsed: pg,
     net: (BigInt(pg.computationCost) + BigInt(pg.storageCost) - BigInt(pg.storageRebate)).toString(), digest: pub.digest ?? pub.effects.transactionDigest });
   console.log(`[info] package ${pkg}, treasury ${treasury}, signer ${me}`);
+  const rgp = await client.getReferenceGasPrice();
+  console.log(`[info] reference gas price: ${JSON.stringify(rgp)}`);
 
   const tA = artifact("transfer"), wA = artifact("withdraw"), cA = artifact("compliance");
   const tVk = vkBytes(tA.vk), wVk = vkBytes(wA.vk), cVk = vkBytes(cA.vk);
@@ -302,7 +326,7 @@ async function main() {
   const stolen = rSteal.effects.status.status === "success"
     ? rSteal.objectChanges.find((c) => c.type === "created" && c.objectType.endsWith("::token::TOKEN>") && c.owner?.AddressOwner === attacker)
     : null;
-  console.log(`[E7] recipient substitution: status=${rSteal.effects.status.status}` +
+  console.log(`[E7] recipient substitution: status=${rSteal.effects.status.status} ${rSteal.effects.status.error ?? ""}` +
     (stolen ? ` — Coin<TOKEN> ${stolen.objectId} now owned by ${attacker} (proof was generated for ${me})` : ""));
   results.push({ label: "E7 probe", substitutionSucceeded: !!stolen, stolenCoin: stolen?.objectId ?? null, attacker, provenFor: me });
 
@@ -341,6 +365,17 @@ async function main() {
         await exec(`pvkbench::${fn} (${name})`, (tx) => tx.moveCall({ target: `${bpkg}::pvk::${fn}`,
           arguments: [tx.object(st), tx.pure.vector("u8", arr(pr.proof)), tx.pure.vector("u8", arr(pr.inputs))] }));
       }
+      // Looped: k = 20 and k = 40 iterations; per-call units = (cost40 - cost20) / 20 / RGP.
+      for (const k of [20, 40]) {
+        for (const fn of ["touch_n", "prepare_only_n"]) {
+          await exec(`pvkbench::${fn} k=${k} (${name})`, (tx) => tx.moveCall({ target: `${bpkg}::pvk::${fn}`,
+            arguments: [tx.object(st), tx.pure.u64(k)] }));
+        }
+        for (const fn of ["verify_raw_n", "verify_cached_n"]) {
+          await exec(`pvkbench::${fn} k=${k} (${name})`, (tx) => tx.moveCall({ target: `${bpkg}::pvk::${fn}`,
+            arguments: [tx.object(st), tx.pure.vector("u8", arr(pr.proof)), tx.pure.vector("u8", arr(pr.inputs)), tx.pure.u64(k)] }));
+        }
+      }
     }
   }
 
@@ -348,7 +383,7 @@ async function main() {
   await exec("freeze_pool", (tx) => tx.moveCall({ target: `${pkg}::pool::freeze_pool`, arguments: [tx.object(pool), tx.object(cap), tx.object(CLOCK)] }));
   await exec("unfreeze_pool", (tx) => tx.moveCall({ target: `${pkg}::pool::unfreeze_pool`, arguments: [tx.object(pool), tx.object(cap)] }));
 
-  if (args.out) writeFileSync(args.out, JSON.stringify({ rpc: args.rpc, package: pkg, epochMs: EPOCH_MS, results }, null, 2));
+  if (args.out) writeFileSync(args.out, JSON.stringify({ rpc: args.rpc, package: pkg, epochMs: EPOCH_MS, referenceGasPrice: rgp, results }, null, 2));
   console.log("\n| Entry point | Status | Computation (MIST) | Storage (MIST) | Rebate (MIST) | Net (MIST) |");
   console.log("|---|---|---:|---:|---:|---:|");
   for (const r of results) {

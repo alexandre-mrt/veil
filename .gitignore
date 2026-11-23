@@ -22,3 +22,6 @@ target/
 
 # Sui
 contracts/Published.toml
+
+# Ephemeral Move publication records (sui client test-publish)
+Pub.*.toml

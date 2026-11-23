@@ -25,22 +25,23 @@ sui --version
 # ── local network (fresh genesis every run, so results don't depend on prior state) ──
 sui start --with-faucet --force-regenesis > "$OUT/sui-start.log" 2>&1 &
 NET_PID=$!
-trap 'kill $NET_PID 2>/dev/null || true' EXIT
-for i in $(seq 1 120); do
-  if curl -s -m 2 -X POST "$RPC" -H 'content-type: application/json' \
-      -d '{"jsonrpc":"2.0","id":1,"method":"sui_getChainIdentifier","params":[]}' | grep -q result; then
-    break
-  fi
-  sleep 1
-done
-curl -s -X POST "$RPC" -H 'content-type: application/json' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"sui_getChainIdentifier","params":[]}'; echo
-
+# test-publish records ephemeral publications in Pub.local.toml; a stale one from a previous
+# (regenesised) network makes the next publish fail, so clear it before and after.
+clean_pub() { rm -f "$ROOT/contracts/Pub.local.toml" "$HERE/move-pvk/Pub.local.toml"; }
+clean_pub
+trap 'kill $NET_PID 2>/dev/null || true; clean_pub' EXIT
 # ── client env + funded address ──
 sui client --yes new-env --alias local --rpc "$RPC" >/dev/null 2>&1 || true
 sui client switch --env local
+for i in $(seq 1 120); do
+  # sui >= 1.84 serves gRPC only on this port; wait until it has a committed checkpoint.
+  if sui client chain-identifier >/dev/null 2>&1; then break; fi
+  sleep 1
+done
+sui client chain-identifier
+
 sui client active-address >/dev/null 2>&1 || sui client new-address ed25519 >/dev/null
-for i in 1 2 3; do sui client faucet >/dev/null 2>&1 && break || sleep 3; done
+for i in $(seq 1 30); do sui client faucet >/dev/null 2>&1 && break || sleep 3; done
 sleep 3
 sui client gas --json | head -c 400; echo
 

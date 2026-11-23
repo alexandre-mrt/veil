@@ -45,3 +45,27 @@ public fun prepare_only(s: &Stored) {
 public fun touch(s: &Stored) {
     assert!(s.vk.length() > 0, 1);
 }
+
+// ── Looped variants: Sui gas model v15 charges max(1000, rounded(units)) computation units, so a
+// single verification is hidden under the 1000-unit floor. Running k iterations in one tx and
+// taking the slope between two k values gives the per-call cost with the fixed overhead removed.
+
+public fun verify_raw_n(s: &Stored, proof: vector<u8>, inputs: vector<u8>, n: u64) {
+    let mut k = 0;
+    while (k < n) { verify_raw(s, proof, inputs); k = k + 1; };
+}
+
+public fun verify_cached_n(s: &Stored, proof: vector<u8>, inputs: vector<u8>, n: u64) {
+    let mut k = 0;
+    while (k < n) { verify_cached(s, proof, inputs); k = k + 1; };
+}
+
+public fun prepare_only_n(s: &Stored, n: u64) {
+    let mut k = 0;
+    while (k < n) { prepare_only(s); k = k + 1; };
+}
+
+public fun touch_n(s: &Stored, n: u64) {
+    let mut k = 0;
+    while (k < n) { touch(s); k = k + 1; };
+}

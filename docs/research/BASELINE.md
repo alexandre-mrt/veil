@@ -36,14 +36,46 @@ elements) runs ~721–726 bytes for the same data.
 Reproduce: `node scripts/bench/prove-latency.mjs --runs 10` and
 `node scripts/bench/browser-latency.mjs --runs 8` (see that directory for prerequisites).
 
+## On-chain gas per entry point (MIST, one tx each, real Groth16 proofs)
+
+Measured 2026-11-23 on a local network (`sui 1.84.1-e83d69069e40` built from source, protocol 142,
+gas model v15, reference gas price 1000). Source: [`2026-11-23-onchain-gas-baseline.md`](2026-11-23-onchain-gas-baseline.md).
+`net = computation + storage − rebate`.
+
+| Entry point | Computation | Storage | Rebate | Net |
+|---|---:|---:|---:|---:|
+| publish (whole package) | 1,380,000 | 156,415,600 | 4,939,506 | 152,856,094 |
+| `create_pool` | 1,000,000 | 8,496,800 | 987,901 | 8,508,899 |
+| `propose_withdraw_vk` | 1,000,000 | 11,726,800 | 8,495,950 | 4,230,850 |
+| `create_compliance_config` | 1,000,000 | 18,171,600 | 11,968,803 | 7,202,797 |
+| `update_commitment_root` | 1,000,000 | 11,970,000 | 11,725,627 | 1,244,373 |
+| `propose_compliance_toggle` | 1,000,000 | 11,977,600 | 11,968,803 | 1,008,797 |
+| `freeze_pool` / `unfreeze_pool` | 1,000,000 | 11,970,000 | 11,968,803 | 1,001,197 |
+| `deposit_and_register` (100 TOKEN, incl. split) | 1,000,000 | 13,588,800 | 11,535,646 | 3,053,154 |
+| `shielded_transfer` | 1,000,000 | 14,485,600 | 12,736,326 | 2,749,274 |
+| `zk_withdraw` | 1,000,000 | 15,823,200 | 12,493,151 | 4,330,049 |
+| `compliant_transfer` | 1,000,000 | 22,556,800 | 18,458,554 | 5,098,246 |
+
+Every entry point's computation sits at the 1,000-unit floor. Storage, mostly the full rewrite of
+the shared `Pool` (≈12M MIST gross, 99% rebated) plus new dynamic fields, is the real cost.
+Groth16 verification, by looped slope: 267.5 / 247.0 / 257.0 units (transfer / withdraw /
+compliance VK), of which `prepare_verifying_key` is about 83 units. Sui-encoded VK sizes: 488 /
+424 / 456 bytes. Reproduce: `bash scripts/bench/run-gas-local.sh` (needs `sui` on PATH).
+
+## Test suites
+
+| Suite | Result (2026-11-23) |
+|---|---|
+| Move (`cd contracts && sui move test`) | 124 pass |
+| Circuits (`cd circuits && npm test`, real Groth16) | 43 + 30 + 35 pass |
+
 ## Not yet measured
 
 | Metric | Status | Why |
 |---|---|---|
-| On-chain gas per entry point (`deposit`, `shielded_transfer`, `zk_withdraw`, compliance verify, admin ops) | **BLOCKED** | No `sui` CLI binary available or installable in this session (no prebuilt binary reachable, building the full Sui workspace from source was judged impractical within a single night's budget), and ad-hoc JSON-RPC calls to a public Sui endpoint were not attempted after an early network-call permission denial in the same session (see the experiment report). Top of the queue for the next run. |
-| Move contract test suite (124 tests, `sui move test`) | **NOT RUN** (same blocker) | No contract code changed this session; risk from skipping is low but this is a real verification gap, not a passing claim. |
+| On-chain gas on testnet's live protocol version | **NOT MEASURED** | Local-network numbers above are protocol 142 / gas model v15. Testnet fullnode returns 403 from the sandbox (2026-11-23). Older gas models bucket computation more coarsely. |
+| Shared-object contention under concurrent transfers | **NOT MEASURED** | All gas rows above are serial, one tx at a time. |
 | Mobile WASM proving latency | **NOT MEASURED** | Tonight's browser harness runs desktop headless Chromium only. Extending it to a mobile Chromium device emulation profile is a natural, cheap follow-up (same harness, `page.emulate` a device descriptor). |
 | Relayer throughput / leakage under load | **NOT MEASURED** | Out of scope for tonight; queued. |
 
-Whatever comes out of a future gas/Move-test run should replace the corresponding row above in
-place, not be appended as a separate table.
+Future gas runs should replace the gas table above in place, not append a separate table.
