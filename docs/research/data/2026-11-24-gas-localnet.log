@@ -1,0 +1,68 @@
+== Veil localnet gas bench  (sui 1.71.1-2f5992f189cd, RPC http://127.0.0.1:9000, reference gas price 1000 MIST)
+   sender 0xc1ec15d450e19e4987a91ca3343ae6d304c9a791f4bc1a0d535ba44df4817731
+   on-chain VK bytes: transfer=488 withdraw=424 compliance=456
+-- setup / admin
+  [gas] publish (veil package)                       success  comp=1390000 (1390 units) storage=156415600 rebate=9781200 net=148024400
+  [gas] token_faucet::faucet                         success  comp=1000000 (1000 units) storage=4043200 rebate=2678544 net=2364656
+  [gas] pool::create_pool                            success  comp=1000000 (1000 units) storage=8496800 rebate=978120 net=8518680
+  [gas] pool::propose_withdraw_vk                    success  comp=1000000 (1000 units) storage=11726800 rebate=8411832 net=4314968
+  [gas] compliance::create_compliance_config         success  comp=1000000 (1000 units) storage=18171600 rebate=11609532 net=7562068
+-- deposits
+  [gas] pool::deposit_and_register #1                success  comp=1000000 (1000 units) storage=13832000 rebate=11662200 net=3169800
+  [gas] pool::deposit_and_register #2                success  comp=1000000 (1000 units) storage=13832000 rebate=11662200 net=3169800
+  [gas] pool::deposit_and_register #3                success  comp=1000000 (1000 units) storage=13832000 rebate=11662200 net=3169800
+  [gas] pool::deposit_and_register #4                success  comp=1000000 (1000 units) storage=13832000 rebate=11662200 net=3169800
+  [gas] pool::deposit_and_register #5                success  comp=1000000 (1000 units) storage=13832000 rebate=11662200 net=3169800
+  [gas] pool::deposit_and_register #6                success  comp=1000000 (1000 units) storage=13832000 rebate=11662200 net=3169800
+  [gas] pool::deposit_and_register #7                success  comp=1000000 (1000 units) storage=13832000 rebate=11662200 net=3169800
+  [gas] pool::update_commitment_root                 success  comp=1000000 (1000 units) storage=12213200 rebate=11850300 net=1362900
+-- groth16 primitive cost (sui::groth16, transfer circuit, 7 public inputs)
+  [gas] ptb: groth16::bn254() only (floor)           success  comp=1000000 (1000 units) storage=988000 rebate=978120 net=1009880
+  [gas] ptb: prepare_verifying_key(transfer)         success  comp=1000000 (1000 units) storage=988000 rebate=978120 net=1009880
+  [wait] for pool epoch > 29925085 .......→ 29925086
+-- shielded_transfer
+  [prove] transfer 1123 ms (local verify ok)
+  [gas] pool::shielded_transfer #1                   success  comp=1000000 (1000 units) storage=14485600 rebate=12610224 net=2875376
+  [prove] transfer 819 ms (local verify ok)
+  [gas] pool::shielded_transfer #2                   success  comp=1000000 (1000 units) storage=14485600 rebate=12369456 net=3116144
+  [prove] transfer 869 ms (local verify ok)
+  [gas] pool::shielded_transfer #3                   success  comp=1000000 (1000 units) storage=14485600 rebate=12369456 net=3116144
+  [gas] ptb: prepare + verify_groth16_proof(transfer) success  comp=1000000 (1000 units) storage=988000 rebate=978120 net=1009880
+  [gas] ptb: 2x prepare+verify (dry-run)             success  comp=1000000 (1000 units) storage=988000 rebate=978120 net=1009880
+  [gas] ptb: 4x prepare+verify (dry-run)             success  comp=1080000 (1080 units) storage=988000 rebate=978120 net=1089880
+  [gas] ptb: 8x prepare+verify (dry-run)             success  comp=2150000 (2150 units) storage=988000 rebate=978120 net=2159880
+  [gas] ptb: 16x prepare+verify (dry-run)            success  comp=4300000 (4300 units) storage=988000 rebate=978120 net=4309880
+  [gas] ptb: 32x prepare+verify (dry-run)            success  comp=8640000 (8640 units) storage=988000 rebate=978120 net=8649880
+  [gas] ptb: 64x prepare+verify (dry-run)            success  comp=17500000 (17500 units) storage=988000 rebate=978120 net=17509880
+  [gas] ptb: 64x prepare_verifying_key only (dry-run) success  comp=5410000 (5410 units) storage=988000 rebate=978120 net=5419880
+  [gas] NEG shielded_transfer tampered input (dry-run) failure  comp=1000000 (1000 units) storage=10442400 rebate=10337976 net=1104424  err=MoveAbort(pool::execute_transfer, 3)
+-- compliant_transfer
+  [prove] transfer 735 ms (local verify ok)
+  [prove] compliance 689 ms (local verify ok)
+  [gas] compliance::compliant_transfer               success  comp=1000000 (1000 units) storage=22800000 rebate=18509040 net=5290960
+-- zk_withdraw
+  [prove] withdraw 256 ms (local verify ok)
+  [gas] pool::zk_withdraw                            success  comp=1000000 (1000 units) storage=15823200 rebate=12369456 net=4453744
+  [prove] withdraw 272 ms (local verify ok)
+  [gas] E7 zk_withdraw proof(recipient=A) → pays B   success  comp=1000000 (1000 units) storage=15823200 rebate=12369456 net=4453744
+  [prove] withdraw 233 ms (local verify ok)
+  [gas] E4 zk_withdraw 3x the note's deposit         success  comp=1000000 (1000 units) storage=15823200 rebate=12369456 net=4453744
+-- admin ops
+  [gas] pool::propose_vk_update                      success  comp=1000000 (1000 units) storage=15686400 rebate=11850300 net=4836100
+  [gas] pool::cancel_vk_update                       success  comp=1000000 (1000 units) storage=11970000 rebate=15529536 net=-2559536
+  [gas] pool::propose_withdrawal                     success  comp=1000000 (1000 units) storage=12274000 rebate=11850300 net=1423700
+  [gas] pool::cancel_withdrawal                      success  comp=1000000 (1000 units) storage=11970000 rebate=12151260 net=818740
+  [gas] pool::propose_compliance_toggle              success  comp=1000000 (1000 units) storage=11977600 rebate=11850300 net=1127300
+  [gas] pool::cancel_compliance_toggle               success  comp=1000000 (1000 units) storage=11970000 rebate=11857824 net=1112176
+  [gas] pool::freeze_pool                            success  comp=1000000 (1000 units) storage=11970000 rebate=11850300 net=1119700
+  [gas] pool::unfreeze_pool                          success  comp=1000000 (1000 units) storage=11970000 rebate=11850300 net=1119700
+  [gas] compliance::update_credential_root           success  comp=1000000 (1000 units) storage=8960400 rebate=8630028 net=1330372
+== probes
+  NEG: rejected as expected: MoveAbort(pool::execute_transfer, 3)
+  BIND: ACCEPTED: transfer by secret=2000 (nullifier 5550588166816108283177925568698378102800905198432962496038891224166355978765) carried a compliance proof from a different credential holder (secret=555000111) bound to unrelated transferNullifier=424242. Tx EgfobG1MoNaZBwjoDnGSaDRGKjqPrwXnB5FYtwdt2QXP
+  E7: ACCEPTED: proof bound to recipientHash=Poseidon(8, 4660) paid 100 base units to unrelated address 0x891702d2980bfe4166d69ae7a27e80bc207d016417968d81540cd01445da40c2. Tx Hf2VmkTrUArtcWsSEkBKnLjU86APSyHpY5jNXbho8MMG
+  E4: ACCEPTED: note deposited 100000000 base units, withdrew 300000000 (commitment claimed cumulativeOld=300000000; nothing on-chain ties it to the deposit). Tx 45phrnEY1pzs32jJWHQx3AMXNgiRF17G5CAPrPNJeYZi
+  wrote <scratch>/gas-run4.json
+real	1m33.409s
+user	0m16.370s
+sys	0m0.867s
